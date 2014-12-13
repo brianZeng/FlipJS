@@ -1,7 +1,4 @@
 (function () {
-  /**
-   * Created by 柏然 on 2014/12/12.
-   */
   var Flip = function () {
 
   }, FlipScope = {};
@@ -33,21 +30,16 @@
 
   Flip.util = {Object: obj, Array: array, inherit: inherit};
   function createProxy(obj) {
-    var from, result = {}, func;
-    switch (typeof obj) {
-      case "function":
-        from = obj.proxy;
-        break;
-      case "object":
-        from = obj;
-        break;
-      default :
-        from = {};
-    }
+    var from, result = {}, func, objType = typeof obj;
+    if (objType == "function")from = obj.proxy;
+    else if (objType == "object") from = obj;
+    else from = {};
     func = function (prop, value) {
       var v;
-      if (!from.hasOwnProperty(prop) || from[prop] === undefined)
+      if (!from.hasOwnProperty(prop) || from[prop] === undefined) {
         v = value;
+        delete from[prop];
+      }
       else v = from[prop];
       return result[prop] = v;
     };
@@ -235,9 +227,6 @@
     this[key] = value;
   }
 
-  /**
-   * Created by 柏然 on 2014/12/13.
-   */
   function Animation(opt) {
     var r = Animation.createOptProxy(opt).result;
     this.elements = r.elements;
@@ -245,13 +234,17 @@
   }
 
   Animation.createOptProxy = function (setter, elements) {
+    var selector;
     setter = createProxy(setter);
     if (!setter.proxy.clock)
       setter('clock', new Clock(setter));
+    if ((selector = setter.proxy.selector) && !setter.proxy.elements)
+      elements = Flip.$(selector);
     setter('elements', elements);
     return setter;
   };
   Flip.Animation = Animation;
+  Flip.ANIMATION_TYPE = {};
   Animation.EVENT_NAMES = {
     UPDATE: 'update'
   };
@@ -259,21 +252,31 @@
     var idCache = {};
 
     function main() {
-      var firstParam = typeof arguments[0], constructor, opt, animation;
+      var firstParam = typeof arguments[0], constructor, opt, animation, aniOpt;
       if (firstParam === "string") {
         constructor = main[arguments[0]];
         opt = arguments[1];
       }
       else if (firstParam === "object") {
-        constructor = main[arguments[0].type];
+        constructor = main[arguments[0].animationType];
         opt = arguments[0];
       }
-      debugger;
+      if (!constructor) throw Error('undefined animation type');
+      aniOpt = main.createOptProxy(opt, 0, 0, 1).result;
       animation = new constructor(opt);
-      Flip.instance.add(animation);
+      if (aniOpt.defaultGlobal)
+        (FlipScope.global._tasks.findBy('name', aniOpt.taskName) || FlipScope.global.activeTask).add(animation);
+      if (aniOpt.autoStart) animation.start();
       return animation;
     }
 
+    main.createOptProxy = function (setter, autoStart, taskName, defaultGlobal) {
+      setter = createProxy(setter);
+      setter('autoStart', autoStart);
+      setter('taskName', taskName);
+      setter('defaultGlobal', defaultGlobal);
+      return setter;
+    };
     Flip.animation = main;
     function getCSS(ele) {
       return ele.currentStyle || window.getComputedStyle(ele)
@@ -369,13 +372,9 @@
   })();
 
 
-  /**
-   * Created by 柏然 on 2014/12/12.
-   */
-
   function Clock(opt) {
     if (!(this instanceof Clock))return new Clock(opt);
-    objForEach(Clock.createOptProxy(opt, 1, 1, 0, 0, Clock.TIMEFUNCS.linear, 0, 1, 0).result, cloneFunc, this);
+    objForEach(Clock.createOptProxy(opt, 1, 1, 1, 0, Clock.TIMEFUNCS.linear, 0, 1, 0).result, cloneFunc, this);
     this.reset(0, 0, 1, 1);
     this._paused = false;
   }
@@ -650,26 +649,20 @@
       state.task.remove(this);
   }
 
-  /**
-   * Created by 柏然 on 2014/12/13.
-   */
   (function (Flip) {
-
     function $(slt, ele) {
       var r = [], root = ele || document;
-      return slt.split(',').forEach(function (selector) {
+      slt.split(',').forEach(function (selector) {
         r.push.apply(r, r.slice.apply(root.querySelectorAll(selector)))
       });
+      return r;
     }
 
     Flip.$ = $;
   })(Flip);
-  document.addEventListener('DOMContentLoad', function () {
+  document.addEventListener('DOMContentLoaded', function () {
     FlipScope.global.init();
   });
-  /**
-   * Created by 柏然 on 2014/12/12.
-   */
   Flip.RenderGlobal = RenderGlobal;
   function RenderGlobal() {
     this._tasks = new Flip.util.Array();
@@ -741,10 +734,6 @@
   FlipScope.global = new RenderGlobal();
 
 
-  /**
-   * Created by 柏然 on 2014/12/13.
-   */
-
   function Mat3(arrayOrMat3) {
     if (!(this instanceof Mat3))return new Mat3(arrayOrMat3);
     var s, d;
@@ -814,9 +803,6 @@
       return r;
     }
   };
-  /**
-   * Created by 柏然 on 2014/12/12.
-   */
   function RenderTask(name) {
     if (!(this instanceof  RenderTask))return new RenderTask(name);
     this.name = name;
@@ -869,9 +855,6 @@
     else if (typeof obj.emit == "function") return obj.emit(RenderTask.EVENT_NAMES.UPDATE, this);
   }
 
-  /**
-   * Created by 柏然 on 2014/12/12.
-   */
   function TimeLine(task) {
     this.now = this._stopTime = 0;
     this._startTime = this._lastStop = Date.now();
@@ -898,9 +881,6 @@
         this.now = Date.now() - this._startTime - this._stopTime;
     }
   });
-  /**
-   * Created by 柏然 on 2014/12/13.
-   */
   (function (animation) {
     animation.translate = Translate;
     function Translate(opt) {
@@ -909,6 +889,7 @@
       Animation.call(this, opt);
     }
 
+    Flip.ANIMATION_TYPE.translate = 'translate';
     Translate.createOptProxy = function (setter, dx, dy) {
       setter = createProxy(setter);
       setter('dx', dx);

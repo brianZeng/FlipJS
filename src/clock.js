@@ -4,7 +4,7 @@
 
 function Clock(opt) {
   if (!(this instanceof Clock))return new Clock(opt);
-  objForEach(Clock.createOptProxy(opt, 1, 1, 0, 0, Clock.TIMEFUNCS.linear, 0, 1, 0).result, cloneFunc, this);
+  objForEach(Clock.createOptProxy(opt, 1, 1, 1, 0, Clock.TIMEFUNCS.linear, 0, 1, 0).result, cloneFunc, this);
   this.reset(0, 0, 1, 1);
   this._paused = false;
 }

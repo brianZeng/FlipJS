@@ -9,6 +9,7 @@
     Animation.call(this, opt);
   }
 
+  Flip.ANIMATION_TYPE.translate = 'translate';
   Translate.createOptProxy = function (setter, dx, dy) {
     setter = createProxy(setter);
     setter('dx', dx);

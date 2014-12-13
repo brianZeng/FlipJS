@@ -1,0 +1,18 @@
+/**
+ * Created by 柏然 on 2014/12/13.
+ */
+describe('Construct translate animation:', function () {
+  it('1. .dx .dy stands for the translation distance:', function () {
+    var proxy = Flip.animation.translate.createOptProxy({dx: 100, dy: 200});
+    expect(proxy.result.dx).toBe(100);
+    expect(proxy.result.dy).toBe(200);
+  });
+  it('2.create from Flip.animation:', function () {
+    var ani = Flip.animation({animationType: Flip.ANIMATION_TYPE.translate, dx: 20, dy: 100, iteration: 10});
+    expect(ani.dx).toBe(20);
+    expect(ani.dy).toBe(100);
+    expect(ani.clock.iteration).toBe(10);
+  })
+
+
+});

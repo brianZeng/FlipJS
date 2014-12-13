@@ -18,7 +18,8 @@ var config = {
         if (path.indexOf('bin/flip.js') == 0)
           return '(function(){*})();'.replace('*', src);
         return src;
-      }
+      },
+      stripBanners: true
     }
   }
 };

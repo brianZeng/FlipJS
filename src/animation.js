@@ -7,13 +7,17 @@ function Animation(opt) {
   this.clock = r.clock;
 }
 Animation.createOptProxy = function (setter, elements) {
+  var selector;
   setter = createProxy(setter);
   if (!setter.proxy.clock)
     setter('clock', new Clock(setter));
+  if ((selector = setter.proxy.selector) && !setter.proxy.elements)
+    elements = Flip.$$(selector);
   setter('elements', elements);
   return setter;
 };
 Flip.Animation = Animation;
+Flip.ANIMATION_TYPE = {};
 Animation.EVENT_NAMES = {
   UPDATE: 'update'
 };
@@ -21,21 +25,31 @@ Animation.EVENT_NAMES = {
   var idCache = {};
 
   function main() {
-    var firstParam = typeof arguments[0], constructor, opt, animation;
+    var firstParam = typeof arguments[0], constructor, opt, animation, aniOpt;
     if (firstParam === "string") {
       constructor = main[arguments[0]];
       opt = arguments[1];
     }
     else if (firstParam === "object") {
-      constructor = main[arguments[0].type];
+      constructor = main[arguments[0].animationType];
       opt = arguments[0];
     }
-    debugger;
+    if (!constructor) throw Error('undefined animation type');
+    aniOpt = main.createOptProxy(opt, 0, 0, 1).result;
     animation = new constructor(opt);
-    Flip.instance.add(animation);
+    if (aniOpt.defaultGlobal)
+      (FlipScope.global._tasks.findBy('name', aniOpt.taskName) || FlipScope.global.activeTask).add(animation);
+    if (aniOpt.autoStart) animation.start();
     return animation;
   }
 
+  main.createOptProxy = function (setter, autoStart, taskName, defaultGlobal) {
+    setter = createProxy(setter);
+    setter('autoStart', autoStart);
+    setter('taskName', taskName);
+    setter('defaultGlobal', defaultGlobal);
+    return setter;
+  };
   Flip.animation = main;
   function getCSS(ele) {
     return ele.currentStyle || window.getComputedStyle(ele)

@@ -32,21 +32,16 @@ else if (window) window.Flip = Flip;
 
 Flip.util = {Object: obj, Array: array, inherit: inherit};
 function createProxy(obj) {
-  var from, result = {}, func;
-  switch (typeof obj) {
-    case "function":
-      from = obj.proxy;
-      break;
-    case "object":
-      from = obj;
-      break;
-    default :
-      from = {};
-  }
+  var from, result = {}, func, objType = typeof obj;
+  if (objType == "function")from = obj.proxy;
+  else if (objType == "object") from = obj;
+  else from = {};
   func = function (prop, value) {
     var v;
-    if (!from.hasOwnProperty(prop) || from[prop] === undefined)
+    if (!from.hasOwnProperty(prop) || from[prop] === undefined) {
       v = value;
+      delete from[prop];
+    }
     else v = from[prop];
     return result[prop] = v;
   };
