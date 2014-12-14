@@ -6,6 +6,7 @@ function Animation(opt) {
   var r = Animation.createOptProxy(opt).result;
   this.elements = r.elements;
   this.clock = r.clock;
+  this.css = {};
 }
 Animation.createOptProxy = function (setter, elements) {
   var selector;
@@ -76,7 +77,9 @@ Animation.EVENT_NAMES = {
   }
 
   function removeWhenFinished(o, v, state) {
-    state.animation.destroy(state);
+    var ani = state.animation;
+    ani.render(state);
+    ani.destroy(state);
   }
 
   inherit(Animation, Flip.util.Object, {
@@ -135,10 +138,15 @@ Animation.EVENT_NAMES = {
       this.clock = null;
     },
     apply: function (state) {
-      var mat = this.getMatrix(state).toString();
+      var mat = this.getMatrix(state).toString(), css = this.getCss();
       this.elements.forEach(function (ele) {
-        ele.style.transform = mat;
+        var style = ele.style;
+        style.transform = mat;
+        objForEach(css, cloneFunc, style);
       });
+    },
+    getCss: function () {
+      return 0;
     },
     getMatrix: function () {
       return new Mat3();

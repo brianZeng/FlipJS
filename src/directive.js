@@ -11,7 +11,11 @@
   }
 
   Flip.$$ = $$;
+  document.addEventListener('DOMContentLoaded', function () {
+    FlipScope.global.init();
+    FlipScope.readyFuncs.forEach(function (callback) {
+      callback(Flip);
+    });
+    FlipScope.readyFuncs = null;
+  });
 })(Flip);
-document.addEventListener('DOMContentLoaded', function () {
-  FlipScope.global.init();
-});

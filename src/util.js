@@ -2,8 +2,9 @@
  * Created by 柏然 on 2014/12/12.
  */
 var Flip = function () {
-
-}, FlipScope = {};
+  var first = arguments[0];
+  if (typeof first === "function") arrAdd(FlipScope.readyFuncs, first);
+}, FlipScope = {readyFuncs: []};
 Object.defineProperty(Flip, 'instance', {get: function () {
   return FlipScope.global;
 }});
@@ -40,12 +41,18 @@ function createProxy(obj) {
     for (var i = 0, v, prop, value, len = arguments.length; i < len; i += 2) {
       prop = arguments[i];
       value = arguments[i + 1];
-      if (!from.hasOwnProperty(prop) || from[prop] === undefined) {
+      if (!from.hasOwnProperty(prop)) {
         v = value;
         delete from[prop];
       }
       else v = from[prop];
       result[prop] = v;
+    }
+  };
+  func.source = function () {
+    for (var i = 0, prop, len = arguments.length; i < len; i += 2) {
+      prop = arguments[i];
+      if (!from.hasOwnProperty(prop))from[prop] = arguments[i + 1];
     }
   };
   func.result = result;
@@ -184,24 +191,30 @@ function addEventListenerOnce(obj, evtName, handler) {
 }
 obj.once = addEventListenerOnce;
 function objForEach(object, callback, thisObj, arg) {
-  if (thisObj == undefined)thisObj = object;
-  for (var i = 0, names = Object.getOwnPropertyNames(object), name = names[0]; name; name = names[++i])
-    callback.apply(thisObj, [name, object[name], arg]);
+  if (object) {
+    if (thisObj == undefined)thisObj = object;
+    for (var i = 0, names = Object.getOwnPropertyNames(object), name = names[0]; name; name = names[++i])
+      callback.apply(thisObj, [name, object[name], arg]);
+  }
   return object;
 }
 obj.forEach = objForEach;
 function objMap(object, callback, thisObj, arg) {
   var r = obj();
-  if (thisObj == undefined)thisObj = object;
-  for (var keys = Object.getOwnPropertyNames(object), i = 0, key = keys[0]; key; key = keys[++i])
-    r[key] = callback.apply(thisObj, [key, object[key], arg]);
+  if (object) {
+    if (thisObj == undefined)thisObj = object;
+    for (var keys = Object.getOwnPropertyNames(object), i = 0, key = keys[0]; key; key = keys[++i])
+      r[key] = callback.apply(thisObj, [key, object[key], arg]);
+  }
   return r;
 }
 obj.map = objMap;
 function objReduce(object, callback, initialValue, thisObj, arg) {
-  if (thisObj == undefined)thisObj = object;
-  for (var keys = Object.getOwnPropertyNames(object), i = 0, key = keys[0]; key; key = keys[++i])
-    initialValue = callback.apply(thisObj, [initialValue, key, object[key], arg]);
+  if (object) {
+    if (thisObj == undefined)thisObj = object;
+    for (var keys = Object.getOwnPropertyNames(object), i = 0, key = keys[0]; key; key = keys[++i])
+      initialValue = callback.apply(thisObj, [initialValue, key, object[key], arg]);
+  }
   return initialValue;
 }
 obj.reduce = objReduce;

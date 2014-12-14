@@ -16,9 +16,10 @@ Clock.createOptProxy = function (opt, duration, direction, range, offset, timing
     'infinite', infinite, 'iteration', iteration, 'autoReverse', autoReverse);
   return setter;
 };
-Clock.TIMEFUNCS = (function () {
+Flip.TIMEFUNCS = Clock.TIMEFUNCS = (function () {
   /**
    * @name Clock.TIMEFUNCS
+   * @name Flip.TIMEFUNCS
    * @type {{linear: linear, sineEaseIn: sineEaseIn, sineEaseOut: sineEaseOut, sineEaseInOut: sineEaseInOut, quintEaseIn: quintEaseIn, quintEaseOut: quintEaseOut, quintEaseInOut: quintEaseInOut, quartEaseIn: quartEaseIn, quartEaseOut: quartEaseOut, quartEaseInOut: quartEaseInOut, circEaseIn: circEaseIn, circEaseOut: circEaseOut, circEaseInOut: circEaseInOut, quadEaseIn: quadEaseIn, quadEaseOut: quadEaseOut, quadEaseInOut: quadEaseInOut, cubicEaseIn: cubicEaseIn, cubicEaseOut: cubicEaseOut, cubicEaseInOut: cubicEaseInOut, bounceEaseOut: bounceEaseOut, bounceEaseIn: bounceEaseIn, bounceEaseInOut: bounceEaseInOut, expoEaseIn: expoEaseIn, expoEaseOut: expoEaseOut, expoEaseInOut: expoEaseInOut, zeroStep: zeroStep, halfStep: halfStep, oneStep: oneStep, random: random, randomLimit: randomLimit}}
    */
   var FUNCS = {
@@ -139,7 +140,7 @@ Clock.TIMEFUNCS = (function () {
       return Math.random() * t;
     }
   };
-  return FUNCS;
+  return Object.freeze(FUNCS);
 })();
 Clock.EVENT_NAMES = {
   UPDATE: 'update',
@@ -228,7 +229,17 @@ inherit(Clock, obj, {
   }},
   isStopped: {get: function () {
     return this._stopped;
-  }}
+  }},
+  timingFunction: {
+    get: function () {
+      return this._tf;
+    },
+    set: function (src) {
+      var t;
+      if ((typeof src === "function" && (t = src)) || (t = Clock.TIMEFUNCS[src]))
+        this._tf = t;
+    }
+  }
 });
 function updateClock(state) {
   if (!this._stopped) {
@@ -253,13 +264,12 @@ function updateClock(state) {
       else if (this.t == 1) evt = Clock.EVENT_NAMES.END;
 
       if (ov != curValue) this.emit(Clock.EVENT_NAMES.TICK, evtArg);
-
       if (evt) {
         this._stopped = true;
         this.emit(evt, evtArg);
         if (this.infinite) this.toggle();
         else if (this.i-- > 0)
-          this.reset(0, this.autoReverse, 0, 0);
+          this.reset(0, this.autoReverse && this.i % 2 == 0, 0, 0);
         else
           this.emit(Clock.EVENT_NAMES.FINISHED, evtArg);
       }
