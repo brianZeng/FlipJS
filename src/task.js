@@ -19,23 +19,24 @@ RenderTask.EVENT_NAMES = {
 };
 inherit(RenderTask, Flip.util.Object, {
   update: function (state) {
-    var t = state.task, updateParam = [state, this], oups;
+    var t = state.task, updateParam = [state, this];
     (state.timeline = t.timeline).move();
     this.emit(RenderTask.EVENT_NAMES.UPDATE, updateParam);
-    oups = this._updateObjs;
-    this._updateObjs = [];
-    this._updateObjs = this._updateObjs.concat(oups.filter(filterIUpdate, state));
+    this._updateObjs = arrSafeFilter(this._updateObjs, filterIUpdate, state);
   },
   invalid: function () {
     this._invalid = true;
   },
   render: function (state) {
+    var evtParam = [state, this];
     if (this._invalid) {
+      this.emit(RenderTask.EVENT_NAMES.RENDER_START, evtParam);
       this._updateObjs.forEach(function (component) {
         if (component.render) component.render(state);
       });
       this._invalid = false;
     }
+    this.emit(RenderTask.EVENT_NAMES.RENDER_END, evtParam);
   },
   add: function (obj, type) {
     if (type == 'update') return arrAdd(this._updateObjs, obj);
@@ -43,7 +44,9 @@ inherit(RenderTask, Flip.util.Object, {
       arrAdd(this._updateObjs, obj) && (obj._task = this);
   },
   remove: function (obj) {
-    if (arrRemove(this._updateObjs, obj) && obj._task == this)obj._task = null;
+    if (obj._task == this)
+      obj._task = null;
+    arrRemove(this._updateObjs, obj);
   }
 });
 function filterIUpdate(obj) {

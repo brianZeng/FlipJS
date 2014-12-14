@@ -8,12 +8,10 @@
     objForEach(Translate.createOptProxy(opt, 0, 0).result, cloneFunc, this);
     Animation.call(this, opt);
   }
-
   Flip.ANIMATION_TYPE.translate = 'translate';
   Translate.createOptProxy = function (setter, dx, dy) {
     setter = createProxy(setter);
-    setter('dx', dx);
-    setter('dy', dy);
+    setter('dx', dx, 'dy', dy);
     return setter;
   };
   inherit(Translate, Animation.prototype, {

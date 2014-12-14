@@ -15,13 +15,30 @@ describe('Construct Animation:', function () {
       var eles = [1, 2, 3];
       proxy = Flip.Animation.createOptProxy({selector: 'body', elements: eles});
       expect(proxy.result.elements).toBe(eles);
-    })
-
+    });
   });
   describe('2.use Flip.animation() to construct an animation:', function () {
+
     it('first param can be animation type', function () {
       var ani = Flip.animation('translate');
       expect(ani instanceof Flip.Animation).toBeTruthy();
     });
+    it('animation clock ticks when change:', function (done) {
+      var tickSpy = jasmine.createSpy('tick'), finishSpy = jasmine.createSpy('finish');
+      var ani = Flip.animation({duration: 0.2, range: 1, autoStart: true});
+      ani.clock.once(Flip.Clock.EVENT_NAMES.TICK, function () {
+        tickSpy();
+        console.log(arguments);
+      });
+      ani.clock.once(Flip.Clock.EVENT_NAMES.FINISHED, function () {
+        finishSpy(this.value);
+        expect(tickSpy).toHaveBeenCalled();
+        expect(finishSpy).toHaveBeenCalledWith(1);
+        done();
+      });
+    });
+
+
+
   });
 });

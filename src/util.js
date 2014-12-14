@@ -36,14 +36,17 @@ function createProxy(obj) {
   if (objType == "function")from = obj.proxy;
   else if (objType == "object") from = obj;
   else from = {};
-  func = function (prop, value) {
-    var v;
-    if (!from.hasOwnProperty(prop) || from[prop] === undefined) {
-      v = value;
-      delete from[prop];
+  func = function () {
+    for (var i = 0, v, prop, value, len = arguments.length; i < len; i += 2) {
+      prop = arguments[i];
+      value = arguments[i + 1];
+      if (!from.hasOwnProperty(prop) || from[prop] === undefined) {
+        v = value;
+        delete from[prop];
+      }
+      else v = from[prop];
+      result[prop] = v;
     }
-    else v = from[prop];
-    return result[prop] = v;
   };
   func.result = result;
   func.proxy = from;
@@ -79,13 +82,14 @@ function arrAdd(array, item) {
     return !!array.push(item);
   return false;
 }
-array.remove = arrRemove;
+
 function arrRemove(array, item) {
   var i = array.indexOf(item);
   if (i >= 0)
     return !!array.splice(i, 1);
   return false;
 }
+array.remove = arrRemove;
 array.add = arrAdd;
 function mapProName(proNameOrFun) {
   if (typeof proNameOrFun == "function")return proNameOrFun;
@@ -108,13 +112,26 @@ function arrFind(array, proNameOrFun, value, unstrict) {
   return undefined;
 }
 array.findBy = arrFind;
-
+function arrSafeFilter(array, filter, thisObj) {
+  var copy = array.slice();
+  if (thisObj == undefined)thisObj = array;
+  return copy.filter(filter, thisObj).filter(function (item) {
+    return array.indexOf(item) > -1;
+  });
+}
+array.safeFilter = arrSafeFilter;
 inherit(array, Array, {
   add: function (item) {
     return arrAdd(this, item);
   },
   findBy: function (proNameOrFun, value, unstrict) {
     return arrFind(this, proNameOrFun, value, unstrict);
+  },
+  remove: function (item) {
+    return arrRemove(this, item);
+  },
+  safeFilter: function (callback, thisObj) {
+    return arrSafeFilter(this, callback, thisObj);
   }
 });
 
@@ -136,24 +153,17 @@ function addEventListener(obj, evtName, handler) {
   return obj;
 }
 obj.on = addEventListener;
-addEventListener.emit = obj.emit = (function () {
-  var emitings = array();
-  return function (obj, evtName, argArray, thisObj) {
-    var cbs = obj._callbacks, hs, r, nhs;
-    if (!cbs)return 0;
-    hs = cbs[evtName];
-    if (!hs || !emitings.add(hs))return false;
-    if (!argArray)argArray = [];
-    else if (!(argArray instanceof Array)) argArray = [argArray];
-    thisObj = thisObj || obj;
-    nhs = cbs[evtName] = hs.filter(function (call) {
-      r = call.apply(thisObj, argArray);
-      return r != -1;
-    });
-    emitings.remove(hs);
-    return nhs.length;
-  }
-})();
+function emitEvent(obj, evtName, argArray, thisObj) {
+  var callbacks , handlers;
+  if (!(obj.hasOwnProperty('_callbacks')) || !(handlers = (callbacks = obj._callbacks)[evtName]))return false;
+  if (!argArray)argArray = [];
+  else if (!(argArray instanceof Array)) argArray = [argArray];
+  if (thisObj === undefined) thisObj = obj;
+  return (callbacks[evtName] = arrSafeFilter(handlers, function (call) {
+    return call.apply(thisObj, argArray) != -1;
+  })).length;
+}
+obj.emit = emitEvent;
 function removeEventListener(obj, evtName, handler) {
   var cbs, hs;
   if (evtName === undefined)delete obj._callbacks;
@@ -200,7 +210,7 @@ inherit(obj, null, {
     return addEventListener(this, evtName, handler);
   },
   emit: function (evtName, argArray, thisObj) {
-    return addEventListener.emit(this, evtName, argArray, thisObj);
+    return emitEvent(this, evtName, argArray, thisObj);
   },
   off: function (evtName, handler) {
     return removeEventListener(this, evtName, handler);

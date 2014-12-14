@@ -2,6 +2,7 @@
  * Created by 柏然 on 2014/12/13.
  */
 function Animation(opt) {
+  if (!(this instanceof Animation))return new Animation(opt);
   var r = Animation.createOptProxy(opt).result;
   this.elements = r.elements;
   this.clock = r.clock;
@@ -13,19 +14,20 @@ Animation.createOptProxy = function (setter, elements) {
     setter('clock', new Clock(setter));
   if ((selector = setter.proxy.selector) && !setter.proxy.elements)
     elements = Flip.$$(selector);
-  setter('elements', elements);
+  setter('elements', elements || []);
   return setter;
 };
 Flip.Animation = Animation;
 Flip.ANIMATION_TYPE = {};
 Animation.EVENT_NAMES = {
-  UPDATE: 'update'
+  UPDATE: 'update',
+  DESTROY: 'destroy'
 };
 (function () {
   var idCache = {};
 
   function main() {
-    var firstParam = typeof arguments[0], constructor, opt, animation, aniOpt;
+    var firstParam = typeof arguments[0], constructor, opt;
     if (firstParam === "string") {
       constructor = main[arguments[0]];
       opt = arguments[1];
@@ -34,20 +36,20 @@ Animation.EVENT_NAMES = {
       constructor = main[arguments[0].animationType];
       opt = arguments[0];
     }
-    if (!constructor) throw Error('undefined animation type');
-    aniOpt = main.createOptProxy(opt, 0, 0, 1).result;
-    animation = new constructor(opt);
+    if (!constructor) constructor = Animation;
+    return setAniEnv(main.createOptProxy(opt, 0, 0, 1).result, new constructor(opt));
+  }
+
+  function setAniEnv(aniOpt, animation) {
+    var global = FlipScope.global;
     if (aniOpt.defaultGlobal)
-      (FlipScope.global._tasks.findBy('name', aniOpt.taskName) || FlipScope.global.activeTask).add(animation);
+      (global._tasks.findBy('name', aniOpt.taskName) || global.activeTask).add(animation);
     if (aniOpt.autoStart) animation.start();
     return animation;
   }
-
   main.createOptProxy = function (setter, autoStart, taskName, defaultGlobal) {
     setter = createProxy(setter);
-    setter('autoStart', autoStart);
-    setter('taskName', taskName);
-    setter('defaultGlobal', defaultGlobal);
+    setter('autoStart', autoStart, 'taskName', taskName, 'defaultGlobal', defaultGlobal);
     return setter;
   };
   Flip.animation = main;
@@ -62,7 +64,7 @@ Animation.EVENT_NAMES = {
   }
 
   function getAniId(type) {
-    type = type || '*';
+    type = type || 'Animation';
     var i = idCache[type] || 0;
     idCache[type] = i++;
     return '_F_' + type + ':' + i;
@@ -114,6 +116,7 @@ Animation.EVENT_NAMES = {
       state.animation = this;
       this._clock.update(state);
       state.animation = null;
+      return true;
     },
     render: function (state) {
       state.animation = this;
@@ -124,12 +127,11 @@ Animation.EVENT_NAMES = {
       if (this._task) this._task.invalid();
     },
     destroy: function (state) {
-      var task;
-      if (task = this._task) {
+      var task, clock;
+      if (task = this._task)
         task.remove(this);
-        task.remove(this.clock);
-      }
       this.elements = null;
+      if ((clock = this.clock))clock.emit(Animation.EVENT_NAMES.DESTROY, state);
       this.clock = null;
     },
     apply: function (state) {
@@ -140,6 +142,13 @@ Animation.EVENT_NAMES = {
     },
     getMatrix: function () {
       return new Mat3();
+    }
+  });
+  'start,stop'.split(',').forEach(function (funcName) {
+    Animation.prototype[funcName] = function () {
+      var clock = this._clock;
+      clock[funcName].apply(clock, arguments);
+      return this;
     }
   });
 })();

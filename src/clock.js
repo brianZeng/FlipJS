@@ -4,7 +4,7 @@
 
 function Clock(opt) {
   if (!(this instanceof Clock))return new Clock(opt);
-  objForEach(Clock.createOptProxy(opt, 1, 1, 1, 0, Clock.TIMEFUNCS.linear, 0, 1, 0).result, cloneFunc, this);
+  objForEach(Clock.createOptProxy(opt, 1, 1, 1, 0, Clock.TIMEFUNCS.linear, 0, 0, 0).result, cloneFunc, this);
   this.reset(0, 0, 1, 1);
   this._paused = false;
 }
@@ -12,14 +12,8 @@ Flip.Clock = Clock;
 
 Clock.createOptProxy = function (opt, duration, direction, range, offset, timingFunction, infinite, iteration, autoReverse) {
   var setter = createProxy(opt);
-  setter('duration', duration);
-  setter('direction', direction);
-  setter('range', range);
-  setter('offset', offset);
-  setter('timingFunction', timingFunction);
-  setter('infinite', infinite);
-  setter('iteration', iteration);
-  setter('autoReverse', autoReverse);
+  setter('duration', duration, 'direction', direction, 'range', range, 'offset', offset, 'timingFunction', timingFunction,
+    'infinite', infinite, 'iteration', iteration, 'autoReverse', autoReverse);
   return setter;
 };
 Clock.TIMEFUNCS = (function () {
@@ -155,10 +149,6 @@ Clock.EVENT_NAMES = {
   FINISHED: 'finished'
 };
 inherit(Clock, obj, {
-  waitUpdate: function () {
-    var p = this._animation, t;
-    if (p && (t = p.task)) t.add(this, 'update');
-  },
   start: function () {
     if (this.t != (this.direction == 1 ? 0 : 1)) return false;
     return this.restart();
@@ -166,7 +156,6 @@ inherit(Clock, obj, {
   restart: function () {
     this.reset(0, 0, 0, 1);
     this._stopped = false;
-    this.waitUpdate();
     return this;
   },
   reset: function (toEnd, reverseDir, stopped, iteration) {
@@ -185,22 +174,23 @@ inherit(Clock, obj, {
     if (!this._paused) {
       this._pausedTime = -1;
       this._pausedDur = 0;
-      var t = this.t, p;
-      if (t == 0 || t == 1)
-        if ((p = this.parent) && (p = p.task)) p.remove(this);
+      this._paused = true;
+      // var t = this.t, p;
+      // if (t == 0 || t == 1)
+      // if ((p = this.parent) && (p = p.task)) p.remove(this);
     }
   },
   restore: function () {
     if (this._paused && this._startTime > 0) {
       this._startTime += this._pausedDur;
+      this._paused = false;
       var t = this.t;
-      if (t < 0 && t > 1)this.waitUpdate();
+      //if (t < 0 && t > 1)this.waitUpdate();
     }
   },
   reverse: function () {
     if (this.t != ((this.direction == 1 ? 1 : 0))) return false;
     this.reset(0, 1, 0, 1);
-    this.waitUpdate();
     return true;
   },
   toggle: function () {
@@ -229,6 +219,9 @@ inherit(Clock, obj, {
   }},
   onreverse: {set: function (f) {
     this.on(Clock.EVENT_NAMES.REVERSED, f)
+  }},
+  onfinished: {set: function (f) {
+    this.on(Clock.EVENT_NAMES.FINISHED, f)
   }},
   reversing: {get: function () {
     return this.d == -this.direction;
