@@ -138,6 +138,21 @@ Clock.EVENT_NAMES = {
   FINISHED: 'finished'
 };
 inherit(Clock, obj, {
+  get finished() {
+    return this._stopped && this.i <= 0;
+  },
+  set ontick(f) {
+    this.on(Clock.EVENT_NAMES.TICK, f);
+  },
+  set onend(f) {
+    this.on(Clock.EVENT_NAMES.END, f)
+  },
+  set onreversed(f) {
+    this.on(Clock.EVENT_NAMES.REVERSED, f)
+  },
+  set onfinished(f) {
+    this.on(Clock.EVENT_NAMES.FINISHED, f)
+  },
   start: function () {
     if (this.t != (this.direction == 1 ? 0 : 1)) return false;
     return this.restart();
@@ -200,18 +215,6 @@ inherit(Clock, obj, {
       else this.restore()
     }
   },
-  ontick: {set: function (f) {
-    this.on(Clock.EVENT_NAMES.TICK, f)
-  }},
-  onend: {set: function (f) {
-    this.on(Clock.EVENT_NAMES.END, f)
-  }},
-  onreverse: {set: function (f) {
-    this.on(Clock.EVENT_NAMES.REVERSED, f)
-  }},
-  onfinished: {set: function (f) {
-    this.on(Clock.EVENT_NAMES.FINISHED, f)
-  }},
   reversing: {get: function () {
     return this.d == -this.direction;
   }},

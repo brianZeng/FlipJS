@@ -17,11 +17,12 @@ Animation.createOptProxy = function (setter, elements) {
   setter('elements', elements || []);
   return setter;
 };
-Flip.Animation = Animation;
 Flip.ANIMATION_TYPE = {};
 Animation.EVENT_NAMES = {
   UPDATE: 'update',
-  DESTROY: 'destroy'
+  DESTROY: 'destroy',
+  RENDER: 'render',
+  FINISHED: 'finished'
 };
 (function () {
   var idCache = {};
@@ -78,6 +79,7 @@ Animation.EVENT_NAMES = {
   function removeWhenFinished(o, v, state) {
     var ani = state.animation;
     ani.render(state);
+    ani.emit(Animation.EVENT_NAMES.FINISHED, state);
     ani.destroy(state);
   }
 
@@ -98,6 +100,10 @@ Animation.EVENT_NAMES = {
     },
     get clock() {
       return this._clock;
+    },
+    get finished() {
+      var clock;
+      return (clock = this.clock) ? clock.finished : true;
     },
     get id() {
       if (!this._id)this._id = getAniId(this.type);
@@ -123,6 +129,7 @@ Animation.EVENT_NAMES = {
     render: function (state) {
       state.animation = this;
       this.apply(state);
+      this.emit(Animation.EVENT_NAMES.RENDER, state);
       state.animation = null;
     },
     invalid: function () {
@@ -154,9 +161,34 @@ Animation.EVENT_NAMES = {
   'start,stop'.split(',').forEach(function (funcName) {
     Animation.prototype[funcName] = function () {
       var clock = this._clock;
-      clock[funcName].apply(clock, arguments);
+      if (clock)
+        clock[funcName].apply(clock, arguments);
       return this;
     }
   });
 })();
+Flip.animation.register = (function (animation) {
+  function _beforeCallBase(proxy, opt, instance) {
+    return proxy;
+  }
+
+  return function (option) {
+    var beforeCallBase, defParam, name;
+    beforeCallBase = option.beforeCallBase || _beforeCallBase;
+    defParam = option.defParam || {};
+    Flip.ANIMATION_TYPE[name] = animation[name = option.name] = Constructor;
+    function Constructor(opt) {
+      if (!(this instanceof Constructor))return new Constructor(opt);
+      var proxy = createProxy(opt);
+      objForEach(defParam, function (key, value) {
+        proxy(key, value)
+      });
+      objForEach(proxy.result, cloneFunc, this);
+      beforeCallBase.apply(this, [proxy, opt]);
+      Animation.call(this, opt);
+    }
+
+    inherit(Constructor, Animation.prototype, option.prototype);
+  }
+})(Flip.animation);
 

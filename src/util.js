@@ -50,10 +50,12 @@ function createProxy(obj) {
     }
   };
   func.source = function () {
+    if (arguments.length == 1)return from[arguments[0]];
     for (var i = 0, prop, len = arguments.length; i < len; i += 2) {
       prop = arguments[i];
       if (!from.hasOwnProperty(prop))from[prop] = arguments[i + 1];
     }
+    return from[arguments[0]];
   };
   func.result = result;
   func.proxy = from;

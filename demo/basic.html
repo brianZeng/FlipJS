@@ -24,15 +24,19 @@
     <div class="red square" id="translate"></div>
 </div>
 <div>
-    <div class="square blue" id="scale"></div>
+    <div class="square blue" id="rotate"></div>
 </div>
 
 <script>
     Flip(function (Flip) {
-        var ani = Flip.animation('flip', {selector: '#translate', vertical: 0, autoReverse: 1, timingFunction: Flip.EASE.elasticInOut});
-
+        var ani = Flip.animation('flip', {selector: '#translate', vertical: 0, autoReverse: 1,
+            timingFunction: Flip.EASE.cubicInOut});
         ani.start();
     });
+    Flip(function (flip) {
+        var ani = Flip.animation('rotate', {selector: '#rotate'});
+        ani.start();
+    })
 </script>
 </body>
 </html>

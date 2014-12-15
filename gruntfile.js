@@ -26,7 +26,7 @@ var config = {
 config.watch = {
   scripts: {
     files: 'src/**/*.js',
-    tasks: ['concat:animation'],
+    tasks: ['concat:animation', 'uglify:flip'],
     options: {
       interrupt: true
     }
@@ -36,6 +36,13 @@ config.watch = {
     tasks: ['concat:test'],
     options: {
       interrupt: true
+    }
+  }
+};
+config.uglify = {
+  flip: {
+    files: {
+      'bin/flip.min.js': 'bin/flip.js'
     }
   }
 };
