@@ -6,7 +6,6 @@ function Animation(opt) {
   var r = Animation.createOptProxy(opt).result;
   this.elements = r.elements;
   this.clock = r.clock;
-  this.css = {};
 }
 Animation.createOptProxy = function (setter, elements) {
   var selector;
@@ -59,9 +58,9 @@ Animation.EVENT_NAMES = {
   }
 
   function normalizeEleTransformStyle(ele) {
-    var style = ele.style;
+    var style = ele.style, position = getCSS(ele).position;
     style.transformOrigin = 'center';
-    if (getCSS(ele).position !== 'fixed')style.position = 'absolute';
+    //if (position !== 'fixed'||position!=='absolute')style.position ='relative' ;
   }
 
   function getAniId(type) {

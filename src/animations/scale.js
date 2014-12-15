@@ -8,7 +8,7 @@
     if (!(this instanceof Scale))return new Scale(opt);
     var proxy = createOptProxy(opt, 1, 1, 0, 0);
     objForEach(proxy.result, cloneFunc, this);
-    proxy.source('timingFunction', Clock.TIMEFUNCS.sineEaseInOut);
+    proxy.source('timingFunction', Clock.EASE.sineInOut);
     Animation.call(this, proxy);
   }
 

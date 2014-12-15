@@ -29,7 +29,8 @@
 
 <script>
     Flip(function (Flip) {
-        var ani = Flip.animation('flip', {selector: '#translate', vertical: 0, autoReverse: 1, timingFunction: Flip.TIMEFUNCS.bounceEaseInOut});
+        var ani = Flip.animation('flip', {selector: '#translate', vertical: 0, autoReverse: 1, timingFunction: Flip.EASE.elasticInOut});
+
         ani.start();
     });
 </script>

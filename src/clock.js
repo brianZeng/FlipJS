@@ -4,7 +4,7 @@
 
 function Clock(opt) {
   if (!(this instanceof Clock))return new Clock(opt);
-  objForEach(Clock.createOptProxy(opt, 1, 1, 1, 0, Clock.TIMEFUNCS.linear, 0, 0, 0).result, cloneFunc, this);
+  objForEach(Clock.createOptProxy(opt, 1, 1, 1, 0, Clock.EASE.linear, 0, 0, 0).result, cloneFunc, this);
   this.reset(0, 0, 1, 1);
   this._paused = false;
 }
@@ -16,132 +16,120 @@ Clock.createOptProxy = function (opt, duration, direction, range, offset, timing
     'infinite', infinite, 'iteration', iteration, 'autoReverse', autoReverse);
   return setter;
 };
-Flip.TIMEFUNCS = Clock.TIMEFUNCS = (function () {
+
+Flip.EASE = Clock.EASE = (function () {
   /**
-   * @name Clock.TIMEFUNCS
-   * @name Flip.TIMEFUNCS
-   * @type {{linear: linear, sineEaseIn: sineEaseIn, sineEaseOut: sineEaseOut, sineEaseInOut: sineEaseInOut, quintEaseIn: quintEaseIn, quintEaseOut: quintEaseOut, quintEaseInOut: quintEaseInOut, quartEaseIn: quartEaseIn, quartEaseOut: quartEaseOut, quartEaseInOut: quartEaseInOut, circEaseIn: circEaseIn, circEaseOut: circEaseOut, circEaseInOut: circEaseInOut, quadEaseIn: quadEaseIn, quadEaseOut: quadEaseOut, quadEaseInOut: quadEaseInOut, cubicEaseIn: cubicEaseIn, cubicEaseOut: cubicEaseOut, cubicEaseInOut: cubicEaseInOut, bounceEaseOut: bounceEaseOut, bounceEaseIn: bounceEaseIn, bounceEaseInOut: bounceEaseInOut, expoEaseIn: expoEaseIn, expoEaseOut: expoEaseOut, expoEaseInOut: expoEaseInOut, zeroStep: zeroStep, halfStep: halfStep, oneStep: oneStep, random: random, randomLimit: randomLimit}}
+   * from jQuery.easing
+   * @lends Clock.EASE
+   * @lends Flip.EASE
+   * @enum {function}
+   * @property {function} linear
+   * @property {function} zeroStep
+   * @property {function} halfStep
+   * @property {function} oneStep
+   * @property {function} random
+   * @property {function} randomLimit
+   * @property {function} backOut
+   * @property {function} backIn
+   * @property {function} backInOut
+   * @property {function} cubicOut
+   * @property {function} cubicIn
+   * @property {function} cubicInOut
+   * @property {function} expoOut
+   * @property {function} expoIn
+   * @property {function} expoInOut
+   * @property {function} circOut
+   * @property {function} circIn
+   * @property {function} circInOut
+   * @property {function} sineOut
+   * @property {function} sineIn
+   * @property {function} sineInOut
+   * @property {function} bounceOut
+   * @property {function} bounceIn
+   * @property {function} bounceInOut
+   * @property {function} elasticOut
+   * @property {function} elasticIn
+   * @property {function} elasticInOut
+   * @property {function} quintOut
+   * @property {function} quintIn
+   * @property {function} quintInOut
+   * @property {function} quartOut
+   * @property {function} quartIn
+   * @property {function} quartInOut
+   * @property {function} quadOut
+   * @property {function} quadIn
+   * @property {function} quadInOut
    */
-  var FUNCS = {
+  var F = {
     linear: function (t) {
       return t;
     },
-    sineEaseIn: function (t) {
-      return -Math.cos(t * (Math.PI / 2)) + 1;
-    },
-    sineEaseOut: function (t) {
-      return Math.sin(t * (Math.PI / 2));
-    },
-    sineEaseInOut: function (t) {
-      return -.5 * (Math.cos(Math.PI * t) - 1);
-    }, quintEaseIn: function (t) {
-      return t * t * t * t * t;
-    }, quintEaseOut: function (t) {
-      t--;
-      return t * t * t * t * t + 1;
-    },
-    quintEaseInOut: function (t) {
-      t /= .5;
-      if (t < 1) {
-        return .5 * t * t * t * t * t;
-      }
-      t -= 2;
-      return .5 * (t * t * t * t * t + 2);
-    }, quartEaseIn: function (t) {
-      return t * t * t * t;
-    }, quartEaseOut: function (t) {
-      t--;
-      return -(t * t * t * t - 1);
-    }, quartEaseInOut: function (t) {
-      t /= .5;
-      if (t < 1) {
-        return .5 * t * t * t * t;
-      }
-      t -= 2;
-      return -.5 * (t * t * t * t - 2);
-    }, circEaseIn: function (t) {
-      return -(Math.sqrt(1 - t * t) - 1);
-    }, circEaseOut: function (t) {
-      t--;
-      return Math.sqrt(1 - t * t);
-    }, circEaseInOut: function (t) {
-      t /= .5;
-      if (t < 1) {
-        return -.5 * (Math.sqrt(1 - t * t) - 1);
-      }
-      t -= 2;
-      return .5 * (Math.sqrt(1 - t * t) + 1);
-    }, quadEaseIn: function (t) {
-      return t * t;
-    }, quadEaseOut: function (t) {
-      return -1 * t * (t - 2);
-    }, quadEaseInOut: function (t) {
-      t /= .5;
-      if (t < 1) {
-        return .5 * t * t;
-      }
-      t--;
-      return -.5 * (t * (t - 2) - 1);
-    }, cubicEaseIn: function (t) {
-      return t * t * t;
-    }, cubicEaseOut: function (t) {
-      t--;
-      return t * t * t + 1;
-    }, cubicEaseInOut: function (t) {
-      t /= .5;
-      if (t < 1) {
-        return .5 * t * t * t;
-      }
-      t -= 2;
-      return .5 * (t * t * t + 2);
-    }, bounceEaseOut: function (t) {
-      if (t < 1 / 2.75) {
-        return 7.5625 * t * t;
-      } else {
-        if (t < 2 / 2.75) {
-          t -= 1.5 / 2.75;
-          return 7.5625 * t * t + .75;
-        } else {
-          if (t < 2.5 / 2.75) {
-            t -= 2.25 / 2.75;
-            return 7.5625 * t * t + .9375;
-          } else {
-            t -= 2.625 / 2.75;
-            return 7.5625 * t * t + .984375;
-          }
-        }
-      }
-    }, bounceEaseIn: function (t) {
-      return 1 - FUNCS.bounceEaseOut(1 - t);
-    }, bounceEaseInOut: function (t) {
-      if (t < .5) {
-        return FUNCS.bounceEaseIn(t * 2) * .5;
-      } else {
-        return FUNCS.bounceEaseOut(t * 2 - 1) * .5 + .5;
-      }
-    }, expoEaseIn: function (t) {
-      return t == 0 ? 0 : Math.pow(2, 10 * (t - 1));
-    }, expoEaseOut: function (t) {
-      return t == 1 ? 1 : -Math.pow(2, -10 * t) + 1;
-    }, expoEaseInOut: function (t) {
-      if (t == 0)  return 0;
-      else if (t == 1) return 1;
-      else if (t / .5 < 1) return .5 * Math.pow(2, 10 * (t / .5 - 1));
-      else  return .5 * (-Math.pow(2, -10 * (t / .5 - 1)) + 2);
-    }, zeroStep: function (t) {
+    zeroStep: function (t) {
       return t <= 0 ? 0 : 1;
-    }, halfStep: function (t) {
+    },
+    halfStep: function (t) {
       return t < .5 ? 0 : 1;
-    }, oneStep: function (t) {
+    },
+    oneStep: function (t) {
       return t >= 1 ? 1 : 0;
-    }, random: function (t) {
+    },
+    random: function () {
       return Math.random();
-    }, randomLimit: function (t) {
+    },
+    randomLimit: function (t) {
       return Math.random() * t;
     }
   };
-  return Object.freeze(FUNCS);
+  var pow = Math.pow, PI = Math.PI;
+  (function (obj) {
+    objForEach(obj, function (name, func) {
+      var easeIn = func;
+      F[name + 'In'] = easeIn;
+      F[name + 'Out'] = function (t) {
+        return 1 - easeIn(t);
+      };
+      F[name + 'InOut'] = function (t) {
+        return t < 0.5 ? easeIn(t * 2) / 2 : 1 - easeIn(t * -2 + 2) / 2;
+      };
+    });
+  })({
+    back: function (t) {
+      return t * t * ( 3 * t - 2 );
+    },
+    elastic: function (t) {
+      return t === 0 || t === 1 ? t : -pow(2, 8 * (t - 1)) * Math.sin(( (t - 1) * 80 - 7.5 ) * PI / 15);
+    },
+    sine: function (t) {
+      return 1 - Math.cos(t * PI / 2);
+    },
+    circ: function (t) {
+      return 1 - Math.sqrt(1 - t * t);
+    },
+    cubic: function (t) {
+      return t * t * t;
+    },
+    expo: function (t) {
+      return t == 0 ? 0 : pow(2, 10 * (t - 1));
+    },
+    quad: function (t) {
+      return t * t;
+    },
+    quart: function (t) {
+      return pow(t, 4)
+    },
+    quint: function (t) {
+      return pow(t, 5)
+    },
+    bounce: function (t) {
+      var pow2, bounce = 4;
+      while (t < ( ( pow2 = pow(2, --bounce) ) - 1 ) / 11);
+      return 1 / pow(4, 3 - bounce) - 7.5625 * pow(( pow2 * 3 - 2 ) / 22 - t, 2);
+    }
+  });
+
+  return Object.freeze(F);
 })();
+
 Clock.EVENT_NAMES = {
   UPDATE: 'update',
   END: 'end',
@@ -236,7 +224,7 @@ inherit(Clock, obj, {
     },
     set: function (src) {
       var t;
-      if ((typeof src === "function" && (t = src)) || (t = Clock.TIMEFUNCS[src]))
+      if ((typeof src === "function" && (t = src)) || (t = Clock.EASE[src]))
         this._tf = t;
     }
   }
