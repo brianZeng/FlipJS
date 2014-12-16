@@ -1,23 +1,15 @@
 /**
  * Created by 柏然 on 2014/12/13.
  */
-(function (animation) {
-  animation.translate = Translate;
-  function Translate(opt) {
-    if (!(this instanceof Translate))return new Translate(opt);
-    objForEach(Translate.createOptProxy(opt, 0, 0).result, cloneFunc, this);
-    Animation.call(this, opt);
-  }
-  Flip.ANIMATION_TYPE.translate = 'translate';
-  Translate.createOptProxy = function (setter, dx, dy) {
-    setter = createProxy(setter);
-    setter('dx', dx, 'dy', dy);
-    return setter;
-  };
-  inherit(Translate, Animation.prototype, {
+Flip.animation.register({
+  name: 'translate',
+  defParam: {
+    sx: 0, dx: 100, sy: 0, dy: 0
+  },
+  prototype: {
     getMatrix: function () {
-      var v = this.clock.value;
-      return Mat3.setTranslate(this.dx * v, this.dy * v);
+      var v = this.clock.value, sx = this.sx, sy = this.sy;
+      return Mat3.setTranslate(sx + (this.dx - sx) * v, sy + (this.dy - sy) * v);
     }
-  })
-})(Flip.animation);
+  }
+});

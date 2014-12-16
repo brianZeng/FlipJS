@@ -315,7 +315,6 @@
     function normalizeEleTransformStyle(ele) {
       var style = ele.style, position = getCSS(ele).position;
       style.transformOrigin = 'center';
-      //if (position !== 'fixed'||position!=='absolute')style.position ='relative' ;
     }
 
     function getAniId(type) {
@@ -427,10 +426,11 @@
     }
 
     return function (option) {
-      var beforeCallBase, defParam, name;
+      var beforeCallBase, defParam, name = option.name;
       beforeCallBase = option.beforeCallBase || _beforeCallBase;
       defParam = option.defParam || {};
-      Flip.ANIMATION_TYPE[name] = animation[name = option.name] = Constructor;
+      if (name)
+        animation[name] = Constructor;
       function Constructor(opt) {
         if (!(this instanceof Constructor))return new Constructor(opt);
         var proxy = createProxy(opt);
@@ -443,6 +443,7 @@
       }
 
       inherit(Constructor, Animation.prototype, option.prototype);
+      return Constructor;
     }
   })(Flip.animation);
 
@@ -959,31 +960,20 @@
         this.now = Date.now() - this._startTime - this._stopTime;
     }
   });
-  (function (animation) {
-    animation.flip = _Flip;
-    Flip.ANIMATION_TYPE.flip = 'flip';
-    function _Flip(opt) {
-      if (!(this instanceof _Flip))return new _Flip(opt);
-      var proxy = createOptProxy(opt, 1, Math.PI);
-      objForEach(proxy.result, cloneFunc, this);
+  Flip.animation.register({
+    name: 'flip',
+    defParam: {
+      vertical: true, angle: Math.PI
+    }, beforeCallBase: function (proxy) {
       proxy.source('timingFunction', Clock.EASE.bounceOut);
-      Animation.call(this, proxy);
-    }
-
-    function createOptProxy(setter, vertical, angle) {
-      setter = createProxy(setter);
-      setter('vertical', vertical, 'angle', angle);
-      return setter;
-    }
-
-    inherit(_Flip, Animation.prototype, {
+    },
+    prototype: {
       getMatrix: function () {
         var angle = this.angle * this.clock.value, sin = Math.sin(angle), cos = Math.cos(angle);
         return new Mat3(this.vertical ? [cos, 0, 0, sin, 1, 0] : [1, -sin, 0, 0, cos, 0])
       }
-    });
-    _Flip.createOptProxy = createOptProxy;
-  })(Flip.animation);
+    }
+  });
   (function (register) {
     function formatMoney(n, c, d, t) {
       var s = n < 0 ? "-" : "", i = parseInt(n = Math.abs(+n || 0).toFixed(c)) + "", j;
@@ -1042,50 +1032,31 @@
       }
     }
   });
-  (function (animation) {
-    animation.scale = Scale;
-    Flip.ANIMATION_TYPE.scale = 'scale';
-    function Scale(opt) {
-      if (!(this instanceof Scale))return new Scale(opt);
-      var proxy = createOptProxy(opt, 1, 1, 0, 0);
-      objForEach(proxy.result, cloneFunc, this);
-      proxy.source('timingFunction', Clock.EASE.sineInOut);
-      Animation.call(this, proxy);
-    }
-
-    function createOptProxy(setter, dx, dy, sx, sy) {
-      setter = createProxy(setter);
-      setter('dx', dx, 'dy', dy, 'sx', sx, 'sy', sy);
-      return setter;
-    }
-
-    inherit(Scale, Animation.prototype, {
+  Flip.animation.register({
+    name: 'scale',
+    defParam: {
+      sx: 0, sy: 0, dy: 1, dx: 1
+    },
+    beforeCallBase: function (proxy) {
+      proxy.source('timingFunction', Flip.EASE.sineInOut);
+    },
+    prototype: {
       getMatrix: function () {
         var sx = this.sx, sy = this.sy, dx = this.dx, dy = this.dy, v = this.clock.value;
         return Mat3.setScale(sx + (dx - sx) * v, sy + (dy - sy) * v);
       }
-    });
-    Scale.createOptProxy = createOptProxy;
-  })(Flip.animation);
-  (function (animation) {
-    animation.translate = Translate;
-    function Translate(opt) {
-      if (!(this instanceof Translate))return new Translate(opt);
-      objForEach(Translate.createOptProxy(opt, 0, 0).result, cloneFunc, this);
-      Animation.call(this, opt);
     }
-
-    Flip.ANIMATION_TYPE.translate = 'translate';
-    Translate.createOptProxy = function (setter, dx, dy) {
-      setter = createProxy(setter);
-      setter('dx', dx, 'dy', dy);
-      return setter;
-    };
-    inherit(Translate, Animation.prototype, {
+  });
+  Flip.animation.register({
+    name: 'translate',
+    defParam: {
+      sx: 0, dx: 100, sy: 0, dy: 0
+    },
+    prototype: {
       getMatrix: function () {
-        var v = this.clock.value;
-        return Mat3.setTranslate(this.dx * v, this.dy * v);
+        var v = this.clock.value, sx = this.sx, sy = this.sy;
+        return Mat3.setTranslate(sx + (this.dx - sx) * v, sy + (this.dy - sy) * v);
       }
-    })
-  })(Flip.animation);
+    }
+  });
 })();

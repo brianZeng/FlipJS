@@ -61,7 +61,6 @@ Animation.EVENT_NAMES = {
   function normalizeEleTransformStyle(ele) {
     var style = ele.style, position = getCSS(ele).position;
     style.transformOrigin = 'center';
-    //if (position !== 'fixed'||position!=='absolute')style.position ='relative' ;
   }
 
   function getAniId(type) {
@@ -173,10 +172,11 @@ Flip.animation.register = (function (animation) {
   }
 
   return function (option) {
-    var beforeCallBase, defParam, name;
+    var beforeCallBase, defParam, name = option.name;
     beforeCallBase = option.beforeCallBase || _beforeCallBase;
     defParam = option.defParam || {};
-    Flip.ANIMATION_TYPE[name] = animation[name = option.name] = Constructor;
+    if (name)
+      animation[name] = Constructor;
     function Constructor(opt) {
       if (!(this instanceof Constructor))return new Constructor(opt);
       var proxy = createProxy(opt);
@@ -187,8 +187,8 @@ Flip.animation.register = (function (animation) {
       beforeCallBase.apply(this, [proxy, opt]);
       Animation.call(this, opt);
     }
-
     inherit(Constructor, Animation.prototype, option.prototype);
+    return Constructor;
   }
 })(Flip.animation);
 

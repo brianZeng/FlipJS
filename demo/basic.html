@@ -9,6 +9,13 @@
             background-color: red;
         }
 
+        #scale {
+            background-color: fuchsia;
+        }
+
+        #flip {
+            background-color: darkslateblue;
+        }
         .square {
             width: 100px;
             height: 100px;
@@ -26,17 +33,30 @@
 <div>
     <div class="square blue" id="rotate"></div>
 </div>
-
+<div>
+    <div class="square" id="flip"></div>
+</div>
+<div>
+    <div class="square" id="scale"></div>
+</div>
 <script>
     Flip(function (Flip) {
-        var ani = Flip.animation('flip', {selector: '#translate', vertical: 0, autoReverse: 1,
-            timingFunction: Flip.EASE.cubicInOut});
-        ani.start();
+        Flip.$('.square').forEach(function (ele) {
+            Flip.animation({animationType: ele.id, selector: '#' + ele.id}).start();
+        });
     });
-    Flip(function (flip) {
-        var ani = Flip.animation('rotate', {selector: '#rotate'});
+    /*Flip(function (Flip) {
+     var ani = Flip.animation('translate', {selector: '#translate', dx:100});
+     ani.start();
+    });
+     Flip(function (Flip) {
+     var ani = Flip.animation('rotate', {selector: '#rotate'});
         ani.start();
-    })
+     });
+     Flip(function (Flip) {
+     var ani = Flip.animation('flip', {selector: '#flip'});
+     ani.start();
+     });*/
 </script>
 </body>
 </html>

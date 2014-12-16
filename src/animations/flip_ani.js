@@ -1,26 +1,17 @@
 /**
  * Created by 柏然 on 2014/12/14.
  */
-(function (animation) {
-  animation.flip = _Flip;
-  Flip.ANIMATION_TYPE.flip = 'flip';
-  function _Flip(opt) {
-    if (!(this instanceof _Flip))return new _Flip(opt);
-    var proxy = createOptProxy(opt, 1, Math.PI);
-    objForEach(proxy.result, cloneFunc, this);
+Flip.animation.register({
+  name: 'flip',
+  defParam: {
+    vertical: true, angle: Math.PI
+  }, beforeCallBase: function (proxy) {
     proxy.source('timingFunction', Clock.EASE.bounceOut);
-    Animation.call(this, proxy);
-  }
-  function createOptProxy(setter, vertical, angle) {
-    setter = createProxy(setter);
-    setter('vertical', vertical, 'angle', angle);
-    return setter;
-  }
-  inherit(_Flip, Animation.prototype, {
+  },
+  prototype: {
     getMatrix: function () {
       var angle = this.angle * this.clock.value, sin = Math.sin(angle), cos = Math.cos(angle);
       return new Mat3(this.vertical ? [cos, 0, 0, sin, 1, 0] : [1, -sin, 0, 0, cos, 0])
     }
-  });
-  _Flip.createOptProxy = createOptProxy;
-})(Flip.animation);
+  }
+});
