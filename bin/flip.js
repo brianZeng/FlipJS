@@ -283,11 +283,11 @@
     function main() {
       var firstParam = typeof arguments[0], constructor, opt;
       if (firstParam === "string") {
-        constructor = main[arguments[0]];
+        constructor = Flip.animation[arguments[0]];
         opt = arguments[1];
       }
       else if (firstParam === "object") {
-        constructor = main[arguments[0].animationType];
+        constructor = Flip.animation[arguments[0].animationType];
         opt = arguments[0];
       }
       if (!constructor) constructor = Animation;
@@ -307,7 +307,7 @@
       setter('autoStart', autoStart, 'taskName', taskName, 'defaultGlobal', defaultGlobal);
       return setter;
     };
-    Flip.animation = main;
+    Flip.animate = main;
     function getCSS(ele) {
       return ele.currentStyle || window.getComputedStyle(ele)
     }
@@ -420,17 +420,17 @@
       }
     });
   })();
-  Flip.animation.register = (function (animation) {
+  Flip.animation = (function () {
     function _beforeCallBase(proxy, opt, instance) {
       return proxy;
     }
 
-    return function (option) {
+    function register(option) {
       var beforeCallBase, defParam, name = option.name;
       beforeCallBase = option.beforeCallBase || _beforeCallBase;
       defParam = option.defParam || {};
       if (name)
-        animation[name] = Constructor;
+        register[name] = Constructor;
       function Constructor(opt) {
         if (!(this instanceof Constructor))return new Constructor(opt);
         var proxy = createProxy(opt);
@@ -445,7 +445,9 @@
       inherit(Constructor, Animation.prototype, option.prototype);
       return Constructor;
     }
-  })(Flip.animation);
+
+    return register;
+  })();
 
 
   function Clock(opt) {
@@ -960,7 +962,7 @@
         this.now = Date.now() - this._startTime - this._stopTime;
     }
   });
-  Flip.animation.register({
+  Flip.animation({
     name: 'flip',
     defParam: {
       vertical: true, angle: Math.PI
@@ -1017,8 +1019,8 @@
     )
 
 
-  })(Flip.animation.register);
-  Flip.animation.register({
+  })(Flip.animation);
+  Flip.animation({
     name: 'rotate',
     defParam: {
       angle: Math.PI * 2
@@ -1032,7 +1034,7 @@
       }
     }
   });
-  Flip.animation.register({
+  Flip.animation({
     name: 'scale',
     defParam: {
       sx: 0, sy: 0, dy: 1, dx: 1
@@ -1047,7 +1049,7 @@
       }
     }
   });
-  Flip.animation.register({
+  Flip.animation({
     name: 'translate',
     defParam: {
       sx: 0, dx: 100, sy: 0, dy: 0

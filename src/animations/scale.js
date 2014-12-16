@@ -1,7 +1,7 @@
 /**
  * Created by 柏然 on 2014/12/14.
  */
-Flip.animation.register({
+Flip.animation({
   name: 'scale',
   defParam: {
     sx: 0, sy: 0, dy: 1, dx: 1

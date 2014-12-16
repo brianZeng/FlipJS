@@ -44,4 +44,4 @@
   )
 
 
-})(Flip.animation.register);
+})(Flip.animation);
