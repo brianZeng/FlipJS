@@ -162,7 +162,7 @@
 
   function addEventListener(obj, evtName, handler) {
     if (typeof evtName == "string" && evtName && typeof handler == "function") {
-      var cbs, hs;
+    var cbs, hs;
       if (!obj.hasOwnProperty('_callbacks'))obj._callbacks = {};
       cbs = obj._callbacks;
       if (!(hs = cbs[evtName]))hs = cbs[evtName] = [];
@@ -231,7 +231,7 @@
       if (thisObj == undefined)thisObj = object;
       for (var keys = Object.getOwnPropertyNames(object), i = 0, key = keys[0]; key; key = keys[++i])
         initialValue = callback.apply(thisObj, [initialValue, key, object[key], arg]);
-    }
+  }
     return initialValue;
   }
 
@@ -251,7 +251,7 @@
     },
     forEach: function (callback, thisObj, arg) {
       return objForEach(this, callback, thisObj, arg);
-    }
+  }
   });
   function cloneFunc(value, key) {
     this[key] = value;
@@ -293,7 +293,7 @@
       else if (firstParam === "object") {
         constructor = Flip.animation[arguments[0].animationType];
         opt = arguments[0];
-      }
+    }
       if (!constructor) constructor = Animation;
       return setAniEnv(main.createOptProxy(opt, 0, 0, 1).result, new constructor(opt));
   }
@@ -307,10 +307,10 @@
   }
 
     main.createOptProxy = function (setter, autoStart, taskName, defaultGlobal) {
-      setter = createProxy(setter);
+    setter = createProxy(setter);
       setter('autoStart', autoStart, 'taskName', taskName, 'defaultGlobal', defaultGlobal);
-      return setter;
-    };
+    return setter;
+  };
     Flip.animate = main;
     function getCSS(ele) {
       return ele.currentStyle || window.getComputedStyle(ele)
@@ -435,12 +435,10 @@
   }
 
     function register(option) {
-      var beforeCallBase, defParam, name = option.name;
+      var beforeCallBase, defParam, name = option.name, Constructor;
       beforeCallBase = option.beforeCallBase || _beforeCallBase;
       defParam = option.defParam || {};
-      if (name)
-        register[name] = Constructor;
-      function Constructor(opt) {
+      Constructor = function (opt) {
         if (!(this instanceof Constructor))return new Constructor(opt);
         var proxy = createProxy(opt);
         objForEach(defParam, function (value, key) {
@@ -449,8 +447,11 @@
         objForEach(proxy.result, cloneFunc, this);
         beforeCallBase.apply(this, [proxy, opt]);
         Animation.call(this, opt);
+      };
+      if (name) {
+        register[name] = Constructor;
+        Constructor.name = name;
     }
-
       inherit(Constructor, Animation.prototype, option.prototype);
       return Constructor;
   }
@@ -665,17 +666,17 @@
     },
       halfStep: function (t) {
         return t < .5 ? 0 : 1;
-      },
+    },
       oneStep: function (t) {
         return t >= 1 ? 1 : 0;
-      },
+    },
       random: function () {
         return Math.random();
-      },
+    },
       randomLimit: function (t) {
         return Math.random() * t;
-      }
-    };
+    }
+  };
     var pow = Math.pow, PI = Math.PI;
     (function (obj) {
       objForEach(obj, function (func, name) {
@@ -683,7 +684,7 @@
         F[name + 'In'] = easeIn;
         F[name + 'Out'] = function (t) {
           return 1 - easeIn(t);
-      };
+        };
         F[name + 'InOut'] = function (t) {
           return t < 0.5 ? easeIn(t * 2) / 2 : 1 - easeIn(t * -2 + 2) / 2;
         };
@@ -703,13 +704,13 @@
     },
       cubic: function (t) {
         return t * t * t;
-      },
+    },
       expo: function (t) {
         return t == 0 ? 0 : pow(2, 10 * (t - 1));
-      },
+    },
       quad: function (t) {
         return t * t;
-      },
+    },
       quart: function (t) {
         return pow(t, 4)
       },
@@ -720,7 +721,7 @@
         var pow2, bounce = 4;
         while (t < ( ( pow2 = pow(2, --bounce) ) - 1 ) / 11);
         return 1 / pow(4, 3 - bounce) - 7.5625 * pow(( pow2 * 3 - 2 ) / 22 - t, 2);
-    }
+      }
   });
 
     return Object.freeze(F);
@@ -733,7 +734,7 @@
           r.push.apply(r, r.slice.apply(root.querySelectorAll(selector)))
         });
       return r;
-    }
+  }
 
     Flip.$ = Flip.$ = $;
     document.addEventListener('DOMContentLoaded', function () {
@@ -771,7 +772,7 @@
       if (!t) {
         this._tasks.length ? (t = this._tasks[0]) : this.add(t = new RenderTask('default'));
         this._activeTask = t;
-    }
+      }
       return t;
     },
     add: function (obj) {
@@ -842,7 +843,7 @@
     if (typeof angle == "string") {
       var match = angle.match(/^((\d+(\.\d+)?)|(\.\d+))d|deg/i);
       if (match) angle = (parseFloat(match[1]) / 180) * Math.PI;
-    }
+  }
     angle = parseFloat(angle) || 0;
     var a00 = 1, a01 = 0, a02 = 0, a10 = 0, a11 = 1, a12 = 0, s = Math.sin(angle), c = Math.cos(angle), out = [];
     out[0] = c * a00 + s * a10;
@@ -921,7 +922,7 @@
           if (component.render) component.render(state);
         });
         this._invalid = false;
-    }
+      }
       this.emit(RenderTask.EVENT_NAMES.RENDER_END, evtParam);
     },
     add: function (obj, type) {

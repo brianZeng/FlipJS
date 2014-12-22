@@ -177,12 +177,10 @@ Flip.animation = (function () {
   }
 
   function register(option) {
-    var beforeCallBase, defParam, name = option.name;
+    var beforeCallBase, defParam, name = option.name, Constructor;
     beforeCallBase = option.beforeCallBase || _beforeCallBase;
     defParam = option.defParam || {};
-    if (name)
-      register[name] = Constructor;
-    function Constructor(opt) {
+    Constructor = function (opt) {
       if (!(this instanceof Constructor))return new Constructor(opt);
       var proxy = createProxy(opt);
       objForEach(defParam, function (value, key) {
@@ -191,6 +189,10 @@ Flip.animation = (function () {
       objForEach(proxy.result, cloneFunc, this);
       beforeCallBase.apply(this, [proxy, opt]);
       Animation.call(this, opt);
+    };
+    if (name) {
+      register[name] = Constructor;
+      Constructor.name = name;
     }
     inherit(Constructor, Animation.prototype, option.prototype);
     return Constructor;
