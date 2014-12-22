@@ -2,7 +2,7 @@
  * Created by 柏然 on 2014/12/12.
  */
 function TimeLine(task) {
-  this.now = this._stopTime = 0;
+  this.last = this.now = this._stopTime = 0;
   this._startTime = this._lastStop = Date.now();
   this.task = task;
   this._isStop = true;
@@ -22,7 +22,9 @@ inherit(TimeLine, Flip.util.Object, {
     }
   },
   move: function () {
-    if (!this._isStop)
+    if (!this._isStop) {
+      this.last = this.now;
       this.now = Date.now() - this._startTime - this._stopTime;
+    }
   }
 });

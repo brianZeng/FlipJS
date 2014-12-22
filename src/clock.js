@@ -4,18 +4,156 @@
 
 function Clock(opt) {
   if (!(this instanceof Clock))return new Clock(opt);
-  objForEach(Clock.createOptProxy(opt, 1, 1, 1, 0, Clock.EASE.linear, 0, 0, 0).result, cloneFunc, this);
-  this.reset(0, 0, 1, 1);
+  objForEach(Clock.createOptProxy(opt, 1, Clock.EASE.linear, 0, 0, 0).result, cloneFunc, this);
+  this.reset(1);
   this._paused = false;
 }
 Flip.Clock = Clock;
 
-Clock.createOptProxy = function (opt, duration, direction, range, offset, timingFunction, infinite, iteration, autoReverse) {
+Clock.createOptProxy = function (opt, duration, timingFunction, infinite, iteration, autoReverse) {
   var setter = createProxy(opt);
-  setter('duration', duration, 'direction', direction, 'range', range, 'offset', offset, 'timingFunction', timingFunction,
-    'infinite', infinite, 'iteration', iteration, 'autoReverse', autoReverse);
+  setter('duration', duration, 'timingFunction', timingFunction, 'infinite', infinite, 'iteration', iteration, 'autoReverse', autoReverse);
   return setter;
 };
+(function (EVTS) {
+  Object.seal(EVTS);
+  inherit(Clock, obj, {
+    get controller() {
+      return this._controller || null;
+    },
+    set controller(c) {
+      var oc = this.controller;
+      c = c || null;
+      if (oc === c)return;
+      this._controller = c;
+      this.emit(EVTS.CONTROLLER_CHANGED, {before: oc, after: c, clock: this});
+    },
+    get finished() {
+      return this._stopped && this.i <= 0;
+    },
+    get paused() {
+      return this._paused;
+    },
+    get timingFunction() {
+      return this._tf;
+    },
+    set timingFunction(src) {
+      var t;
+      if ((typeof src === "function" && (t = src)) || (t = Clock.EASE[src]))this._tf = src;
+    },
+    start: function () {
+      if (this.t == 0) {
+        this.reset(0, 1).emit(EVTS.START, this);
+        return true;
+      }
+      return false;
+    },
+    reverse: function () {
+      if (this.t == 1) {
+        this.reset(0, 1, 1, 1).emit(EVTS.REVERSE, this);
+        return true;
+      }
+      return false;
+    },
+    restart: function () {
+      this.t = 0;
+      return this.start();
+    },
+    reset: function (stop, keepIteration, atEnd, reverseDir, pause) {
+      this._startTime = -1;
+      if (!keepIteration)this.i = this.iteration;
+      this.d = !reverseDir;
+      this.t = this.value = atEnd ? 1 : 0;
+      this._stopped = !!stop;
+      this._paused = !!pause;
+      return this;
+    },
+    finish: function (evtArg) {
+      this.emit(EVTS.FINISHED, evtArg);
+      this.reset(1);
+    },
+    end: function (evtArg) {
+      this.autoReverse ? this.reverse(evtArg) : this.iterate(evtArg, 0);
+    },
+    iterate: function (evtArg) {
+      if (this.infinite)this.toggle();
+      else if (0 < this.i--) {
+        this.emit(EVTS.ITERATE, evtArg);
+        this.reset(0, 1);
+      }
+      else this.finish(evtArg);
+    },
+    pause: function () {
+      if (!this._paused) {
+        this._pausedTime = -1;
+        this._pausedDur = 0;
+        this._paused = true;
+      }
+    },
+    restore: function () {
+      if (this._paused && this._startTime > 0) {
+        this._startTime += this._pausedDur;
+        this._paused = false;
+      }
+    },
+    toggle: function () {
+      if (this.t == 0)
+        this.start();
+      else if (this.t == 1)
+        this.reverse();
+    },
+    update: updateClock
+  });
+  objForEach(EVTS, function (evtName, key) {
+    Object.defineProperty(this, 'on' + evtName, {
+      set: function (func) {
+        this.on(EVTS[key], func);
+      }
+    })
+  }, Clock.prototype);
+  function updateClock(state) {
+    if (!this._stopped) {
+      var timeline = state.timeline;
+      if (this._startTime == -1) {
+        this.emit(EVTS.START, state);
+        return (this._startTime = timeline.now) >= 0;
+      }
+      if (this._paused) {
+        var pt = this._pausedTime;
+        pt == -1 ? this._pausedTime = timeline.now : this._pausedDur = timeline.now - pt;
+        return true;
+      }
+      var dur = (timeline.now - this._startTime) / timeline.ticksPerSecond, curValue, evtArg;
+      if (dur > 0) {
+        var ov = this.value, t;
+        t = this.t = this.d ? dur / this.duration : 1 - dur / this.duration;
+        if (t > 1)t = this.t = 1;
+        else if (t < 0)t = this.t = 0;
+        curValue = this.value = this.timingFunction(t);
+        evtArg = Object.create(state);
+        evtArg.clock = this;
+        evtArg.currentValue = curValue;
+        evtArg.lastValue = ov;
+        if (ov != curValue) this.emit(EVTS.TICK, evtArg);
+        if (t == 1)this.end(evtArg);
+        else if (t == 0)this.iterate(evtArg);
+        if (state.clock === this)state.clock = null;
+      }
+      return true;
+    }
+    else
+      state.task.remove(this);
+  }
+})(Clock.EVENT_NAMES = {
+  UPDATE: 'update',
+  ITERATE: 'iterate',
+  START: 'start',
+  REVERSE: 'reverse',
+  TICK: 'tick',
+  FINISHED: 'finished',
+  CONTROLLER_CHANGED: 'controllerChanged'
+});
+
 
 Flip.EASE = Clock.EASE = (function () {
   /**
@@ -82,7 +220,7 @@ Flip.EASE = Clock.EASE = (function () {
   };
   var pow = Math.pow, PI = Math.PI;
   (function (obj) {
-    objForEach(obj, function (name, func) {
+    objForEach(obj, function (func, name) {
       var easeIn = func;
       F[name + 'In'] = easeIn;
       F[name + 'Out'] = function (t) {
@@ -129,145 +267,3 @@ Flip.EASE = Clock.EASE = (function () {
 
   return Object.freeze(F);
 })();
-
-Clock.EVENT_NAMES = {
-  UPDATE: 'update',
-  END: 'end',
-  REVERSED: 'reversed',
-  TICK: 'tick',
-  FINISHED: 'finished'
-};
-inherit(Clock, obj, {
-  get finished() {
-    return this._stopped && this.i <= 0;
-  },
-  set ontick(f) {
-    this.on(Clock.EVENT_NAMES.TICK, f);
-  },
-  set onend(f) {
-    this.on(Clock.EVENT_NAMES.END, f)
-  },
-  set onreversed(f) {
-    this.on(Clock.EVENT_NAMES.REVERSED, f)
-  },
-  set onfinished(f) {
-    this.on(Clock.EVENT_NAMES.FINISHED, f)
-  },
-  start: function () {
-    if (this.t != (this.direction == 1 ? 0 : 1)) return false;
-    return this.restart();
-  },
-  restart: function () {
-    this.reset(0, 0, 0, 1);
-    this._stopped = false;
-    return this;
-  },
-  reset: function (toEnd, reverseDir, stopped, iteration) {
-    this._startTime = -1;
-    if (iteration)this.i = this.iteration;
-    this.d = reverseDir ? -this.direction : this.direction;
-    this.t = toEnd ? (this.d == 1 ? 1 : 0) : (this.d == 1 ? 0 : 1);
-    this.value = this.t * this.range + this.offset;
-    this._stopped = !!stopped;
-    return this;
-  },
-  end: function () {
-    return this.reset(1, 0, 1);
-  },
-  pause: function () {
-    if (!this._paused) {
-      this._pausedTime = -1;
-      this._pausedDur = 0;
-      this._paused = true;
-      // var t = this.t, p;
-      // if (t == 0 || t == 1)
-      // if ((p = this.parent) && (p = p.task)) p.remove(this);
-    }
-  },
-  restore: function () {
-    if (this._paused && this._startTime > 0) {
-      this._startTime += this._pausedDur;
-      this._paused = false;
-      var t = this.t;
-      //if (t < 0 && t > 1)this.waitUpdate();
-    }
-  },
-  reverse: function () {
-    if (this.t != ((this.direction == 1 ? 1 : 0))) return false;
-    this.reset(0, 1, 0, 1);
-    return true;
-  },
-  toggle: function () {
-    if (this.t == 0)
-      this.start();
-    else if (this.t == 1)
-      this.reverse();
-  },
-  update: updateClock
-}, {
-  paused: {
-    get: function () {
-      return this._paused;
-    },
-    set: function (v) {
-      if (this._paused = !!v)
-        this.pause();
-      else this.restore()
-    }
-  },
-  reversing: {get: function () {
-    return this.d == -this.direction;
-  }},
-  isStopped: {get: function () {
-    return this._stopped;
-  }},
-  timingFunction: {
-    get: function () {
-      return this._tf;
-    },
-    set: function (src) {
-      var t;
-      if ((typeof src === "function" && (t = src)) || (t = Clock.EASE[src]))
-        this._tf = t;
-    }
-  }
-});
-function updateClock(state) {
-  if (!this._stopped) {
-    var timeline = state.timeline;
-    if (this._startTime == -1)
-      return (this._startTime = timeline.now) >= 0;
-    if (this._paused) {
-      var pt = this._pausedTime;
-      pt == -1 ? this._pausedTime = timeline.now : this._pausedDur = timeline.now - pt;
-      return true;
-    }
-    var dur = (timeline.now - this._startTime) / timeline.ticksPerSecond, curValue, evtArg;
-    if (dur > 0) {
-      var ov = this.value, evt;
-      this.t = this.d == 1 ? dur / this.duration : 1 - dur / this.duration;
-      if (this.t > 1)this.t = 1;
-      else if (this.t < 0)this.t = 0;
-      curValue = this.value = this.timingFunction(this.t) * this.range + this.offset;
-      state.clock = this;
-      evtArg = [ov, curValue, state];
-      if (this.t == 0) evt = Clock.EVENT_NAMES.REVERSED;
-      else if (this.t == 1) evt = Clock.EVENT_NAMES.END;
-
-      if (ov != curValue) this.emit(Clock.EVENT_NAMES.TICK, evtArg);
-      if (evt) {
-        this._stopped = true;
-        this.emit(evt, evtArg);
-        if (this.infinite) this.toggle();
-        else if (this.i-- > 0)
-          this.reset(0, this.autoReverse && this.i % 2 == 0, 0, 0);
-        else
-          this.emit(Clock.EVENT_NAMES.FINISHED, evtArg);
-      }
-      if (state.clock === this)state.clock = null;
-    }
-    return true;
-  }
-  else
-    state.task.remove(this);
-}

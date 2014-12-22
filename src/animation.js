@@ -70,12 +70,13 @@ Animation.EVENT_NAMES = {
     return '_F_' + type + ':' + i;
   }
 
-  function invalidWhenTick(o, v, state) {
+  function invalidWhenTick(state) {
     state.animation.invalid();
     state.animation.emit(Animation.EVENT_NAMES.UPDATE, state);
   }
 
-  function removeWhenFinished(o, v, state) {
+  function removeWhenFinished(state) {
+    debugger;
     var ani = state.animation;
     ani.render(state);
     ani.emit(Animation.EVENT_NAMES.FINISHED, state);
@@ -85,16 +86,20 @@ Animation.EVENT_NAMES = {
   inherit(Animation, Flip.util.Object, {
     set clock(c) {
       var oc = this._clock;
+      c = c || null;
       if (oc == c)return;
       if (oc && c)throw Error('remove the animation clock before add a new one');
       this._clock = c;
+      //add a clock
       if (c) {
         c.ontick = invalidWhenTick;
-        c.on(Clock.EVENT_NAMES.FINISHED, removeWhenFinished)
-      }
+        c.on(Clock.EVENT_NAMES.FINISHED, removeWhenFinished);
+        c.controller = this;
+      }//remove a clock
       else if (oc) {
         oc.off(Clock.EVENT_NAMES.TICK, invalidWhenTick);
         oc.off(Clock.EVENT_NAMES.FINISHED, removeWhenFinished);
+        oc.controller = null;
       }
     },
     get clock() {
@@ -180,7 +185,7 @@ Flip.animation = (function () {
     function Constructor(opt) {
       if (!(this instanceof Constructor))return new Constructor(opt);
       var proxy = createProxy(opt);
-      objForEach(defParam, function (key, value) {
+      objForEach(defParam, function (value, key) {
         proxy(key, value)
       });
       objForEach(proxy.result, cloneFunc, this);

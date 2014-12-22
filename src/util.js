@@ -2,8 +2,8 @@
  * Created by 柏然 on 2014/12/12.
  */
 var Flip = function () {
-  var first = arguments[0];
-  if (typeof first === "function") arrAdd(FlipScope.readyFuncs, first);
+  var first = arguments[0], readyFuncs = FlipScope.readyFuncs;
+  if (typeof first === "function") readyFuncs ? arrAdd(FlipScope.readyFuncs, first) : first(Flip);
 }, FlipScope = {readyFuncs: []};
 Object.defineProperty(Flip, 'instance', {get: function () {
   return FlipScope.global;
@@ -126,7 +126,9 @@ function arrSafeFilter(array, filter, thisObj) {
   if (thisObj == undefined)thisObj = array;
   return copy.filter(filter, thisObj).filter(function (item) {
     return array.indexOf(item) > -1;
-  });
+  }).concat(array.filter(function (item) {
+    return copy.indexOf(item) == -1;
+  }));
 }
 array.safeFilter = arrSafeFilter;
 inherit(array, Array, {
@@ -196,7 +198,7 @@ function objForEach(object, callback, thisObj, arg) {
   if (object) {
     if (thisObj == undefined)thisObj = object;
     for (var i = 0, names = Object.getOwnPropertyNames(object), name = names[0]; name; name = names[++i])
-      callback.apply(thisObj, [name, object[name], arg]);
+      callback.apply(thisObj, [object[name], name, arg]);
   }
   return object;
 }
@@ -237,6 +239,6 @@ inherit(obj, null, {
     return objForEach(this, callback, thisObj, arg);
   }
 });
-function cloneFunc(key, value) {
+function cloneFunc(value, key) {
   this[key] = value;
 }

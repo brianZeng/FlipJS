@@ -19,10 +19,11 @@ RenderTask.EVENT_NAMES = {
 };
 inherit(RenderTask, Flip.util.Object, {
   update: function (state) {
-    var t = state.task, updateParam = [state, this];
+    var t = state.task, updateParam = [state, this], nextComs;
     (state.timeline = t.timeline).move();
     this.emit(RenderTask.EVENT_NAMES.UPDATE, updateParam);
-    this._updateObjs = arrSafeFilter(this._updateObjs, filterIUpdate, state);
+    this._updateObjs = nextComs = [];
+    this._updateObjs = nextComs.concat(arrSafeFilter(this._updateObjs, filterIUpdate, state));
   },
   invalid: function () {
     this._invalid = true;

@@ -51,4 +51,5 @@ module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.initConfig(config);
+  grunt.registerTask('con-ugly', ['concat:animation', 'uglify:flip']);
 };
