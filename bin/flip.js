@@ -1164,7 +1164,7 @@
       d = d == undefined ? "." : d;
       t = t == undefined ? "," : t;
       return s + (j ? i.substr(0, j) + t : "") + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + t) + (c ? d + Math.abs(n - i).toFixed(c).slice(2) : "");
-    }
+  }
 
     function mapValue(ele) {
       var v = ele.innerHTML || ele.value, d = v.replace(/\,|[^\d\.]/g, '');
@@ -1239,6 +1239,41 @@
         var v = this.clock.value, sx = this.sx, sy = this.sy;
         return Mat3.setTranslate(sx + (this.dx - sx) * v, sy + (this.dy - sy) * v);
     }
+    }
+  });
+  Flip.interpolation({
+    name: 'cubic',
+    prototype: {
+      init: function () {
+        this._ensureAxisAlign();
+        this._initDx();
+    },
+      interpolate: function (x) {
+        var i0, i1, x1, xs = this.axis.x, x0, t, vp, t2, t3;
+        i0 = xs.indexOf(arrFirst(xs, function (num) {
+          return num >= x
+        }));
+        if (i0 > 0)i0--;
+        i1 = i0 + 3;
+        if (i1 >= xs.length - 1) {
+          i1 = xs.length - 1;
+          i0 = i1 - 3;
+        }
+        t = (x - (x0 = xs[i0])) / (xs[i1] - x0);
+        t2 = t * t;
+        t3 = t2 * t;
+        vp = [
+          -4.5 * t3 + 9 * t2 - 5.5 * t + 1,
+          13.5 * t3 - 22.5 * t2 + 9 * t,
+          -13.5 * t3 + 18 * t2 - 4.5 * t,
+          4.5 * t3 - 4.5 * t2 + t
+        ];
+        return {
+          x: x,//Vec.multi(vp, vx),
+          y: Vec.multi(vp, this.axis.y.slice(i0, i0 + 4))
+        }
+    }
+
     }
   });
   Flip.interpolation({

@@ -30,7 +30,7 @@
         });
     }
     function testLinear() {
-        var inter = Flip.interpolate('quadratic', [1, 40, 60, 80, 120, 160], [100, 30, 120, 60, 90, 40]), itor = inter.getItor(), ps;
+        var inter = Flip.interpolate('cubic', [1, 40, 60, 80, 120, 160], [100, 30, 120, 60, 90, 40]), itor = inter.getItor(), ps;
         concatPoints(itor.all(), 'red');
         ps = inter.axis.x.map(function (x, i) {
             var p = {x: x, y: inter.axis.y[i]};
