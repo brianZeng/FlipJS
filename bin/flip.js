@@ -76,7 +76,7 @@
     if (propertyObj)
       obj.forEach(propertyObj, function (key, value) {
         Object.defineProperty(proto, key, value);
-      });
+    });
     return constructor;
   }
 
@@ -140,9 +140,9 @@
   function mapProName(proNameOrFun) {
     if (typeof proNameOrFun == "function")return proNameOrFun;
     else if (proNameOrFun && typeof proNameOrFun == "string")
-      return function (item) {
-        return item ? item[proNameOrFun] : undefined;
-      };
+    return function (item) {
+      return item ? item[proNameOrFun] : undefined;
+    };
     else return function (item) {
         return item;
       }
@@ -225,7 +225,7 @@
     else if ((cbs = obj._callbacks) && (hs = cbs[evtName]) && hs) {
       if (handler) array.remove(hs, handler);
       else delete cbs[evtName];
-    }
+  }
     return obj;
   }
 
@@ -304,13 +304,13 @@
           return p.y
         })
       };
-    }
+  }
     else {
       if (pts = opt.x)this.axis = {x: pts};
       else throw Error('the data of X axis not provided');
       if (pts = opt.y)this.axis.y = pts;
       else throw Error('the data of Y axis not provided');
-    }
+  }
     this.init(opt);
   }
 
@@ -342,7 +342,7 @@
     _ensureAxisAlign: function () {
       var axis = this.axis;
       if (axis.x.length !== axis.y.length)throw Error('x and y must have same amount of data');
-    }
+  }
   });
   function InterItor(opt) {
     if (!(this instanceof InterItor))return new InterItor(opt);
@@ -360,20 +360,20 @@
     Object.defineProperty(this, 'current', {
       get: function () {
         return curPoint;
-      }
-    });
+    }
+  });
     this.reset();
   }
 
   InterItor.prototype = {
     all: function () {
       var cache = [];
-      this.reset();
+    this.reset();
       while (this.hasNext())
         cache.push(this.next());
       this.reset();
       return cache;
-    }
+  }
   };
   (function (Flip) {
     function main(opt) {
@@ -397,10 +397,10 @@
           opt.y = YData;
         }
         else opt.data = dataOrXData;
-      }
+    }
       else opt = nameOrOpt;
       return new main[opt.name](opt);
-    };
+  };
     return Flip.interpolation = main;
   })(Flip);
 
@@ -428,7 +428,7 @@
   objForEach(Vec, function (func, name) {
     this[name] = function () {
       return func.apply(this, arguments);
-    }
+  }
   }, Vec.prototype);
   function Animation(opt) {
     if (!(this instanceof Animation))return new Animation(opt);
@@ -905,7 +905,7 @@
       if (slt)
         slt.split(',').forEach(function (selector) {
           r.push.apply(r, r.slice.apply(root.querySelectorAll(selector)))
-        });
+      });
       return r;
   }
 
@@ -916,7 +916,7 @@
         callback(Flip);
       });
       FlipScope.readyFuncs = null;
-    });
+  });
   })(Flip);
 
   Flip.RenderGlobal = RenderGlobal;
@@ -1133,13 +1133,13 @@
       if (this._isStop) {
         this._isStop = false;
         this._stopTime += Date.now() - this._lastStop;
-      }
+    }
     },
     move: function () {
       if (!this._isStop) {
         this.last = this.now;
         this.now = Date.now() - this._startTime - this._stopTime;
-      }
+    }
     }
   });
   Flip.animation({
@@ -1153,7 +1153,7 @@
       getMatrix: function () {
         var angle = this.angle * this.clock.value, sin = Math.sin(angle), cos = Math.cos(angle);
         return new Mat3(this.vertical ? [cos, 0, 0, sin, 1, 0] : [1, -sin, 0, 0, cos, 0])
-      }
+    }
     }
   });
   (function (register) {
@@ -1247,7 +1247,7 @@
       init: function () {
         this._ensureAxisAlign();
         this._initDx();
-      },
+    },
       interpolate: function (x) {
         var x1, x0, xs = this.axis.x, i0, i1, t, ys = this.axis.y;
         x1 = arrFirst(xs, function (num) {
@@ -1258,7 +1258,7 @@
         t = (x1 - x) / (x1 - x0);
         if (isNaN(t))t = 1;
         return {x: x, y: ys[i0] * t + (1 - t) * ys[i1]}
-      }
+    }
     }
   });
   Flip.interpolation({
@@ -1267,7 +1267,8 @@
       init: function () {
         this._ensureAxisAlign();
         this._initDx();
-      },
+    },
+
       interpolate: function (x) {
         var i0, i1, x1, xs = this.axis.x, ys = this.axis.y, vx, t, vp;
         x1 = arrFirst(xs, function (num) {
@@ -1283,8 +1284,8 @@
         vp = [2 * t * t - 3 * t + 1, 4 * t - 4 * t * t, 2 * t * t - t];
         return {
           x: Vec.multi(vp, vx), y: Vec.multi(vp, ys.slice(i0, i0 + 3))
-        }
       }
+    }
 
     }
   });

@@ -5,7 +5,7 @@ var config = {
   concat: {
     animation: {
       files: {
-        'bin/flip.js': ['src/util.js', 'src/*.js', 'src/animations/*.js', 'src/interpolations/*.js'],
+        'bin/flip.js': ['src/util.js', 'src/*.js', 'src/animations/*.js', 'src/interpolation/*.js'],
         'bin/Flip.js': ['bin/flip.js']
       }
     },
