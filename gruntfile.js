@@ -5,7 +5,7 @@ var config = {
   concat: {
     animation: {
       files: {
-        'bin/flip.js': ['src/util.js', 'src/*.js', 'src/animations/*.js'],
+        'bin/flip.js': ['src/util.js', 'src/*.js', 'src/animations/*.js', 'src/interpolations/*.js'],
         'bin/Flip.js': ['bin/flip.js']
       }
     },
@@ -26,7 +26,7 @@ var config = {
 config.watch = {
   scripts: {
     files: 'src/**/*.js',
-    tasks: ['concat:animation', 'uglify:flip'],
+    tasks: ['concat:animation'],
     options: {
       interrupt: true
     }
@@ -43,6 +43,13 @@ config.uglify = {
   flip: {
     files: {
       'bin/flip.min.js': 'bin/flip.js'
+    }
+  },
+  atrk: {
+    files: {
+      "bin/atrk.min.js": "bin/atrk.js"
+    }, options: {
+      banner: '/* borian@vip.qq.com */'
     }
   }
 };

@@ -94,11 +94,45 @@
     return false;
   }
 
+  function arrSort(array, func_ProName, des) {
+    var compare = arrMapFun(func_ProName);
+    return array.sort(des ? function (a, b) {
+      return compare(a) < compare(b)
+    } : function (a, b) {
+      return compare(a) > compare(b)
+    });
+  }
+
+  function arrUnique(array, func_ProName) {
+    var compare = arrMapFun(func_ProName);
+    return array.reduce(function (r, item) {
+      var res = compare(item);
+      if (r.indexOf(res) == -1)r.push(item);
+      return r;
+    }, []);
+  }
+
+  function arrFirst(array, func_ProName) {
+    for (var i = 0, item, len = array.length, compare = arrMapFun(func_ProName); i < len; i++)
+      if (compare(item = array[i]))return item;
+  }
+
   function arrRemove(array, item) {
     var i = array.indexOf(item);
     if (i >= 0)
       return !!array.splice(i, 1);
     return false;
+  }
+
+  function arrMapFun(func_ProName) {
+    var ct = typeof func_ProName;
+    if (ct === "string")return function (item) {
+      return item[func_ProName]
+    };
+    else if (ct === "function")return func_ProName;
+    return function (item) {
+      return item
+    };
   }
 
   array.remove = arrRemove;
@@ -137,6 +171,7 @@
   }
 
   array.safeFilter = arrSafeFilter;
+  array.sort = arrSort;
   inherit(array, Array, {
     add: function (item) {
       return arrAdd(this, item);
@@ -257,6 +292,144 @@
     this[key] = value;
   }
 
+  function Interpolation(opt) {
+    if (!(this instanceof Interpolation))return new Interpolation(opt);
+    var pts;
+    if (opt.data instanceof Array) {
+      pts = arrSort(opt.data, 'x');
+      this.axis = {
+        x: pts.map(function (p) {
+          return p.x
+        }), y: pts.map(function (p) {
+          return p.y
+        })
+      };
+    }
+    else {
+      if (pts = opt.x)this.axis = {x: pts};
+      else throw Error('the data of X axis not provided');
+      if (pts = opt.y)this.axis.y = pts;
+      else throw Error('the data of Y axis not provided');
+    }
+    this.init(opt);
+  }
+
+  inherit(Interpolation, {
+    init: function (points) {
+    },
+    getPoint: function (t) {
+      var xs = this.axis.x;
+      return this.interpolate(xs[0] + this.dx * this._clampT(t));
+    },
+    getItor: function () {
+      var xs = this.axis.x, self = this;
+      return new InterItor({
+        x1: xs[xs.length - 1],
+        x0: xs[0],
+        interpolate: function (x) {
+          return self.interpolate(x);
+        }
+      })
+    },
+    _clampT: function (t) {
+      t = parseFloat(t) || 0;
+      return t < 0 ? 0 : (t > 1 ? 1 : t);
+    },
+    _initDx: function () {
+      var xs = this.axis.x;
+      this.dx = xs[xs.length - 1] - xs[0];
+    },
+    _ensureAxisAlign: function () {
+      var axis = this.axis;
+      if (axis.x.length !== axis.y.length)throw Error('x and y must have same amount of data');
+    }
+  });
+  function InterItor(opt) {
+    if (!(this instanceof InterItor))return new InterItor(opt);
+    var x0 = opt.x0, x1 = opt.x1, cur, curPoint;
+    this.reset = opt.reset || function () {
+      return cur = x0;
+    };
+    this.hasNext = opt.hasNext || function () {
+      return cur <= x1;
+    };
+    this.next = opt.next || function () {
+      if (cur > x1)return undefined;
+      return curPoint = opt.interpolate(cur++);
+    };
+    Object.defineProperty(this, 'current', {
+      get: function () {
+        return curPoint;
+      }
+    });
+    this.reset();
+  }
+
+  InterItor.prototype = {
+    all: function () {
+      var cache = [];
+      this.reset();
+      while (this.hasNext())
+        cache.push(this.next());
+      this.reset();
+      return cache;
+    }
+  };
+  (function (Flip) {
+    function main(opt) {
+      var Constructor, name = opt.name;
+      Constructor = function (opt) {
+        if (!(this instanceof Constructor))return new Constructor(opt);
+        if (opt instanceof Array)opt = {data: opt};
+        Interpolation.call(this, opt);
+      };
+      inherit(Constructor, Interpolation.prototype, opt.prototype);
+      if (name) main[name] = Constructor;
+      return Constructor;
+    }
+
+    Flip.interpolate = function (nameOrOpt, dataOrXData, YData) {
+      var opt;
+      if (typeof nameOrOpt == "string") {
+        opt = {name: nameOrOpt};
+        if (dataOrXData instanceof Array) {
+          opt.x = dataOrXData;
+          opt.y = YData;
+        }
+        else opt.data = dataOrXData;
+      }
+      else opt = nameOrOpt;
+      return new main[opt.name](opt);
+    };
+    return Flip.interpolation = main;
+  })(Flip);
+
+  function Vec(arrayOrNum) {
+    if (!(this instanceof Vec))return new Vec(arrayOrNum);
+    Float32Array.call(this, arrayOrNum);
+  }
+
+  Vec.add = function (v1, v2) {
+    for (var i = 0, len = v1.length, r = new Vec(len); i < len; i++)
+      r[i] = v1[1] + v2[i] || 0;
+    return r;
+  };
+  Vec.dot = function (v1, v2OrNum) {
+    for (var i = 0, len = v1.length, r = new Vec(len); i < len; i++)
+      r[i] = v1[i] * v2OrNum;
+    return r;
+  };
+  Vec.multi = Vec.concat = function (v1, v2) {
+    for (var i = 0, len = v1.length, r = 0; i < len; i++)
+      r += v1[i] * v2[i] || 0;
+    return r;
+  };
+  inherit(Vec, Float32Array.prototype, {});
+  objForEach(Vec, function (func, name) {
+    this[name] = function () {
+      return func.apply(this, arguments);
+    }
+  }, Vec.prototype);
   function Animation(opt) {
     if (!(this instanceof Animation))return new Animation(opt);
     var r = Animation.createOptProxy(opt).result;
@@ -866,7 +1039,7 @@
           return getFloat(e[i])
         });
         return 'matrix(' + r.join(',') + ')';
-    }
+      }
     })([0, 3, 1, 4, 2, 5]),
     translate: function (dx, dy, overwrite) {
       return this.concat(Mat3.setTranslate(dx, dy), overwrite);
@@ -908,8 +1081,7 @@
       var t = state.task, updateParam = [state, this], nextComs;
       (state.timeline = t.timeline).move();
       this.emit(RenderTask.EVENT_NAMES.UPDATE, updateParam);
-      this._updateObjs = nextComs = [];
-      this._updateObjs = nextComs.concat(arrSafeFilter(this._updateObjs, filterIUpdate, state));
+      this._updateObjs = arrSafeFilter(this._updateObjs, filterIUpdate, state);
     },
     invalid: function () {
       this._invalid = true;
@@ -961,13 +1133,13 @@
       if (this._isStop) {
         this._isStop = false;
         this._stopTime += Date.now() - this._lastStop;
-    }
+      }
     },
     move: function () {
       if (!this._isStop) {
         this.last = this.now;
         this.now = Date.now() - this._startTime - this._stopTime;
-    }
+      }
     }
   });
   Flip.animation({
@@ -981,7 +1153,7 @@
       getMatrix: function () {
         var angle = this.angle * this.clock.value, sin = Math.sin(angle), cos = Math.cos(angle);
         return new Mat3(this.vertical ? [cos, 0, 0, sin, 1, 0] : [1, -sin, 0, 0, cos, 0])
-    }
+      }
     }
   });
   (function (register) {
@@ -1066,7 +1238,54 @@
       getMatrix: function () {
         var v = this.clock.value, sx = this.sx, sy = this.sy;
         return Mat3.setTranslate(sx + (this.dx - sx) * v, sy + (this.dy - sy) * v);
+      }
     }
+  });
+  Flip.interpolation({
+    name: 'linear',
+    prototype: {
+      init: function () {
+        this._ensureAxisAlign();
+        this._initDx();
+      },
+      interpolate: function (x) {
+        var x1, x0, xs = this.axis.x, i0, i1, t, ys = this.axis.y;
+        x1 = arrFirst(xs, function (num) {
+          return num >= x
+        });
+        i1 = xs.indexOf(x1);
+        x0 = xs[i0 = i1 == 0 ? i1 : i1 - 1];
+        t = (x1 - x) / (x1 - x0);
+        if (isNaN(t))t = 1;
+        return {x: x, y: ys[i0] * t + (1 - t) * ys[i1]}
+      }
+    }
+  });
+  Flip.interpolation({
+    name: 'quadratic',
+    prototype: {
+      init: function () {
+        this._ensureAxisAlign();
+        this._initDx();
+      },
+      interpolate: function (x) {
+        var i0, i1, x1, xs = this.axis.x, ys = this.axis.y, vx, t, vp;
+        x1 = arrFirst(xs, function (num) {
+          return num >= x
+        });
+        i1 = xs.indexOf(x1);
+        if (i1 == 0)i1 = 1;
+        else if (i1 == xs.length - 1)
+          i1 = i1 - 1;
+        i0 = i1 - 1;
+        vx = xs.slice(i0, i0 + 3);
+        t = (x - vx[0]) / (vx[2] - vx[0]);
+        vp = [2 * t * t - 3 * t + 1, 4 * t - 4 * t * t, 2 * t * t - t];
+        return {
+          x: Vec.multi(vp, vx), y: Vec.multi(vp, ys.slice(i0, i0 + 3))
+        }
+      }
+
     }
   });
 })();

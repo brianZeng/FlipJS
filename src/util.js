@@ -91,12 +91,41 @@ function arrAdd(array, item) {
     return !!array.push(item);
   return false;
 }
-
+function arrSort(array, func_ProName, des) {
+  var compare = arrMapFun(func_ProName);
+  return array.sort(des ? function (a, b) {
+    return compare(a) < compare(b)
+  } : function (a, b) {
+    return compare(a) > compare(b)
+  });
+}
+function arrUnique(array, func_ProName) {
+  var compare = arrMapFun(func_ProName);
+  return array.reduce(function (r, item) {
+    var res = compare(item);
+    if (r.indexOf(res) == -1)r.push(item);
+    return r;
+  }, []);
+}
+function arrFirst(array, func_ProName) {
+  for (var i = 0, item, len = array.length, compare = arrMapFun(func_ProName); i < len; i++)
+    if (compare(item = array[i]))return item;
+}
 function arrRemove(array, item) {
   var i = array.indexOf(item);
   if (i >= 0)
     return !!array.splice(i, 1);
   return false;
+}
+function arrMapFun(func_ProName) {
+  var ct = typeof func_ProName;
+  if (ct === "string")return function (item) {
+    return item[func_ProName]
+  };
+  else if (ct === "function")return func_ProName;
+  return function (item) {
+    return item
+  };
 }
 array.remove = arrRemove;
 array.add = arrAdd;
@@ -131,6 +160,7 @@ function arrSafeFilter(array, filter, thisObj) {
   }));
 }
 array.safeFilter = arrSafeFilter;
+array.sort = arrSort;
 inherit(array, Array, {
   add: function (item) {
     return arrAdd(this, item);
