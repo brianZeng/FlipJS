@@ -371,7 +371,7 @@
     this.reset();
       while (this.hasNext())
         cache.push(this.next());
-      this.reset();
+    this.reset();
       return cache;
   }
   };
@@ -1127,20 +1127,20 @@
       if (!this._isStop) {
         this._isStop = true;
         this._lastStop = Date.now();
-    }
+      }
     },
     start: function () {
       if (this._isStop) {
         this._isStop = false;
         this._stopTime += Date.now() - this._lastStop;
-    }
+      }
     },
     move: function () {
       if (!this._isStop) {
         this.last = this.now;
         this.now = Date.now() - this._startTime - this._stopTime;
-    }
-    }
+      }
+  }
   });
   Flip.animation({
     name: 'flip',
@@ -1153,8 +1153,8 @@
       getMatrix: function () {
         var angle = this.angle * this.clock.value, sin = Math.sin(angle), cos = Math.cos(angle);
         return new Mat3(this.vertical ? [cos, 0, 0, sin, 1, 0] : [1, -sin, 0, 0, cos, 0])
-    }
-    }
+      }
+  }
   });
   (function (register) {
     function formatMoney(n, c, d, t) {
@@ -1170,11 +1170,11 @@
       var v = ele.innerHTML || ele.value, d = v.replace(/\,|[^\d\.]/g, '');
       ele.unit = v.replace(/.*\d(.*)/, '$1');
       return parseFloat(d);
-    }
+  }
 
     function applyValue(ele, value, prec) {
       ele.innerHTML = ele.value = prec == -1 ? value + ele.unit : formatMoney(value, prec).replace(/\.0+$/, '');
-    }
+  }
 
     register(
       {
@@ -1238,7 +1238,7 @@
       getMatrix: function () {
         var v = this.clock.value, sx = this.sx, sy = this.sy;
         return Mat3.setTranslate(sx + (this.dx - sx) * v, sy + (this.dy - sy) * v);
-      }
+    }
     }
   });
   Flip.interpolation({
@@ -1268,9 +1268,8 @@
         this._ensureAxisAlign();
         this._initDx();
     },
-
       interpolate: function (x) {
-        var i0, i1, x1, xs = this.axis.x, ys = this.axis.y, vx, t, vp;
+        var i0, i1, x1, xs = this.axis.x, ys = this.axis.y, x0, t, vp;
         x1 = arrFirst(xs, function (num) {
           return num >= x
         });
@@ -1279,11 +1278,11 @@
         else if (i1 == xs.length - 1)
           i1 = i1 - 1;
         i0 = i1 - 1;
-        vx = xs.slice(i0, i0 + 3);
-        t = (x - vx[0]) / (vx[2] - vx[0]);
+        t = (x - (x0 = xs[i0])) / (xs[i0 + 2] - x0);
         vp = [2 * t * t - 3 * t + 1, 4 * t - 4 * t * t, 2 * t * t - t];
         return {
-          x: Vec.multi(vp, vx), y: Vec.multi(vp, ys.slice(i0, i0 + 3))
+          x: x,//Vec.multi(vp, vx),
+          y: Vec.multi(vp, ys.slice(i0, i0 + 3))
       }
     }
 

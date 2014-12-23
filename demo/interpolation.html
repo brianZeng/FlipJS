@@ -7,6 +7,7 @@
 </head>
 <body>
 <canvas id="cvs" width="200" height="200"></canvas>
+<div id="info"></div>
 <script>
     var cvs = document.querySelector('#cvs'), ctx = cvs.getContext('2d');
     function concatPoints(points, color) {
@@ -29,16 +30,36 @@
         });
     }
     function testLinear() {
-        var inter = Flip.interpolate('quadratic', [1, 40, 60, 80], [100, 30, 120, 60]), itor = inter.getItor(), ps;
+        var inter = Flip.interpolate('quadratic', [1, 40, 60, 80, 120, 160], [100, 30, 120, 60, 90, 40]), itor = inter.getItor(), ps;
         concatPoints(itor.all(), 'red');
         ps = inter.axis.x.map(function (x, i) {
-            return {x: x, y: inter.axis.y[i]}
+            var p = {x: x, y: inter.axis.y[i]};
+            addInfo(p.x, p.y);
+            return p;
         });
         concatPoints(ps, 'blue');
+        console.log(itor.all().filter(function (p) {
+            return p.x >= 40 && p.x < 60
+        }).map(function (p) {
+            return 'x:' + p.x + ',y:' + parseInt(p.y) + ' ';
+        }).join('\n'));
         // concatPoints([{x:0,y:100},{x:70,y:30},{x:140,y:120}],'red');
 
     }
+    function $(slt) {
+        return document.querySelector(slt);
+    }
+    function addInfo(x, y) {
+        var p = document.createElement('p');
+        p.innerHTML = 'x:*,y:^'.replace('*', x).replace('^', y);
+        $('#info').appendChild(p);
+    }
     testLinear();
+    cvs.addEventListener('click', function (e) {
+        var x = e.clientX - cvs.clientLeft - cvs.offsetLeft, y = cvs.height - e.clientY + cvs.clientTop + cvs.offsetTop;
+        addInfo(x, y);
+        // debugger;
+    });
 </script>
 <script>
     function NewtonInterpolate(points) {
