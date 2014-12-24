@@ -29,6 +29,8 @@ inherit(Interpolation, {
     var xs = this.axis.x;
     return this.interpolate(xs[0] + this.dx * this._clampT(t));
   },
+  interpolate: function (x) {
+  },
   getItor: function () {
     var xs = this.axis.x, self = this;
     return new InterItor({
@@ -94,7 +96,6 @@ InterItor.prototype = {
     if (name) main[name] = Constructor;
     return Constructor;
   }
-
   Flip.interpolate = function (nameOrOpt, dataOrXData, YData) {
     var opt;
     if (typeof nameOrOpt == "string") {

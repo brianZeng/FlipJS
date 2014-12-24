@@ -321,6 +321,8 @@
       var xs = this.axis.x;
       return this.interpolate(xs[0] + this.dx * this._clampT(t));
     },
+    interpolate: function (x) {
+    },
     getItor: function () {
       var xs = this.axis.x, self = this;
       return new InterItor({
@@ -1238,6 +1240,34 @@
       getMatrix: function () {
         var v = this.clock.value, sx = this.sx, sy = this.sy;
         return Mat3.setTranslate(sx + (this.dx - sx) * v, sy + (this.dy - sy) * v);
+      }
+    }
+  });
+  Flip.interpolation({
+    name: 'lagrange',
+    prototype: {
+      calCoefficient: function () {
+        var xs = this.axis.x, n, ws = new Array(n = xs.length);
+        for (var i = 0, xi, wi = 1, j; i < n; i++, wi = 1) {
+          xi = xs[i];
+          for (j = 0; j < n; j++)if (j !== i)wi *= (xi - xs[j]);
+          ws[i] = wi;
+        }
+        return this.coefficeint = ws;
+    },
+      init: function () {
+        this._ensureAxisAlign();
+        this._initDx();
+        this.calCoefficient();
+    },
+      interpolate: function (x) {
+        var ws = this.coefficeint, xs = this.axis.x, ys = this.axis.y, n = xs.length, y = 0;
+        for (var i = 0, sum = 1, wi = 1, j; i < n; i++, sum = 1, wi = 1) {
+          for (j = 0; j < i; j++)sum *= (x - xs[j]);
+          for (j = i + 1; j < n; j++)sum *= (x - xs[j]);
+          y += ys[i] * sum / ws[i];
+        }
+        return {x: x, y: y}
     }
     }
   });
@@ -1249,7 +1279,7 @@
         this._initDx();
     },
       interpolate: function (x) {
-        var i0, i1, x1, xs = this.axis.x, x0, t, vp, t2, t3;
+        var i0, i1, xs = this.axis.x, x0, t, vp, t2, t3;
         i0 = xs.indexOf(arrFirst(xs, function (num) {
           return num >= x
         }));
@@ -1269,11 +1299,10 @@
           4.5 * t3 - 4.5 * t2 + t
         ];
         return {
-          x: x,//Vec.multi(vp, vx),
+          x: x,//Vec.multi(vp, vx)
           y: Vec.multi(vp, this.axis.y.slice(i0, i0 + 4))
         }
     }
-
     }
   });
   Flip.interpolation({

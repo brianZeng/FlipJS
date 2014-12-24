@@ -29,10 +29,9 @@ Flip.interpolation({
         4.5 * t3 - 4.5 * t2 + t
       ];
       return {
-        x: x,//Vec.multi(vp, vx),
+        x: x,//Vec.multi(vp, vx)
         y: Vec.multi(vp, this.axis.y.slice(i0, i0 + 4))
       }
     }
-
   }
 });
