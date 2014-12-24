@@ -53,8 +53,8 @@
         var ps = this.coefficeint, ts = this.axis.t, n = ts.length;
         if (t == 0) return {x: ps.x0, y: ps.y0};
         else if (t == 1)return {x: ps.x1, y: ps.y1};
-        for (var i = 0, sx = 0, sy = 0, nt = 1; i < n; i++) {
-          nt *= i == 0 ? 1 : (t - ts[i - 1]);
+        for (var i = 1, sx = ps[0].x, sy = ps[0].y, nt = 1; i < n; i++) {
+          nt *= (t - ts[i - 1]);
           sy += nt * ps[i].y;
           sx += nt * ps[i].x;
         }
