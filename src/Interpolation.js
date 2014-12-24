@@ -41,6 +41,10 @@ inherit(Interpolation, {
       }
     })
   },
+  _getT: function (x) {
+    var xs = this.axis.x, x0 = xs[0];
+    return (x - x0) / (xs[xs.length - 1] - x0)
+  },
   _clampT: function (t) {
     t = parseFloat(t) || 0;
     return t < 0 ? 0 : (t > 1 ? 1 : t);

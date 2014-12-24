@@ -30,10 +30,12 @@
         });
     }
     function testLinear() {
-        var inter = Flip.interpolate('lagrange', [1, 40, 60, 80, 120, 160], [100, 30, 120, 60, 90, 40]), itor = inter.getItor(), ps;
+        var px = [1, 40, 60, 80, 120, 160],
+                py = [100, 30, 120, 60, 90, 40];
+        var inter = Flip.interpolate('newton', px, py), itor = inter.getItor(), ps;
         concatPoints(itor.all(), 'red');
-        ps = inter.axis.x.map(function (x, i) {
-            var p = {x: x, y: inter.axis.y[i]};
+        ps = px.map(function (x, i) {
+            var p = {x: x, y: py[i]};
             addInfo(p.x, p.y);
             return p;
         });
