@@ -30,9 +30,9 @@
         });
     }
     function testLinear() {
-        var px = [1, 40, 60, 80, 120, 160],
-                py = [100, 30, 120, 60, 90, 40];
-        var inter = Flip.interpolate('newton', px, py), itor = inter.getItor(), ps;
+        var px = [1, 40, 60, 80, 120, 160], //80],
+                py = [100, 30, 120, 60, 90, 40];//, ];
+        var inter = Flip.interpolate('quadratic', px, py), itor = inter.getItor(), ps;
         concatPoints(itor.all(), 'red');
         ps = px.map(function (x, i) {
             var p = {x: x, y: py[i]};
@@ -41,11 +41,16 @@
         });
         concatPoints(ps, 'blue');
         console.log(itor.all().filter(function (p, i) {
-            return i < 10;
-            //  return p.x >= 40 && p.x < 60
+            // return i < 10;
+            p.i = i;
+
+            // return p;
+            return p.x >= 40 && p.x < 60
         }).map(function (p) {
-            return 'x:' + p.x + ',y:' + parseInt(p.y) + ' ';
+            // return p.x+':'+inter._getT(p.x);
+            return p.i + ' x:' + p.x + ',y:' + parseInt(p.y) + ' ';
         }).join('\n'));
+
         debugger;
         // concatPoints([{x:0,y:100},{x:70,y:30},{x:140,y:120}],'red');
 

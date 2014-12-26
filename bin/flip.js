@@ -12,7 +12,7 @@
     if (!window.requestAnimationFrame)
       window.requestAnimationFrame = function (callback) {
         setTimeout(callback, 30);
-      };
+    };
     if (!window.Float32Array) {
       window.Float32Array = inherit(function (lengthOrArray) {
         if (!(this instanceof arguments.callee))return new arguments.callee(lengthOrArray);
@@ -25,7 +25,7 @@
         for (i; i < len; i++)
           this[i] = from[i] || 0;
       }, Array.prototype)
-    }
+  }
   };
   if (typeof module !== "undefined" && module.exports)
     module.exports = Flip;
@@ -44,7 +44,7 @@
         if (!from.hasOwnProperty(prop)) {
           v = value;
           delete from[prop];
-        }
+      }
         else v = from[prop];
         result[prop] = v;
       }
@@ -76,7 +76,7 @@
     if (propertyObj)
       obj.forEach(propertyObj, function (key, value) {
         Object.defineProperty(proto, key, value);
-      });
+    });
     return constructor;
   }
 
@@ -140,22 +140,22 @@
   function mapProName(proNameOrFun) {
     if (typeof proNameOrFun == "function")return proNameOrFun;
     else if (proNameOrFun && typeof proNameOrFun == "string")
-      return function (item) {
-        return item ? item[proNameOrFun] : undefined;
-      };
+    return function (item) {
+      return item ? item[proNameOrFun] : undefined;
+    };
     else return function (item) {
         return item;
-      }
+    }
   }
 
   function arrFind(array, proNameOrFun, value, unstrict) {
     var fun = mapProName(proNameOrFun), i, item;
     if (unstrict) {
       for (i = 0, item = array[0]; item; item = array[++i]) if (fun(item) == value)return item;
-    }
+  }
     else {
       for (i = 0, item = array[0]; item; item = array[++i]) if (fun(item) === value)return item;
-    }
+  }
     return undefined;
   }
 
@@ -184,7 +184,7 @@
     },
     safeFilter: function (callback, thisObj) {
       return arrSafeFilter(this, callback, thisObj);
-    }
+  }
   });
 
   function obj(from) {
@@ -197,12 +197,12 @@
 
   function addEventListener(obj, evtName, handler) {
     if (typeof evtName == "string" && evtName && typeof handler == "function") {
-      var cbs, hs;
+    var cbs, hs;
       if (!obj.hasOwnProperty('_callbacks'))obj._callbacks = {};
       cbs = obj._callbacks;
       if (!(hs = cbs[evtName]))hs = cbs[evtName] = [];
       arrAdd(hs, handler);
-    }
+  }
     return obj;
   }
 
@@ -225,7 +225,7 @@
     else if ((cbs = obj._callbacks) && (hs = cbs[evtName]) && hs) {
       if (handler) array.remove(hs, handler);
       else delete cbs[evtName];
-    }
+  }
     return obj;
   }
 
@@ -245,7 +245,7 @@
       if (thisObj == undefined)thisObj = object;
       for (var i = 0, names = Object.getOwnPropertyNames(object), name = names[0]; name; name = names[++i])
         callback.apply(thisObj, [object[name], name, arg]);
-    }
+  }
     return object;
   }
 
@@ -256,7 +256,7 @@
       if (thisObj == undefined)thisObj = object;
       for (var keys = Object.getOwnPropertyNames(object), i = 0, key = keys[0]; key; key = keys[++i])
         r[key] = callback.apply(thisObj, [key, object[key], arg]);
-    }
+  }
     return r;
   }
 
@@ -266,7 +266,7 @@
       if (thisObj == undefined)thisObj = object;
       for (var keys = Object.getOwnPropertyNames(object), i = 0, key = keys[0]; key; key = keys[++i])
         initialValue = callback.apply(thisObj, [initialValue, key, object[key], arg]);
-    }
+  }
     return initialValue;
   }
 
@@ -286,7 +286,7 @@
     },
     forEach: function (callback, thisObj, arg) {
       return objForEach(this, callback, thisObj, arg);
-    }
+  }
   });
   function cloneFunc(value, key) {
     this[key] = value;
@@ -302,9 +302,9 @@
           return p.x
         }), y: pts.map(function (p) {
           return p.y
-        })
-      };
-    }
+      })
+    };
+  }
     else {
       if (pts = opt.x)this.axis = {x: pts};
       else throw Error('the data of X axis not provided');
@@ -330,7 +330,7 @@
         x0: xs[0],
         interpolate: function (x) {
           return self.interpolate(x);
-        }
+      }
       })
     },
     _getT: function (x) {
@@ -348,25 +348,25 @@
     _ensureAxisAlign: function () {
       var axis = this.axis;
       if (axis.x.length !== axis.y.length)throw Error('x and y must have same amount of data');
-    }
+  }
   });
   function InterItor(opt) {
     if (!(this instanceof InterItor))return new InterItor(opt);
     var x0 = opt.x0, x1 = opt.x1, cur, curPoint;
     this.reset = opt.reset || function () {
       return cur = x0;
-    };
+  };
     this.hasNext = opt.hasNext || function () {
       return cur <= x1;
-    };
+  };
     this.next = opt.next || function () {
       if (cur > x1)return undefined;
       return curPoint = opt.interpolate(cur++);
-    };
+  };
     Object.defineProperty(this, 'current', {
       get: function () {
         return curPoint;
-      }
+    }
     });
     this.reset();
   }
@@ -379,7 +379,7 @@
         cache.push(this.next());
       this.reset();
       return cache;
-    }
+  }
   };
   (function (Flip) {
     function main(opt) {
@@ -406,7 +406,7 @@
       }
       else opt = nameOrOpt;
       return new main[opt.name](opt);
-    };
+  };
     return Flip.interpolation = main;
   })(Flip);
 
@@ -484,7 +484,6 @@
     if (aniOpt.autoStart) animation.start();
     return animation;
   }
-
   main.createOptProxy = function (setter, autoStart, taskName, defaultGlobal) {
     setter = createProxy(setter);
     setter('autoStart', autoStart, 'taskName', taskName, 'defaultGlobal', defaultGlobal);
@@ -611,7 +610,7 @@
   Flip.animation = (function () {
     function _beforeCallBase(proxy, opt, instance) {
       return proxy;
-    }
+  }
 
     function register(option) {
       var beforeCallBase, defParam, name = option.name, Constructor;
@@ -622,7 +621,7 @@
         var proxy = createProxy(opt);
         objForEach(defParam, function (value, key) {
           proxy(key, value)
-        });
+      });
         objForEach(proxy.result, cloneFunc, this);
         beforeCallBase.apply(this, [proxy, opt]);
         Animation.call(this, opt);
@@ -630,7 +629,7 @@
       if (name) {
         register[name] = Constructor;
         Constructor.name = name;
-      }
+    }
       inherit(Constructor, Animation.prototype, option.prototype);
       return Constructor;
     }
@@ -658,7 +657,7 @@
     inherit(Clock, obj, {
       get controller() {
         return this._controller || null;
-      },
+    },
       set controller(c) {
         var oc = this.controller;
         c = c || null;
@@ -683,20 +682,20 @@
         if (this.t == 0) {
           this.reset(0, 1).emit(EVTS.START, this);
           return true;
-        }
+      }
         return false;
-      },
+    },
       reverse: function () {
         if (this.t == 1) {
           this.reset(0, 1, 1, 1).emit(EVTS.REVERSE, this);
           return true;
-        }
-        return false;
-      },
+      }
+      return false;
+    },
       restart: function () {
         this.t = 0;
         return this.start();
-      },
+    },
       reset: function (stop, keepIteration, atEnd, reverseDir, pause) {
         this._startTime = -1;
         if (!keepIteration)this.i = this.iteration;
@@ -705,14 +704,14 @@
         this._stopped = !!stop;
         this._paused = !!pause;
         return this;
-      },
+    },
       finish: function (evtArg) {
         this.emit(EVTS.FINISHED, evtArg);
         this.reset(1);
-      },
+    },
       end: function (evtArg) {
         this.autoReverse ? this.reverse(evtArg) : this.iterate(evtArg, 0);
-      },
+    },
       iterate: function (evtArg) {
         if (this.infinite)this.toggle();
         else if (0 < this.i--) {
@@ -741,7 +740,7 @@
           this.reverse();
       },
       update: updateClock
-    });
+  });
     objForEach(EVTS, function (evtName, key) {
       Object.defineProperty(this, 'on' + evtName, {
         set: function (func) {
@@ -778,10 +777,10 @@
           if (state.clock === this)state.clock = null;
         }
         return true;
-      }
+    }
       else
         state.task.remove(this);
-    }
+  }
   })(Clock.EVENT_NAMES = {
     UPDATE: 'update',
     ITERATE: 'iterate',
@@ -839,13 +838,13 @@
     var F = {
       linear: function (t) {
         return t;
-      },
+    },
       zeroStep: function (t) {
         return t <= 0 ? 0 : 1;
-      },
+    },
       halfStep: function (t) {
         return t < .5 ? 0 : 1;
-      },
+    },
       oneStep: function (t) {
         return t >= 1 ? 1 : 0;
       },
@@ -854,8 +853,8 @@
       },
       randomLimit: function (t) {
         return Math.random() * t;
-      }
-    };
+    }
+  };
     var pow = Math.pow, PI = Math.PI;
     (function (obj) {
       objForEach(obj, function (func, name) {
@@ -871,16 +870,16 @@
     })({
       back: function (t) {
         return t * t * ( 3 * t - 2 );
-      },
+    },
       elastic: function (t) {
         return t === 0 || t === 1 ? t : -pow(2, 8 * (t - 1)) * Math.sin(( (t - 1) * 80 - 7.5 ) * PI / 15);
-      },
+    },
       sine: function (t) {
         return 1 - Math.cos(t * PI / 2);
-      },
+    },
       circ: function (t) {
         return 1 - Math.sqrt(1 - t * t);
-      },
+    },
       cubic: function (t) {
         return t * t * t;
       },
@@ -900,8 +899,8 @@
         var pow2, bounce = 4;
         while (t < ( ( pow2 = pow(2, --bounce) ) - 1 ) / 11);
         return 1 / pow(4, 3 - bounce) - 7.5625 * pow(( pow2 * 3 - 2 ) / 22 - t, 2);
-      }
-    });
+    }
+  });
 
     return Object.freeze(F);
   })();
@@ -913,7 +912,7 @@
           r.push.apply(r, r.slice.apply(root.querySelectorAll(selector)))
         });
       return r;
-    }
+  }
 
     Flip.$ = Flip.$ = $;
     document.addEventListener('DOMContentLoaded', function () {
@@ -922,7 +921,7 @@
         callback(Flip);
       });
       FlipScope.readyFuncs = null;
-    });
+  });
   })(Flip);
 
   Flip.RenderGlobal = RenderGlobal;
@@ -951,7 +950,7 @@
       if (!t) {
         this._tasks.length ? (t = this._tasks[0]) : this.add(t = new RenderTask('default'));
         this._activeTask = t;
-      }
+    }
       return t;
     },
     add: function (obj) {
@@ -960,7 +959,7 @@
         if (!(taskName = obj.name)) throw Error('task must has a name');
         else if ((task = (tasks = this._tasks).findBy('name', taskName)) && task !== obj) throw Error('contains same name task');
         else if (tasks.add(obj)) return !!(obj._global = this);
-      }
+    }
       else if (obj instanceof Animation || obj instanceof Clock)
         return this.activeTask.add(obj);
       return false;
@@ -1045,7 +1044,7 @@
           return getFloat(e[i])
         });
         return 'matrix(' + r.join(',') + ')';
-      }
+    }
     })([0, 3, 1, 4, 2, 5]),
     translate: function (dx, dy, overwrite) {
       return this.concat(Mat3.setTranslate(dx, dy), overwrite);
@@ -1199,8 +1198,8 @@
             this.elements.forEach(function (ele, i) {
               applyValue(ele, targets[i] * v, precition);
             });
-          }
         }
+      }
       }
     )
 
@@ -1217,7 +1216,7 @@
     prototype: {
       getMatrix: function () {
         return Flip.Mat3.setRotate(this.angle * this.clock.value);
-      }
+    }
     }
   });
   Flip.animation({
@@ -1258,21 +1257,21 @@
           ws[i] = wi;
         }
         return this.coefficeint = ws;
-      },
+    },
       init: function () {
         this._ensureAxisAlign();
         this._initDx();
         this.calCoefficient();
-      },
+    },
       interpolate: function (x) {
         var ws = this.coefficeint, xs = this.axis.x, ys = this.axis.y, n = xs.length, y = 0;
         for (var i = 0, sum = 1, wi = 1, j; i < n; i++, sum = 1, wi = 1) {
           for (j = 0; j < i; j++)sum *= (x - xs[j]);
           for (j = i + 1; j < n; j++)sum *= (x - xs[j]);
           y += ys[i] * sum / ws[i];
-        }
-        return {x: x, y: y}
       }
+        return {x: x, y: y}
+    }
     }
   });
   (function (register) {
@@ -1287,59 +1286,59 @@
 
     register({
       name: 'newton',
-      prototype: {
-        calCoefficient: function () {
-          var xs = this.axis.x, x0 = xs[0], dx = this.dx - x0, ts, ys = this.axis.y, co;
-          ts = this.axis.t = xs.map(function (x) {
-            return (x - x0) / dx
-          });
-          co = this.coefficeint = ts.map(function (t, i) {
-            return {
-              x: devidedDiff(i, 0, xs, ts),
-              y: devidedDiff(i, 0, ys, ts)
-            }
-          });
-          co.x0 = x0;
-          co.x1 = dx + x0;
-          co.y1 = ys[ys.length - 1];
-          co.y0 = ys[0];
-        },
-        init: function (opt) {
-          this._ensureAxisAlign();
-          this._initDx();
-          this.calCoefficient();
-          if (opt.compress) {
-            this.axis.x = null;
-            this.axis.y = null;
+    prototype: {
+      calCoefficient: function () {
+        var xs = this.axis.x, x0 = xs[0], dx = this.dx - x0, ts, ys = this.axis.y, co;
+        ts = this.axis.t = xs.map(function (x) {
+          return (x - x0) / dx
+        });
+        co = this.coefficeint = ts.map(function (t, i) {
+          return {
+            x: devidedDiff(i, 0, xs, ts),
+            y: devidedDiff(i, 0, ys, ts)
           }
-        },
-        getItor: function () {
-          var self = this;
-          return new InterItor({
-            x1: self.coefficeint.x1,
-            x0: self.coefficeint.x0,
-            interpolate: function (x) {
-              return self.interpolate(x);
-            }
-          })
-        },
-        getPoint: function (t) {
-          var ps = this.coefficeint, ts = this.axis.t, n = ts.length;
-          if (t == 0) return {x: ps.x0, y: ps.y0};
-          else if (t == 1)return {x: ps.x1, y: ps.y1};
-          for (var i = 1, sx = ps[0].x, sy = ps[0].y, nt = 1; i < n; i++) {
-            nt *= (t - ts[i - 1]);
-            sy += nt * ps[i].y;
-            sx += nt * ps[i].x;
-          }
-          return {x: sx, y: sy}
-        },
-        interpolate: function (x) {
-          var co = this.coefficeint;
-          return this.getPoint((x - co.x0) / (co.x1 - co.x0));
+        });
+        co.x0 = x0;
+        co.x1 = dx + x0;
+        co.y1 = ys[ys.length - 1];
+        co.y0 = ys[0];
+      },
+      init: function (opt) {
+        this._ensureAxisAlign();
+        this._initDx();
+        this.calCoefficient();
+        if (opt.compress) {
+          this.axis.x = null;
+          this.axis.y = null;
         }
+      },
+      getItor: function () {
+        var self = this;
+        return new InterItor({
+          x1: self.coefficeint.x1,
+          x0: self.coefficeint.x0,
+          interpolate: function (x) {
+            return self.interpolate(x);
+          }
+        })
+      },
+      getPoint: function (t) {
+        var ps = this.coefficeint, ts = this.axis.t, n = ts.length;
+        if (t == 0) return {x: ps.x0, y: ps.y0};
+        else if (t == 1)return {x: ps.x1, y: ps.y1};
+        for (var i = 1, sx = ps[0].x, sy = ps[0].y, nt = 1; i < n; i++) {
+          nt *= (t - ts[i - 1]);
+          sy += nt * ps[i].y;
+          sx += nt * ps[i].x;
+        }
+        return {x: sx, y: sy}
+      },
+      interpolate: function (x) {
+        var co = this.coefficeint;
+        return this.getPoint((x - co.x0) / (co.x1 - co.x0));
       }
-    });
+    }
+  });
   })(Flip.interpolation);
   Flip.interpolation({
     name: 'cubic',
@@ -1358,7 +1357,7 @@
         if (i1 >= xs.length - 1) {
           i1 = xs.length - 1;
           i0 = i1 - 3;
-        }
+      }
         t = (x - (x0 = xs[i0])) / (xs[i1] - x0);
         t2 = t * t;
         t3 = t2 * t;
@@ -1372,7 +1371,7 @@
           x: x,//Vec.multi(vp, vx)
           y: Vec.multi(vp, this.axis.y.slice(i0, i0 + 4))
         }
-      }
+    }
     }
   });
   Flip.interpolation({
@@ -1402,23 +1401,49 @@
         this._ensureAxisAlign();
         this._initDx();
       },
+      /*getPoint:function(t){
+       var xs=this.axis.x,tUnit=1/(xs.length-1),i0,phrase,tx,vx,vy,tx2,vp;
+       phrase=t/tUnit;
+       i0=Math.floor(phrase);
+       tx=(phrase-i0)*tUnit;
+       tx2=tx*tx;
+       if(i0> xs.length-3) i0=xs.length-3;
+       vx=xs.slice(i0,i0+3);
+       vy=this.axis.y.slice(i0,i0+3);
+       vp=[2*tx2-3*tx+1,4*tx-4*tx2,2*tx2-tx];
+       return {
+       x: Vec.multi(vp, vx),
+       y: Vec.multi(vp, vy)
+      }
+       },
+       _getT:function(x){
+       var xs=this.axis.x,units=xs.length- 1,x1,i1,t;
+       x1=arrFirst(xs,function(num){return num>= x});
+       i1=xs.indexOf(x1);
+       t=(i1-(x1-x)/(x1-xs[i1-1]))/units;
+       if(!t)t=(x - xs[0]) / (xs[xs.length-1] - xs[0]);
+       return t;
+       },*/
       interpolate: function (x) {
-        var i0, i1, x1, xs = this.axis.x, ys = this.axis.y, x0, t, vp;
+        var i0, i1, x1, xs = this.axis.x, ys = this.axis.y, x0, t, vp, rx;
         x1 = arrFirst(xs, function (num) {
           return num >= x
         });
         i1 = xs.indexOf(x1);
-        if (i1 == 0)i1 = 1;
-        else if (i1 == xs.length - 1)
-          i1 = i1 - 1;
-        i0 = i1 - 1;
-        t = (x - (x0 = xs[i0])) / (xs[i0 + 2] - x0);
-        vp = [2 * t * t - 3 * t + 1, 4 * t - 4 * t * t, 2 * t * t - t];
-        return {
-          x: x,//Vec.multi(vp, vx),
-          y: Vec.multi(vp, ys.slice(i0, i0 + 3))
+        if (i1 < 2) {
+          i1 = 2;
+          t = (x - (x0 = xs[0])) / (xs[1] - x0) / 2;
         }
-      }
+        else t = (x - (x0 = xs[i1 - 2])) / (x1 - x0);
+        //t=(x-(x0=xs[i1-2]))/(xs[i1-1]-x0)/2;
+        vp = [2 * t * t - 3 * t + 1, 4 * t - 4 * t * t, 2 * t * t - t];
+        rx = Vec.multi(vp, xs.slice(i1 - 2, i1 + 1));
+        return {
+          x: rx > x ? rx : x,
+          y: Vec.multi(vp, ys.slice(i1 - 2, i1 + 1)) //Vec.multi(vp, ys.slice(i0, i0 + 3))
+        }
+        /**/
+    }
 
     }
   });
