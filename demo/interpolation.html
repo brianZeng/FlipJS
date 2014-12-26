@@ -30,22 +30,22 @@
         });
     }
     function testLinear() {
-        var px = [1, 40, 60, 80, 120, 160], //80],
+        var px = [0, 40, 60, 80, 120, 160], //80],
                 py = [100, 30, 120, 60, 90, 40];//, ];
-        var inter = Flip.interpolate('quadratic', px, py), itor = inter.getItor(), ps;
+        var inter = Flip.interpolate('cubic', px, py), itor = inter.getItor(), ps;
         concatPoints(itor.all(), 'red');
         ps = px.map(function (x, i) {
             var p = {x: x, y: py[i]};
             addInfo(p.x, p.y);
             return p;
         });
-        concatPoints(ps, 'blue');
+        // concatPoints(ps, 'blue');
         console.log(itor.all().filter(function (p, i) {
             // return i < 10;
             p.i = i;
 
             // return p;
-            return p.x >= 40 && p.x < 60
+            return px.indexOf(p.x) > -1;
         }).map(function (p) {
             // return p.x+':'+inter._getT(p.x);
             return p.i + ' x:' + p.x + ',y:' + parseInt(p.y) + ' ';

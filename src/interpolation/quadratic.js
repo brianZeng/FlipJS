@@ -32,25 +32,30 @@ Flip.interpolation({
      return t;
      },*/
     interpolate: function (x) {
-      var i0, i1, x1, xs = this.axis.x, ys = this.axis.y, x0, t, vp, rx;
-      x1 = arrFirst(xs, function (num) {
+      var x1, x0, x2, xs = this.axis.x, t, i1, vy, t2, vt;
+      i1 = xs.indexOf(x1 = arrFirst(xs, function (num) {
         return num >= x
-      });
-      i1 = xs.indexOf(x1);
-      if (i1 < 2) {
-        i1 = 2;
-        t = (x - (x0 = xs[0])) / (xs[1] - x0) / 2;
+      }));
+      if (i1 == 0)
+        x1 = xs[i1 = 1];
+      if (i1 == xs.length - 1) {
+        x2 = x1;
+        x1 = xs[--i1];
+        x0 = xs[i1 - 1];
+        t = (1 + (x - x1) / (x2 - x1)) * 0.5;
       }
-      else t = (x - (x0 = xs[i1 - 2])) / (x1 - x0);
-      //t=(x-(x0=xs[i1-2]))/(xs[i1-1]-x0)/2;
-      vp = [2 * t * t - 3 * t + 1, 4 * t - 4 * t * t, 2 * t * t - t];
-      rx = Vec.multi(vp, xs.slice(i1 - 2, i1 + 1));
+      else {
+        x0 = xs[i1 - 1];
+        x2 = xs[i1 + 1];
+        t = (1 - (x1 - x) / (x1 - x0)) * 0.5;
+      }
+      t2 = t * t;
+      vy = this.axis.y.slice(i1 - 1, i1 + 2);
+      vt = [2 * t2 - 3 * t + 1, 4 * (t - t2), 2 * t2 - t];
       return {
-        x: rx > x ? rx : x,
-        y: Vec.multi(vp, ys.slice(i1 - 2, i1 + 1)) //Vec.multi(vp, ys.slice(i0, i0 + 3))
+        x: Vec.multi(vt, [x0, x1, x2]),
+        y: Vec.multi(vt, vy)
       }
-      /**/
     }
-
   }
 });
