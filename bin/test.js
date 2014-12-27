@@ -1,3 +1,53 @@
+describe('Matrix:', function () {
+  function fromRows() {
+    return Flip.Matrix.fromRows.apply(null, arguments);
+  }
+
+  function fromCols() {
+    return Flip.Matrix.fromCols.apply(null, arguments);
+  }
+
+  function literalEqual(mat, str) {
+    expect(mat.toString().replace(/[\s\n]/g, '')).toBe(str);
+  }
+
+  var mat, Matrix = Flip.Matrix;
+  it('basic:', function () {
+      mat = Matrix.identify(3);
+      expect(mat.toString().replace(/[\s\n]/g, '')).toBe('100010001');
+      literalEqual(mat.multi(3), '300030003');
+      literalEqual(mat.multi([1, 2, 3]), '123');
+      literalEqual(fromRows([2, 2, 4, 4], [1, 5, 7, 8], [2, 4, 5, 6]), '224415782456');
+      literalEqual(mat.multi(fromRows([1, 2, 3], [4, 5, 6], [7, 8, 9])), '123456789');
+      literalEqual(fromRows([1, 2], [-2, 1]).multi(fromRows([3, 5], [2, 7])), '719-4-3');
+      literalEqual(fromCols([1, 2], [3, 4]), '1324');
+    }
+  );
+  it('solve:', function () {
+    //2x+5y=12
+    //x+y=3
+    //x=1 y=2
+    mat = fromRows([2, 5], [1, 1]);
+    var r = mat.solve([12, 3]);
+    expect(r[0]).toBe(1);
+    expect(r[1]).toBe(2);
+  })
+});
+describe('Vec test', function () {
+  it('basic test', function () {
+    var vec = new Flip.Vec([1, 2, 3]), Vec = Flip.Vec;
+    for (var i = 0; i < vec.length; i++)
+      expect(vec[i]).toBe(i + 1);
+    expect(vec.toString().replace(/\s+|\n/g, '')).toBe('123');
+    vec = vec.multi(3);
+    for (i = 0; i < vec.length; i++)
+      expect(vec[i]).toBe((i + 1) * 3);
+    vec[2] = 0;
+    expect(vec[2]).toBe(0);
+    expect(Vec([1, 1, 1]).multi([2, 3, 4])).toEqual(Vec([2, 3, 4]));
+    expect(Vec([1, 2, 1]).dot([1, -1, 1])).toBe(0);
+  });
+});
 xdescribe('Construct translate animation:', function () {
   it('1. .dx .dy stands for the translation distance:', function () {
     var ani = Flip.animation.translate({dx: 100, dy: 200});

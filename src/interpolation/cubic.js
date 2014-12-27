@@ -72,8 +72,8 @@ Flip.interpolation({
       vy = [ys[0], ys[2], seg.ya, seg.yb];
       vp = [2 * t3 - 3 * t2 + 1, -2 * t3 + 3 * t2, t3 - 2 * t2 + t, t3 - t2];
       return {
-        x: Vec.multi(vp, vx),
-        y: Vec.multi(vp, vy)
+        x: Vec.dot(vp, vx),
+        y: Vec.dot(vp, vy)
       }
     }
   }

@@ -53,8 +53,8 @@ Flip.interpolation({
       vy = this.axis.y.slice(i1 - 1, i1 + 2);
       vt = [2 * t2 - 3 * t + 1, 4 * (t - t2), 2 * t2 - t];
       return {
-        x: Vec.multi(vt, [x0, x1, x2]),
-        y: Vec.multi(vt, vy)
+        x: Vec.dot(vt, [x0, x1, x2]),
+        y: Vec.dot(vt, vy)
       }
     }
   }
