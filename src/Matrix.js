@@ -84,7 +84,7 @@ inherit(Matrix, [], {
     }
     for (var i = 0; i < row; i++)
       this[i] = new Vec(col);
-    this.length = row * col;
+    this['length'] = row * col;
     return this;
   },
   solve: function (B) {
@@ -147,6 +147,13 @@ inherit(Matrix, [], {
   set: function (row, col, value) {
     var colLen = this.col;
     return this[(row % this.row) * colLen][col % colLen] = value;
+  },
+  setRow: function (rowIndex, elements, startIndex) {
+    var row = this[rowIndex];
+    startIndex = startIndex || 0;
+    for (var i = 0, len = elements.length; i < len; i++)
+      row[i + startIndex] = elements[i];
+    return this;
   },
   swapRow: function (i, j) {
     var tem = this[j];

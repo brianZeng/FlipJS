@@ -76,7 +76,7 @@
     if (propertyObj)
       obj.forEach(propertyObj, function (key, value) {
         Object.defineProperty(proto, key, value);
-      });
+    });
     return constructor;
   }
 
@@ -345,6 +345,11 @@
       var xs = this.axis.x;
       this.dx = xs[xs.length - 1] - xs[0];
     },
+    _fistLargerX: function (x) {
+      return arrFirst(this.axis.x, function (num) {
+        return num >= x
+      });
+    },
     _ensureAxisAlign: function () {
       var axis = this.axis;
       if (axis.x.length !== axis.y.length)throw Error('x and y must have same amount of data');
@@ -377,7 +382,7 @@
     this.reset();
       while (this.hasNext())
         cache.push(this.next());
-      this.reset();
+    this.reset();
       return cache;
   }
   };
@@ -427,8 +432,8 @@
         if (maxValue < abs(temp = U[iNextRow][iRow])) {
           pivot[iRow] = iNextRow;
           maxValue = temp;
-        }
-    }
+      }
+      }
       if (!maxValue) return false;
       if (pivot[iRow] != iRow)
         U.swapRow(iRow, pivot[iRow]);
@@ -491,15 +496,18 @@
       else {
         row = this.row = opt.row;
         col = this.col = opt.col;
-      }
-      for (var i = 0; i < row; i++)
-        this[i] = new Vec(col);
-      this.length = row * col;
+    }
+    for (var i = 0; i < row; i++)
+      this[i] = new Vec(col);
+      this['length'] = row * col;
       return this;
     },
     solve: function (B) {
       var lu = Matrix.luDecompose(this);
       return lu ? Matrix.luSolve(lu.L, lu.U, B) : null;
+    },
+    transpose: function () {
+      return Matrix.fromCols.apply(null, this);
     },
     inverse: function () {
       var n = this.row, cols = new Array(n), B;
@@ -508,9 +516,9 @@
           B = new Vec(n);
           B[i] = 1;
           cols[i] = this.solve(B);
-        }
-        return Matrix.fromCols.apply(null, cols);
       }
+        return Matrix.fromCols.apply(null, cols);
+    }
 
     },
     clone: function () {
@@ -523,7 +531,7 @@
       var len, r = new Vec(len = this.row);
       for (var i = 0; i < len; i++)
         r[i] = this[i].dot(vec);
-      return r;
+    return r;
     },
     multiMat: function (mat) {
       var row = this.row, col = mat.col, r = new Matrix({col: col, row: row}), sum;
@@ -534,7 +542,7 @@
             sum += this[ir][i] * mat[i][ic];
           r[ir][ic] = sum;
         }
-      return r;
+    return r;
     },
     multi: function (a) {
       if (typeof  a === "number")return this.dot(a);
@@ -555,6 +563,13 @@
       var colLen = this.col;
       return this[(row % this.row) * colLen][col % colLen] = value;
     },
+    setRow: function (rowIndex, elements, startIndex) {
+      var row = this[rowIndex];
+      startIndex = startIndex || 0;
+      for (var i = 0, len = elements.length; i < len; i++)
+        row[i + startIndex] = elements[i];
+      return this;
+    },
     swapRow: function (i, j) {
       var tem = this[j];
       this[j] = this[i];
@@ -566,7 +581,7 @@
     },
     get length() {
       return this.row * this.col;
-    }
+  }
   });
   function Vec(arrayOrNum) {
     if (!(this instanceof Vec))return new Vec(arrayOrNum);
@@ -595,8 +610,22 @@
     return r;
   };
   Vec.multi = Vec.concat = function (v1, v2) {
+    if (v2 instanceof Matrix)return Vec.multiMat(v1, v2);
     for (var i = 0, len = v1.length, r = new Vec(len); i < len; i++)
       r [i] = v1[i] * v2[i];
+    return r;
+  };
+  Vec.multiMat = function (vec, mat) {
+    var row = vec.length, col, sum, r;
+    if (row !== mat.row)return NaN;
+    col = mat.col;
+    r = new Vec(row);
+    for (var iCol = 0; iCol < col; iCol++) {
+      sum = 0;
+      for (var iRow = 0; iRow < row; iRow++)
+        sum += vec[iRow] * mat[iRow][iCol];
+      r[iCol] = sum;
+    }
     return r;
   };
   inherit(Vec, [], {
@@ -1103,7 +1132,7 @@
       FlipScope.global.init();
       FlipScope.readyFuncs.forEach(function (callback) {
         callback(Flip);
-      });
+    });
       FlipScope.readyFuncs = null;
     });
   })(Flip);
@@ -1205,7 +1234,7 @@
     if (typeof angle == "string") {
       var match = angle.match(/^((\d+(\.\d+)?)|(\.\d+))d|deg/i);
       if (match) angle = (parseFloat(match[1]) / 180) * Math.PI;
-    }
+  }
     angle = parseFloat(angle) || 0;
     var a00 = 1, a01 = 0, a02 = 0, a10 = 0, a11 = 1, a12 = 0, s = Math.sin(angle), c = Math.cos(angle), out = [];
     out[0] = c * a00 + s * a10;
@@ -1246,7 +1275,7 @@
       r = new Mat3([m11 * n11 + m12 * n21, m21 * n11 + m22 * n21, mx * n11 + my * n21 + nx, m11 * n12 + m12 * n22, m21 * n12 + m22 * n22, mx * n12 + my * n22 + ny]);
       if (overwrite) this.elements = new Float32Array(r.elements);
       return r;
-    }
+  }
   };
   function RenderTask(name) {
     if (!(this instanceof  RenderTask))return new RenderTask(name);
@@ -1295,7 +1324,7 @@
       if (obj._task == this)
         obj._task = null;
       arrRemove(this._updateObjs, obj);
-  }
+    }
   });
   function filterIUpdate(obj) {
     if (obj == null || !(typeof obj == "object"))return false;
@@ -1322,7 +1351,7 @@
       if (this._isStop) {
         this._isStop = false;
         this._stopTime += Date.now() - this._lastStop;
-    }
+      }
     },
     move: function () {
       if (!this._isStop) {
@@ -1343,7 +1372,7 @@
         var angle = this.angle * this.clock.value, sin = Math.sin(angle), cos = Math.cos(angle);
         return new Mat3(this.vertical ? [cos, 0, 0, sin, 1, 0] : [1, -sin, 0, 0, cos, 0])
     }
-    }
+  }
   });
   (function (register) {
     function formatMoney(n, c, d, t) {
@@ -1353,17 +1382,17 @@
       d = d == undefined ? "." : d;
       t = t == undefined ? "," : t;
       return s + (j ? i.substr(0, j) + t : "") + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + t) + (c ? d + Math.abs(n - i).toFixed(c).slice(2) : "");
-    }
+  }
 
     function mapValue(ele) {
       var v = ele.innerHTML || ele.value, d = v.replace(/\,|[^\d\.]/g, '');
       ele.unit = v.replace(/.*\d(.*)/, '$1');
       return parseFloat(d);
-    }
+  }
 
     function applyValue(ele, value, prec) {
       ele.innerHTML = ele.value = prec == -1 ? value + ele.unit : formatMoney(value, prec).replace(/\.0+$/, '');
-    }
+  }
 
     register(
       {
@@ -1545,9 +1574,9 @@
           else {
             x2 = xs[i + 1];
             y2 = ys[i + 1];
-          }
+        }
           segments.push(segInfo = this.calSegmentParam(x0, x1, x2, y0, y1, y2, tension));
-      }
+        }
         this.coefficeint = segments;
       },
       calSegmentParam: function (x0, x1, x2, y0, y1, y2, tension) {
@@ -1558,29 +1587,6 @@
         return {xa: a, xb: b, ya: a * F, yb: b * G, x: [x0, x1, x2, P, Q], y: [y0, y1, y2, M, N]}
       },
       interpolate: function (x) {
-        /* var i0, i1, xs = this.axis.x, x0, t, vp, t2, t3;
-         i0 = xs.indexOf(arrFirst(xs, function (num) {
-         return num >= x
-         }));
-         if (i0 > 0)i0--;
-         i1 = i0 + 3;
-         if (i1 >= xs.length - 1) {
-         i1 = xs.length - 1;
-         i0 = i1 - 3;
-         }
-         t = (x - (x0 = xs[i0])) / (xs[i1] - x0);
-         t2 = t * t;
-         t3 = t2 * t;
-         vp = [
-         -4.5 * t3 + 9 * t2 - 5.5 * t + 1,
-         13.5 * t3 - 22.5 * t2 + 9 * t,
-         -13.5 * t3 + 18 * t2 - 4.5 * t,
-         4.5 * t3 - 4.5 * t2 + t
-         ];
-         return {
-         x: x,//Vec.multi(vp, vx)
-         y: Vec.multi(vp, this.axis.y.slice(i0, i0 + 4))
-         }*/
         var seg, t, xs, vx, vy, ys, t2, t3, vp;
         seg = arrFirst(this.coefficeint, function (seg) {
           return seg.x[2] >= x
@@ -1618,7 +1624,7 @@
         t = (x1 - x) / (x1 - x0);
         if (isNaN(t))t = 1;
         return {x: x, y: ys[i0] * t + (1 - t) * ys[i1]}
-      }
+    }
     }
   });
   Flip.interpolation({
@@ -1628,29 +1634,6 @@
         this._ensureAxisAlign();
         this._initDx();
       },
-      /*getPoint:function(t){
-       var xs=this.axis.x,tUnit=1/(xs.length-1),i0,phrase,tx,vx,vy,tx2,vp;
-       phrase=t/tUnit;
-       i0=Math.floor(phrase);
-       tx=(phrase-i0)*tUnit;
-       tx2=tx*tx;
-       if(i0> xs.length-3) i0=xs.length-3;
-       vx=xs.slice(i0,i0+3);
-       vy=this.axis.y.slice(i0,i0+3);
-       vp=[2*tx2-3*tx+1,4*tx-4*tx2,2*tx2-tx];
-       return {
-       x: Vec.multi(vp, vx),
-       y: Vec.multi(vp, vy)
-       }
-       },
-       _getT:function(x){
-       var xs=this.axis.x,units=xs.length- 1,x1,i1,t;
-       x1=arrFirst(xs,function(num){return num>= x});
-       i1=xs.indexOf(x1);
-       t=(i1-(x1-x)/(x1-xs[i1-1]))/units;
-       if(!t)t=(x - xs[0]) / (xs[xs.length-1] - xs[0]);
-       return t;
-       },*/
       interpolate: function (x) {
         var x1, x0, x2, xs = this.axis.x, t, i1, vy, t2, vt;
         i1 = xs.indexOf(x1 = arrFirst(xs, function (num) {
@@ -1668,15 +1651,65 @@
           x0 = xs[i1 - 1];
           x2 = xs[i1 + 1];
           t = (1 - (x1 - x) / (x1 - x0)) * 0.5;
-      }
+        }
         t2 = t * t;
         vy = this.axis.y.slice(i1 - 1, i1 + 2);
         vt = [2 * t2 - 3 * t + 1, 4 * (t - t2), 2 * t2 - t];
         return {
           x: Vec.dot(vt, [x0, x1, x2]),
           y: Vec.dot(vt, vy)
-      }
+        }
     }
+    }
+  });
+  Flip.interpolation({
+    name: 'quadratic-spline',
+    /*
+     |-1,1,-1|
+     (t2,t,1)|0, 0, 1|(P1,P2,Pt1)
+     |1, 0, 0|
+
+     Pt1+Pt2=2*(P2-P1)
+     */
+    prototype: {
+      init: function (opt) {
+        this._ensureAxisAlign();
+        this._initSegments(opt);
+      },
+      _initSegments: function (opt) {
+        var xs = this.axis.x, ys = this.axis.y, n = xs.length, mat = new Matrix(n - 1), lu, px = [], py = [];
+        for (var i = 1, j, para = [1, 1]; i < n; i++) {
+          j = i - 1;
+          mat.setRow(j, para, j - 1);
+          px[j] = (xs[i] - xs[j]) * 2;
+          py[j] = (ys[i] - ys[j]) * 2;
+      }
+        var sVec = opt.startVec || {x: 1, y: 1};
+        lu = Matrix.luDecompose(mat);
+        px[0] -= sVec.x;
+        py[0] -= sVec.y;
+        px = Matrix.luSolve(lu.L, lu.U, px);
+        py = Matrix.luSolve(lu.L, lu.U, py);
+        px.unshift(sVec.x);
+        py.unshift(sVec.y);
+        this.coefficeint = {x: px, y: py}
+      },
+      interpolateSeg: (function () {
+        var interMat = Matrix.fromRows([-1, 1, -1], [0, 0, 1], [1, 0, 0]);
+        return function (t, vx, vy) {
+          var vt = [t * t, t, 1], pVec = Vec.multiMat(vt, interMat);
+          return {x: pVec.dot(vx), y: pVec.dot(vy)}
+      }
+      })(),
+      interpolate: function (x) {
+        var xs = this.axis.x, ys = this.axis.y, x1, x0, i1, i0, t, co;
+        x1 = this._fistLargerX(x);
+        i0 = (i1 = xs.indexOf(x1) || 1) - 1;
+        x0 = xs[i0];
+        t = (x - x0) / (x1 - x0) || 0;
+        co = this.coefficeint;
+        return this.interpolateSeg(t, [x0, x1, co.x[i0]], [ys[i0], ys[i1], co.y[i0]]);
+      }
     }
   });
 })();

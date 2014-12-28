@@ -55,6 +55,17 @@
         // concatPoints([{x:0,y:100},{x:70,y:30},{x:140,y:120}],'red');
 
     }
+    function testQu() {
+        var opt = {
+            x: [0, 20, 40, 60, 80, 120],
+            y: [0, 10, 22, 44, 50, 90],
+            startVec: {x: 1, y: 1},
+            name: 'quadratic-spline'
+        }, inter = Flip.interpolate(opt), itor = inter.getItor();
+        concatPoints(itor.all(), 'black');
+        opt.name = 'quadratic';
+        concatPoints(Flip.interpolate(opt).getItor().all(), 'red');
+    }
     function $(slt) {
         return document.querySelector(slt);
     }
@@ -63,7 +74,8 @@
         p.innerHTML = 'x:*,y:^'.replace('*', x).replace('^', y);
         $('#info').appendChild(p);
     }
-    testLinear();
+    // testLinear();
+    testQu();
     cvs.addEventListener('click', function (e) {
         var x = e.clientX - cvs.clientLeft - cvs.offsetLeft, y = cvs.height - e.clientY + cvs.clientTop + cvs.offsetTop;
         addInfo(x, y);

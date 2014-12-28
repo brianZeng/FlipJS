@@ -210,3 +210,29 @@ describe('test build in renderScope:', function () {
     expect(Flip.instance.activeTask._updateObjs).toContain(ani);
   });
 });
+describe('quadraticSpline:', function () {
+  var opt = {
+    x: [0, 10, 12],
+    y: [0, 10, 2],
+    startVec: {x: 1, y: 1},
+    name: 'quadratic-spline'
+  }, interpolation;
+  beforeEach(function () {
+    interpolation = Flip.interpolate(opt);
+  });
+  function getPoint(co, index) {
+    return {x: co.x[index], y: co.y[index]}
+  }
+
+  it('construct:', function () {
+    var co = interpolation.coefficeint;
+    expect(getPoint(co, 0)).toEqual({x: 1, y: 1});
+    expect(getPoint(co, 1)).toEqual({x: 19, y: 19});
+    expect(getPoint(co, 2)).toEqual({x: -15, y: -35});
+  });
+  it('pass data point', function () {
+    opt.x.forEach(function (x, i) {
+      expect(interpolation.interpolate(x)).toEqual({x: x, y: opt.y[i]});
+    });
+  })
+});

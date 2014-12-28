@@ -53,6 +53,11 @@ inherit(Interpolation, {
     var xs = this.axis.x;
     this.dx = xs[xs.length - 1] - xs[0];
   },
+  _fistLargerX: function (x) {
+    return arrFirst(this.axis.x, function (num) {
+      return num >= x
+    });
+  },
   _ensureAxisAlign: function () {
     var axis = this.axis;
     if (axis.x.length !== axis.y.length)throw Error('x and y must have same amount of data');

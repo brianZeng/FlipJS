@@ -27,8 +27,22 @@ Vec.dot = function (v1, v2OrNum) {
   return r;
 };
 Vec.multi = Vec.concat = function (v1, v2) {
+  if (v2 instanceof Matrix)return Vec.multiMat(v1, v2);
   for (var i = 0, len = v1.length, r = new Vec(len); i < len; i++)
     r [i] = v1[i] * v2[i];
+  return r;
+};
+Vec.multiMat = function (vec, mat) {
+  var row = vec.length, col, sum, r;
+  if (row !== mat.row)return NaN;
+  col = mat.col;
+  r = new Vec(row);
+  for (var iCol = 0; iCol < col; iCol++) {
+    sum = 0;
+    for (var iRow = 0; iRow < row; iRow++)
+      sum += vec[iRow] * mat[iRow][iCol];
+    r[iCol] = sum;
+  }
   return r;
 };
 inherit(Vec, [], {
