@@ -349,12 +349,12 @@
       _fistLargerX: function (x) {
         return arrFirst(this.axis.x, function (num) {
           return num >= x
-        });
+    });
       },
       _ensureAxisAlign: function () {
         var axis = this.axis;
         if (axis.x.length !== axis.y.length)throw Error('x and y must have same amount of data');
-  }
+      }
     });
     function InterItor(opt) {
       if (!(this instanceof InterItor))return new InterItor(opt);
@@ -1173,7 +1173,7 @@
           if (!(taskName = obj.name)) throw Error('task must has a name');
           else if ((task = (tasks = this._tasks).findBy('name', taskName)) && task !== obj) throw Error('contains same name task');
           else if (tasks.add(obj)) return !!(obj._global = this);
-        }
+    }
         else if (obj instanceof Animation || obj instanceof Clock)
           return this.activeTask.add(obj);
         return false;
@@ -1258,7 +1258,7 @@
             return getFloat(e[i])
           });
           return 'matrix(' + r.join(',') + ')';
-        }
+    }
       })([0, 3, 1, 4, 2, 5]),
       translate: function (dx, dy, overwrite) {
         return this.concat(Mat3.setTranslate(dx, dy), overwrite);
@@ -1344,7 +1344,7 @@
       ticksPerSecond: 1000,
       stop: function () {
         if (!this._isStop) {
-          this._isStop = true;
+      this._isStop = true;
           this._lastStop = Date.now();
     }
       },
@@ -1608,7 +1608,74 @@
     }
       }
     });
+    Flip.interpolation({
+      name: 'cubic-spline',
+      prototype: {
+        init: function (opt) {
+          this._ensureAxisAlign();
+          this._initSegments(opt);
+        },
+        _initSegments: function (opt) {
+          var sVec = opt.startVec, eVec = opt.endVec, xs = this.axis.x, ys = this.axis.y, n = xs.length, px = [], py = [], mat = new Matrix(n - 2);
+          var fParam, fx, fy;
+          if (sVec) {
+            fParam = [4, 1];
+            fx = sVec.x;
+            fy = sVec.y;
+      }
+          else {
+            fParam = [3.5, 1];
+            fx = 1.5 * (xs[1] - xs[0]);
+            fy = 1.5 * (ys[1] - ys[0]);
+          }
+          //set first row
+          mat.setRow(0, fParam);
+          px[0] = 3 * (xs[2] - xs[0]) - fx;
+          py[0] = 3 * (ys[2] - ys[0]) - fy;
+          for (var i = 1; i < n - 3; i++) {
+            mat.setRow(i, [1, 4, 1], i - 1);
+            px[i] = 3 * (xs[i + 2] - xs[i]);
+            py[i] = 3 * (ys[i + 2] - ys[i]);
+          }
+          //set last row
+          if (i == n - 3) {
+            if (eVec) {
+              fParam = [1, 4];
+              fx = eVec.x;
+              fy = eVec.y;
+            }
+            else {
+              fParam = [1, 3.5];
+              fx = 1.5 * (xs[i + 2] - xs[i + 1]);
+              fy = 1.5 * (ys[i + 2] - ys[i + 1]);
+            }
+            mat.setRow(i, fParam, i - 1);
+            px[i] = 3 * (xs[i + 2] - xs[i]) - fx;
+            py[i] = 3 * (ys[i + 2] - ys[i]) - fy;
+          }
 
+          var lu = Matrix.luDecompose(mat), rx, ry;
+          rx = Matrix.luSolve(lu.L, lu.U, px);
+          ry = Matrix.luSolve(lu.L, lu.U, py);
+          if (eVec) {
+            rx.push(eVec.x);
+            ry.push(eVec.y);
+      }
+          else {
+            rx.push(1.5 * (xs[n - 1] - xs[n - 2]) - 0.5 * rx[n - 3]);
+            ry.push(1.5 * (ys[n - 1] - ys[n - 2]) - 0.5 * ry[n - 3]);
+      }
+          if (sVec) {
+            rx.unshift(sVec.x);
+            ry.unshift(sVec.y);
+          } else {
+            rx.unshift(1.5 * (xs[1] - xs[0]) - 0.5 * rx[0]);
+            ry.unshift(1.5 * (ys[1] - ys[0]) - 0.5 * ry[0]);
+          }
+          this.coefficeint = {x: rx, y: ry}
+    }
+      }
+    });
     Flip.interpolation({
       name: 'linear',
       prototype: {
@@ -1626,7 +1693,7 @@
           t = (x1 - x) / (x1 - x0);
           if (isNaN(t))t = 1;
           return {x: x, y: ys[i0] * t + (1 - t) * ys[i1]}
-    }
+        }
       }
     });
     Flip.interpolation({
@@ -1653,14 +1720,14 @@
             x0 = xs[i1 - 1];
             x2 = xs[i1 + 1];
             t = (1 - (x1 - x) / (x1 - x0)) * 0.5;
-          }
+      }
           t2 = t * t;
           vy = this.axis.y.slice(i1 - 1, i1 + 2);
           vt = [2 * t2 - 3 * t + 1, 4 * (t - t2), 2 * t2 - t];
           return {
             x: Vec.dot(vt, [x0, x1, x2]),
             y: Vec.dot(vt, vy)
-          }
+      }
     }
       }
     });
@@ -1701,7 +1768,7 @@
           return function (t, vx, vy) {
             var vt = [t * t, t, 1], pVec = Vec.multiMat(vt, interMat);
             return {x: pVec.dot(vx), y: pVec.dot(vy)}
-      }
+          }
         })(),
         interpolate: function (x) {
           var xs = this.axis.x, ys = this.axis.y, x1, x0, i1, i0, t, co;
@@ -1711,7 +1778,7 @@
           t = (x - x0) / (x1 - x0) || 0;
           co = this.coefficeint;
           return this.interpolateSeg(t, [x0, x1, co.x[i0]], [ys[i0], ys[i1], co.y[i0]]);
-    }
+        }
       }
     });
   })();

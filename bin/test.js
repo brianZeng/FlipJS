@@ -236,3 +236,31 @@ describe('quadraticSpline:', function () {
     });
   })
 });
+describe('cubicSpline:', function () {
+  /*
+   (0,0) (1.2,-1/3)
+   (1,0) (0.6,2/3)
+   (1,1) (-0.6,2/3)
+   (0,1) (-1.2,-1/3)
+   */
+  var opt = {
+    x: [0, 1, 1, 0],
+    y: [0, 0, 1, 1],
+    name: 'cubic-spline'
+  }, inter;
+
+  function getPoint(co, index) {
+    return {x: co.x[index], y: co.y[index]}
+  }
+
+  beforeEach(function () {
+    inter = Flip.interpolate(opt);
+  });
+  it('construct 4:', function () {
+    var co = inter.coefficeint, px = [1.2, 0.6, -0.6, -1.2], py = [-1 / 3, 2 / 3, 2 / 3, -1 / 3];
+    for (var i = 0, len = opt.x.length; i < len; i++) {
+      expect(co.x[i]).toBeCloseTo(px[i]);
+      expect(co.y[i]).toBeCloseTo(py[i])
+    }
+  })
+});
