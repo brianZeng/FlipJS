@@ -162,7 +162,9 @@ inherit(Matrix, [], {
     return this;
   },
   toString: function () {
-    return this.join('\n');
+    for (var i = 0, row = this.row, r = new Array(row); i < row; i++)
+      r[i] = this[i].toString().trim();
+    return r.join('\n');
   },
   get length() {
     return this.row * this.col;

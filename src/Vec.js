@@ -10,7 +10,6 @@ function Vec(arrayOrNum) {
     for (var i = 0; i < arrayOrNum; i++)
       this[i] = 0;
   }
-
 }
 Vec.add = function (v1, v2) {
   for (var i = 0, len = v1.length, r = new Vec(len); i < len; i++)
@@ -31,6 +30,11 @@ Vec.multi = Vec.concat = function (v1, v2) {
   for (var i = 0, len = v1.length, r = new Vec(len); i < len; i++)
     r [i] = v1[i] * v2[i];
   return r;
+};
+Vec.get = function (vec, index) {
+  if (isNaN(index))
+    return index == 'x' ? index[0] : index == 'y' ? index[1] : undefined;
+  return vec[index];
 };
 Vec.multiMat = function (vec, mat) {
   var row = vec.length, col, sum, r;

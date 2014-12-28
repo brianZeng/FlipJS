@@ -34,9 +34,9 @@ Flip.interpolation({
       this.coefficeint = {x: px, y: py}
     },
     interpolateSeg: (function () {
-      var interMat = Matrix.fromRows([-1, 1, -1], [0, 0, 1], [1, 0, 0]);
+      var weight = Matrix.fromRows([-1, 1, -1], [0, 0, 1], [1, 0, 0]);
       return function (t, vx, vy) {
-        var vt = [t * t, t, 1], pVec = Vec.multiMat(vt, interMat);
+        var pVec = Vec.multiMat([t * t, t, 1], weight);
         return {x: pVec.dot(vx), y: pVec.dot(vy)}
       }
     })(),

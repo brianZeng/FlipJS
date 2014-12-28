@@ -237,12 +237,7 @@ describe('quadraticSpline:', function () {
   })
 });
 describe('cubicSpline:', function () {
-  /*
-   (0,0) (1.2,-1/3)
-   (1,0) (0.6,2/3)
-   (1,1) (-0.6,2/3)
-   (0,1) (-1.2,-1/3)
-   */
+
   var opt = {
     x: [0, 1, 1, 0],
     y: [0, 0, 1, 1],
@@ -253,14 +248,45 @@ describe('cubicSpline:', function () {
     return {x: co.x[index], y: co.y[index]}
   }
 
-  beforeEach(function () {
-    inter = Flip.interpolate(opt);
-  });
   it('construct 4:', function () {
+    /*
+     (0,0) (1.2,-1/3)
+     (1,0) (0.6,2/3)
+     (1,1) (-0.6,2/3)
+     (0,1) (-1.2,-1/3)
+     */
     var co = inter.coefficeint, px = [1.2, 0.6, -0.6, -1.2], py = [-1 / 3, 2 / 3, 2 / 3, -1 / 3];
+    inter = Flip.interpolate(opt);
     for (var i = 0, len = opt.x.length; i < len; i++) {
       expect(co.x[i]).toBeCloseTo(px[i]);
       expect(co.y[i]).toBeCloseTo(py[i])
+    }
+  });
+  it('construct 5', function () {
+    /*    p        pt
+     (0,0)   (10,0)
+     (10,10) (285,-245)/28
+     (20,-10)(65/7,5)
+     (30,0)  (355,525)/28
+     (40,20) (0,10)
+     */
+    opt.x = [0, 10, 20, 30, 40];
+    opt.y = [0, 10, -10, 0, 20];
+    opt.startVec = [10, 0];
+    opt.endVec = [0, 10];
+    inter = Flip.interpolate(opt);
+    var co = inter.coefficeint, px = [10, 285 / 28, 65 / 7, 355 / 28, 0], ys = opt.y;
+    var mat = Flip.Matrix.fromRows([4, 1, 0], [1, 4, 1], [0, 1, 4]);
+    var ry = mat.solve(Flip.Vec.dot([ys[2] - ys[0], ys[3] - ys[1], ys[4] - ys[2] - 10 / 3], 3));
+    ry.unshift(0);
+    ry.push(10);
+    debugger;
+    for (var i = 0, len = opt.x.length; i < len; i++) {
+      expect(co.x[i]).toBeCloseTo(px[i]);
+      expect(co.y[i]).toBeCloseTo(ry[i]);
+    }
+    for (i = 0; i < 3; i++) {
+      expect(co.y[i] + 4 * co.y[1 + i] + co.y[i + 2]).toBeCloseTo(3 * (opt.y[i + 2] - opt.y[i]))
     }
   })
 });
