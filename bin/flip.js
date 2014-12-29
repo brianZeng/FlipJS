@@ -184,8 +184,11 @@ inherit(array, Array, {
 function obj(from) {
   if (!(this instanceof obj))return new obj(from);
   if (typeof from === "object")
-    objForEach(from, function (key, value) {
-      this[key] = value;
+    objForEach(from, function (value,key) {
+      var pro;
+      if(pro=Object.getOwnPropertyDescriptor(from,key))
+       Object.defineProperty(this,key,pro);
+      else this[key] = value;
     }, this);
 }
 function addEventListener(obj, evtName, handler) {
@@ -456,11 +459,11 @@ InterItor.prototype = {
       Interpolation.call(this, opt);
     };
     inherit(Constructor, Interpolation.prototype, addPrototype(opt.prototype, opt));
-    if (name) main[name] = Constructor;
+    if (name) main.interpolations[name] = Constructor;
     Object.seal(Constructor.prototype);
     return Constructor;
   }
-
+  main.interpolations={};
   function addPrototype(proto, opt) {
     objForEach(handler, function (fun, name) {
       var v = opt[name];
@@ -479,7 +482,7 @@ InterItor.prototype = {
       else opt.data = dataOrXData;
     }
     else opt = nameOrOpt;
-    return new main[opt.name](opt);
+    return new main.interpolations[opt.name](opt);
   };
   return Flip.interpolation = main;
 })(Flip);

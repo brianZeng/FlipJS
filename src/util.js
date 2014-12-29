@@ -187,8 +187,11 @@ inherit(array, Array, {
 function obj(from) {
   if (!(this instanceof obj))return new obj(from);
   if (typeof from === "object")
-    objForEach(from, function (key, value) {
-      this[key] = value;
+    objForEach(from, function (value, key) {
+      var pro;
+      if (pro = Object.getOwnPropertyDescriptor(from, key))
+        Object.defineProperty(this, key, pro);
+      else this[key] = value;
     }, this);
 }
 function addEventListener(obj, evtName, handler) {

@@ -9,6 +9,10 @@ var config = {
         'bin/Flip.js': ['bin/flip.js']
       }
     },
+    ng: {
+      src: 'plugin/ng/*.js',
+      dest: 'bin/ng.js'
+    },
     test: {
       src: 'test/*.js',
       dest: 'bin/test.js'
@@ -37,6 +41,10 @@ config.watch = {
     options: {
       interrupt: true
     }
+  },
+  ng: {
+    files: 'plugin/ng/*.js',
+    tasks: ['concat:ng']
   }
 };
 config.uglify = {
@@ -58,5 +66,5 @@ module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.initConfig(config);
-  grunt.registerTask('con-ugly', ['concat:animation', 'uglify:flip']);
+  grunt.registerTask('con-ugly', ['concat', 'uglify:flip']);
 };
