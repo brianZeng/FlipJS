@@ -39,7 +39,7 @@
           this.axis.y = null;
         }
       },
-      getItor: function () {
+      itor: function () {
         var self = this;
         return new InterItor({
           x1: self.coefficeint.x1,

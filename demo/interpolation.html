@@ -32,7 +32,7 @@
     function testLinear() {
         var px = [0, 40, 60, 80, 120, 160], //80],
                 py = [100, 30, 120, 60, 90, 40];//, ];
-        var inter = Flip.interpolate('cubic', px, py), itor = inter.getItor(), ps;
+        var inter = Flip.interpolate('cubic', px, py), itor = inter.itor(), ps;
         concatPoints(itor.all(), 'red');
         ps = px.map(function (x, i) {
             var p = {x: x, y: py[i]};
@@ -61,10 +61,10 @@
             y: [0, 10, 22, 44, 50, 90],
             startVec: {x: 1, y: 1},
             name: 'quadratic-spline'
-        }, inter = Flip.interpolate(opt), itor = inter.getItor();
+        }, inter = Flip.interpolate(opt), itor = inter.itor();
         concatPoints(itor.all(), 'black');
         opt.name = 'quadratic';
-        concatPoints(Flip.interpolate(opt).getItor().all(), 'red');
+        concatPoints(Flip.interpolate(opt).itor().all(), 'red');
     }
     function $(slt) {
         return document.querySelector(slt);

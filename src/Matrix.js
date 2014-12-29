@@ -72,6 +72,9 @@ Matrix.fromCols = function () {
 };
 Flip.Matrix = Matrix;
 inherit(Matrix, [], {
+  get length() {
+    return this.row * this.col;
+  },
   init: function (opt) {
     var row, col;
     if (typeof opt == "number") {
@@ -84,7 +87,6 @@ inherit(Matrix, [], {
     }
     for (var i = 0; i < row; i++)
       this[i] = new Vec(col);
-    this['length'] = row * col;
     return this;
   },
   solve: function (B) {
@@ -165,8 +167,5 @@ inherit(Matrix, [], {
     for (var i = 0, row = this.row, r = new Array(row); i < row; i++)
       r[i] = this[i].toString().trim();
     return r.join('\n');
-  },
-  get length() {
-    return this.row * this.col;
   }
 });

@@ -210,6 +210,41 @@ describe('test build in renderScope:', function () {
     expect(Flip.instance.activeTask._updateObjs).toContain(ani);
   });
 });
+describe('linear:', function () {
+  var opt = {
+    x: [0, 10, 20],
+    y: [0, 10, 0],
+    name: 'linear'
+  }, inter = Flip.interpolate(opt), seg;
+
+  function expectSeg(x0, x1, y0, y1, close) {
+    var fun = close ? 'toBeCloseTo' : 'toBe';
+    expect(seg.x0)[fun](x0);
+    expect(seg.x1)[fun](x1);
+    expect(seg.y0)[fun](y0);
+    expect(seg.y1)[fun](y1);
+  }
+
+  it('test getSeg', function () {
+    expect((seg = inter._findSegByX0(0)).t).toBe(0);
+    expectSeg(0, 10, 0, 10);
+    expect((seg = inter._findSegByX0(5)).t).toBe(0.5);
+    expectSeg(0, 10, 0, 10);
+    expect((seg = inter._findSegByT(0.75)).t).toBe(0.5);
+    expectSeg(10, 20, 10, 0);
+    expect(inter.interpolate(5)).toEqual({x: 5, y: 5});
+    expect(inter.when(0.75)).toEqual({x: 15, y: 5});
+  });
+  it('test Itor', function () {
+    var itor = inter.itor(), p;
+    for (var i = 0; i < 20; i++) {
+      debugger;
+      p = itor.next();
+
+      expect(p.x).toBeCloseTo(i);
+    }
+  });
+});
 describe('quadraticSpline:', function () {
   var opt = {
     x: [0, 10, 12],
@@ -236,12 +271,11 @@ describe('quadraticSpline:', function () {
     });
   })
 });
-describe('cubicSpline:', function () {
-
+describe('cubicN:', function () {
   var opt = {
     x: [0, 1, 1, 0],
     y: [0, 0, 1, 1],
-    name: 'cubic-spline'
+    name: 'cubic-n'
   }, inter;
 
   function getPoint(co, index) {
@@ -255,8 +289,8 @@ describe('cubicSpline:', function () {
      (1,1) (-0.6,2/3)
      (0,1) (-1.2,-1/3)
      */
-    var co = inter.coefficeint, px = [1.2, 0.6, -0.6, -1.2], py = [-1 / 3, 2 / 3, 2 / 3, -1 / 3];
     inter = Flip.interpolate(opt);
+    var co = inter.coefficeint, px = [1.2, 0.6, -0.6, -1.2], py = [-1 / 3, 2 / 3, 2 / 3, -1 / 3];
     for (var i = 0, len = opt.x.length; i < len; i++) {
       expect(co.x[i]).toBeCloseTo(px[i]);
       expect(co.y[i]).toBeCloseTo(py[i])
@@ -280,7 +314,6 @@ describe('cubicSpline:', function () {
     var ry = mat.solve(Flip.Vec.dot([ys[2] - ys[0], ys[3] - ys[1], ys[4] - ys[2] - 10 / 3], 3));
     ry.unshift(0);
     ry.push(10);
-    debugger;
     for (var i = 0, len = opt.x.length; i < len; i++) {
       expect(co.x[i]).toBeCloseTo(px[i]);
       expect(co.y[i]).toBeCloseTo(ry[i]);

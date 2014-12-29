@@ -127,6 +127,14 @@ function arrMapFun(func_ProName) {
     return item
   };
 }
+function arrSameSeq(arr, func_ProName, des) {
+  if (arr.length == 1)return true;
+  var compare = arrMapFun(func_ProName);
+  des = !!des;
+  for (var i = 1, len = arr.length; i < len; i++)
+    if (des != (compare[i] < compare[i - 1]))return false;
+  return true;
+}
 array.remove = arrRemove;
 array.add = arrAdd;
 function mapProName(proNameOrFun) {
