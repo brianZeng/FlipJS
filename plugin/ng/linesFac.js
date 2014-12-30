@@ -1,4 +1,4 @@
-angular.module('flipEditor').factory('lineFactory', function () {
+angular.module('flipEditor').factory('lineFactory', ['$rootScope', function ($rootScope) {
   var lines = [], pts = [], arr = Flip.util.Array, evtEmitter = Flip.util.Object({
     get lines() {
       return lines;
@@ -20,6 +20,7 @@ angular.module('flipEditor').factory('lineFactory', function () {
 
   function emitChange(e) {
     evtEmitter.emit('change', e);
+    if (!$rootScope.$$phase)$rootScope.$digest();
   }
 
   function addLine(opt) {
@@ -52,4 +53,4 @@ angular.module('flipEditor').factory('lineFactory', function () {
     emitChange({points: s});
   };
   return evtEmitter;
-});
+}]);

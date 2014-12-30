@@ -1,38 +1,46 @@
 /**
- * Created by brian on 2014/12/23.
+ * Created by 柏然 on 2014/12/28.
+ */
+/*
+ |-1,1,-1|
+ (t2,t,1) |0, 0, 1|(P1,P2,Pt1)
+ |1, 0, 0|
+
+ Pt1+Pt2=2*(P2-P1)
  */
 Flip.interpolation({
   name: 'quadratic',
+  degree: 2,
+  weightMat: [[-1, 1, -1], [0, 0, 1], [1, 0, 0]],
+  options: {
+    startVec: {x: 1, y: 1}
+  },
   prototype: {
-    init: function () {
+    init: function (opt) {
       this._ensureAxisAlign();
-      this._initDx();
+      this._initSegments(opt);
     },
-    interpolate: function (x) {
-      var x1, x0, x2, xs = this.axis.x, t, i1, vy, t2, vt;
-      i1 = xs.indexOf(x1 = arrFirst(xs, function (num) {
-        return num >= x
-      }));
-      if (i1 == 0)
-        x1 = xs[i1 = 1];
-      if (i1 == xs.length - 1) {
-        x2 = x1;
-        x1 = xs[--i1];
-        x0 = xs[i1 - 1];
-        t = (1 + (x - x1) / (x2 - x1)) * 0.5;
+    _initSegments: function (opt) {
+      var xs = this.axis.x, ys = this.axis.y, n = xs.length, mat = new Matrix(n - 1), lu, px = [], py = [];
+      for (var i = 1, j, para = [1, 1]; i < n; i++) {
+        j = i - 1;
+        mat.setRow(j, para, j - 1);
+        px[j] = (xs[i] - xs[j]) * 2;
+        py[j] = (ys[i] - ys[j]) * 2;
       }
-      else {
-        x0 = xs[i1 - 1];
-        x2 = xs[i1 + 1];
-        t = (1 - (x1 - x) / (x1 - x0)) * 0.5;
-      }
-      t2 = t * t;
-      vy = this.axis.y.slice(i1 - 1, i1 + 2);
-      vt = [2 * t2 - 3 * t + 1, 4 * (t - t2), 2 * t2 - t];
-      return {
-        x: Vec.dot(vt, [x0, x1, x2]),
-        y: Vec.dot(vt, vy)
-      }
+      var sVec = opt.startVec || {x: 1, y: 1};
+      lu = Matrix.luDecompose(mat);
+      px[0] -= sVec.x;
+      py[0] -= sVec.y;
+      px = Matrix.luSolve(lu.L, lu.U, px);
+      py = Matrix.luSolve(lu.L, lu.U, py);
+      px.unshift(sVec.x);
+      py.unshift(sVec.y);
+      this.coefficeint = {x: px, y: py}
+    },
+    useSeg: function (seg) {
+      var co = this.coefficeint, i0 = seg.i0;
+      return this.interpolateSeg(seg.t, [seg.x0, seg.x1, co.x[i0]], [seg.y0, seg.y1, co.y[i0]]);
     }
   }
 });

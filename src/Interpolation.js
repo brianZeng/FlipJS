@@ -59,7 +59,15 @@ inherit(Interpolation, {
     r.t = ts - i0;
     return r;
   },
-  interpolate: function (x) {
+  useSeg: function (seg) {
+    throw Error('not implement');
+    //this.interpolateSeg
+  },
+  interpolate: function (x, skip) {
+    return this.useSeg(this._findSegByX0(x, skip));
+  },
+  when: function (t) {
+    return this.useSeg(this._findSegByT(t));
   },
   itor: function (opt) {
     var xs = this.axis.x, interval, count, self = this;

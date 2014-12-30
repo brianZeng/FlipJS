@@ -2,9 +2,13 @@
  * Created by 柏然 on 2014/12/29.
  */
 Flip.interpolation({
-  name: 'cubic-n',
+  name: 'cubic',
   degree: 3,
   weightMat: [[2, -2, 1, 1], [-3, 3, -2, -1], [0, 0, 1, 0], [1, 0, 0, 0]],
+  options: {
+    startVec: null,
+    endVec: null
+  },
   prototype: {
     init: function (opt) {
       this._ensureAxisAlign();
@@ -69,17 +73,11 @@ Flip.interpolation({
       }
       this.coefficeint = {x: rx, y: ry}
     },
-    _useSeg: function (seg) {
+    useSeg: function (seg) {
       var co = this.coefficeint, i0 = seg.i0, i1 = seg.i1;
       return this.interpolateSeg(seg.t,
         [seg.x0, seg.x1, co.x[i0], co.x[i1]],
-        [seg.i0, seg.i1, co.y[i0], co.y[i1]])
-    },
-    interpolate: function (x, skip) {
-      return this._useSeg(this._findSegByX0(x, skip));
-    },
-    when: function (t) {
-      return this._useSeg(this._findSegByT(t));
+        [seg.y0, seg.y1, co.y[i0], co.y[i1]])
     }
   }
 });

@@ -57,7 +57,7 @@ Matrix.identify = function (n) {
 Matrix.fromRows = function () {
   var row = arguments.length, col = arguments[0].length, mat = new Matrix({row: row, col: col});
   for (var i = 0; i < row; i++)
-    for (var j = 0; j < col; j++)mat[i][j] = arguments[i][j];
+    mat[i] = Matrix.constructRow(arguments[i]);
   return mat;
 };
 Matrix.fromCols = function () {
@@ -70,6 +70,21 @@ Matrix.fromCols = function () {
       mat[i][j] = cols[j][i];
   return mat;
 };
+
+Matrix.constructRow = (function () {
+  function toString() {
+    var len, r = new Array(len = this.length);
+    for (var i = 0; i < len; i++)
+      r[i] = this[i].toFixed(2).replace('.00', '  ');
+    return r.join(' ').trim();
+  }
+
+  return function (arryOrNum) {
+    var row = new Float32Array(arryOrNum);
+    row.toString = toString;
+    return row;
+  }
+})();
 Flip.Matrix = Matrix;
 inherit(Matrix, [], {
   get length() {
@@ -86,7 +101,7 @@ inherit(Matrix, [], {
       col = this.col = opt.col;
     }
     for (var i = 0; i < row; i++)
-      this[i] = new Vec(col);
+      this[i] = Matrix.constructRow(col);
     return this;
   },
   solve: function (B) {
@@ -111,13 +126,13 @@ inherit(Matrix, [], {
   clone: function () {
     var mat = new Matrix(this);
     for (var i = 0, row = this.row; i < row; i++)
-      mat[i] = this[i].clone();
+      mat[i] = Matrix.constructRow(this[i]);
     return mat;
   },
   multiVec: function (vec) {
     var len, r = new Vec(len = this.row);
     for (var i = 0; i < len; i++)
-      r[i] = this[i].dot(vec);
+      r[i] = Vec.dot(this[i], vec);
     return r;
   },
   multiMat: function (mat) {

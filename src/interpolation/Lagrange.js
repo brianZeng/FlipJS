@@ -18,6 +18,10 @@ Flip.interpolation({
       this._initDx();
       this.calCoefficient();
     },
+    when: function (t) {
+      var seg = this._findSegByT(t);
+      return this.interpolate(seg.x0 + seg.t * (seg.x1 - seg.x0));
+    },
     interpolate: function (x) {
       var ws = this.coefficeint, xs = this.axis.x, ys = this.axis.y, n = xs.length, y = 0;
       for (var i = 0, sum = 1, wi = 1, j; i < n; i++, sum = 1, wi = 1) {
