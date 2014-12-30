@@ -7,12 +7,12 @@ angular.module('flipEditor').factory('lineFactory', ['$rootScope', function ($ro
       return pts;
     },
     get interpolations() {
-      return Object.getOwnPropertyNames(Flip.interpolation.interpolations);
+      return Object.getOwnPropertyNames(Flip.interpolation.cache);
     },
     set onchange(f) {
       this.on('change', f);
     }
-  });
+  }), pointIndex = 0;
 
   function findLine(name) {
     return arr.findBy(lines, 'name', name);
@@ -26,7 +26,6 @@ angular.module('flipEditor').factory('lineFactory', ['$rootScope', function ($ro
   function addLine(opt) {
     var line = {};
     if (findLine(line.name = opt.name))return false;
-    debugger;
     line.points = opt.points.slice();
     line.color = opt.color || '#000';
     line.lineWidth = opt.lineWidth || 1;
@@ -40,6 +39,7 @@ angular.module('flipEditor').factory('lineFactory', ['$rootScope', function ($ro
     p.r = opt.r || 1;
     p.x = opt.x;
     p.y = opt.y;
+    p.i = pointIndex++;
     p.color = opt.color || '#000';
     pts.push(p);
     emitChange({point: p});

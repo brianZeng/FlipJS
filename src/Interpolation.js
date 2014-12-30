@@ -3,21 +3,18 @@
  */
 function Interpolation(opt) {
   if (!(this instanceof Interpolation))return new Interpolation(opt);
-  var pts;
   if (opt.data instanceof Array) {
-    pts = arrSort(opt.data, 'x');
-    this.axis = {
-      x: pts.map(function (p) {
-        return p.x
-      }), y: pts.map(function (p) {
-        return p.y
-      })
-    };
+    var pts = opt.data, len = pts.length, xs = new Float32Array(len), ys = new Float32Array(len);
+    for (var i = 0, p = pts[0]; i < len; p = pts[++i]) {
+      xs[i] = p.x;
+      ys[i] = p.y;
+    }
+    this.axis = {x: xs, y: ys}
   }
   else {
-    if (pts = opt.x)this.axis = {x: pts};
+    if (pts = opt.x)this.axis = {x: new Float32Array(pts)};
     else throw Error('the data of X axis not provided');
-    if (pts = opt.y)this.axis.y = pts;
+    if (pts = opt.y)this.axis.y = new Float32Array(pts);
     else throw Error('the data of Y axis not provided');
   }
   this.init(opt);
@@ -25,9 +22,23 @@ function Interpolation(opt) {
 inherit(Interpolation, {
   init: function (points) {
   },
-  getPoint: function (t) {
-    var xs = this.axis.x;
-    return this.interpolate(xs[0] + this.dx * this._clampT(t));
+  useSeg: function (seg) {
+    this.interpolateSeg(seg.t, [seg.x0, seg.x1], [seg.y0, seg.y1]);
+  },
+  interpolate: function (x, skip) {
+    return this.useSeg(this._findSegByX0(x, skip));
+  },
+  when: function (t) {
+    return this.useSeg(this._findSegByT(t));
+  },
+  itor: function (opt) {
+    var xs = this.axis.x, interval, count, self = this;
+    opt = createProxy(opt);
+    count = opt.source('count') || (Math.max.apply(null, xs) - Math.min.apply(null, xs));
+    opt('interval', 1 / count, 'when', function (t) {
+      return self.when(t);
+    });
+    return new InterItor(opt.result);
   },
   interpolateSeg: function (t, vx, vy) {
     return this.calcPoint(this.calcVt(t), vx, vy)
@@ -59,45 +70,23 @@ inherit(Interpolation, {
     r.t = ts - i0;
     return r;
   },
-  useSeg: function (seg) {
-    throw Error('not implement');
-    //this.interpolateSeg
-  },
-  interpolate: function (x, skip) {
-    return this.useSeg(this._findSegByX0(x, skip));
-  },
-  when: function (t) {
-    return this.useSeg(this._findSegByT(t));
-  },
-  itor: function (opt) {
-    var xs = this.axis.x, interval, count, self = this;
-    opt = createProxy(opt);
-    count = opt.source('count') || (Math.max.apply(null, xs) - Math.min.apply(null, xs));
-    opt('interval', 1 / count, 'when', function (t) {
-      return self.when(t);
-    });
-    return new InterItor(opt.result);
-  },
-  _getT: function (x) {
-    var xs = this.axis.x, x0 = xs[0];
-    return (x - x0) / (xs[xs.length - 1] - x0)
-  },
-  _clampT: function (t) {
-    t = parseFloat(t) || 0;
-    return t < 0 ? 0 : (t > 1 ? 1 : t);
-  },
   _initDx: function () {
     var xs = this.axis.x;
     this.dx = xs[xs.length - 1] - xs[0];
   },
-  _fistLargerX: function (x) {
-    return arrFirst(this.axis.x, function (num) {
-      return num >= x
-    });
-  },
   _ensureAxisAlign: function () {
     var axis = this.axis;
     if (axis.x.length !== axis.y.length)throw Error('x and y must have same amount of data');
+  },
+  _ensureAxisOrder: function (axisName, asc) {
+    var arr = this.axis[axisName], order;
+    if (arr.length < 2)return;
+    if (asc == undefined) {
+      asc = arr[0] < arr[1];
+      order = 'asc or des';
+    } else order = asc ? 'asc' : 'des';
+    if (!arrSameSeq(this.axis[axisName], null, !asc))
+      throw Error('data of axis ' + axisName + ' should in ' + order + ' order')
   }
 });
 function InterItor(opt) {
@@ -110,10 +99,11 @@ function InterItor(opt) {
     return !end;
   };
   this.next = function () {
-    if (end)return undefined;
+    if (end)return false;
     curPoint = opt.when(t);
+    if (t == 1)end = 1;
     t += interval;
-    if (t >= 1)end = 1;
+    if (t > 1)t = 1;
     return curPoint;
   };
   Object.defineProperty(this, 'current', {
@@ -125,10 +115,10 @@ function InterItor(opt) {
 }
 InterItor.prototype = {
   all: function () {
-    var cache = [];
+    var cache = [], p;
     this.reset();
-    while (this.hasNext())
-      cache.push(this.next());
+    while (p = this.next())
+      cache.push(p);
     this.reset();
     return cache;
   }
@@ -188,12 +178,12 @@ InterItor.prototype = {
       Interpolation.call(this, opt);
     };
     inherit(Constructor, Interpolation.prototype, addPrototype(opt.prototype, opt));
-    if (name) main.interpolations[name] = Constructor;
+    if (name) main.cache[name] = Constructor;
     Object.seal(Constructor.prototype);
     return Constructor;
   }
 
-  main.interpolations = {};
+  main.cache = {};
   function addPrototype(proto, opt) {
     objForEach(handler, function (fun, name) {
       var v = opt[name];
@@ -212,7 +202,7 @@ InterItor.prototype = {
       else opt.data = dataOrXData;
     }
     else opt = nameOrOpt;
-    return new main.interpolations[opt.name](opt);
+    return new main.cache[opt.name](opt);
   };
   return Flip.interpolation = main;
 })(Flip);

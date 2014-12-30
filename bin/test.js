@@ -305,5 +305,35 @@ describe('cubic:',function(){
     for(i= 0;i<3;i++){
       expect(co.y[i]+4*co.y[1+i]+co.y[i+2]).toBeCloseTo(3*(opt.y[i+2]-opt.y[i]))
     }
+  });
+  it('support spline',function(){
+    opt.x=[0,10,10,0];
+    opt.y=[0,0,10,10];
+    inter=Flip.interpolate(opt);
+    expect(inter.axis.x).toEqual(new Float32Array(opt.x));
+    expect(inter.axis.y).toEqual(new Float32Array(opt.y));
+    expect(inter.when(1/3).y).toBeCloseTo(0);
+    expect(inter.when(2/3).y).toBeCloseTo(10);
+    var itor=inter.itor({count:10}),p;
+    while (p=itor.next())
+     console.log(p.x.toFixed(2),p.y.toFixed(2));
+  })
+});
+describe('lagrange',function(){
+  var opt={
+    x:[0,10,20,10],
+    y:[10,20,10,0],
+    name:'lagrange'
+    },inter;
+  it('x should be asc order',function(){
+    expect(function(){
+      inter=Flip.interpolate(opt);
+    }).toThrow();
+    opt.x=[1,2,3,4];
+    inter=Flip.interpolate(opt);
+    expect(inter.axis.x).toEqual(new Float32Array(opt.x));
+    opt.x=[4,3,2,1];
+    inter=Flip.interpolate(opt);
+    expect(inter.axis.x).toEqual(new Float32Array(opt.x));
   })
 });

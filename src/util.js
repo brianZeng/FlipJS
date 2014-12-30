@@ -132,7 +132,7 @@ function arrSameSeq(arr, func_ProName, des) {
   var compare = arrMapFun(func_ProName);
   des = !!des;
   for (var i = 1, len = arr.length; i < len; i++)
-    if (des != (compare[i] < compare[i - 1]))return false;
+    if (des != (compare(arr[i]) < compare(arr[i - 1])))return false;
   return true;
 }
 array.remove = arrRemove;

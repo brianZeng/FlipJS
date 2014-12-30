@@ -17,6 +17,7 @@ Flip.interpolation({
       this._ensureAxisAlign();
       this._initDx();
       this.calCoefficient();
+      this._ensureAxisOrder('x');
     },
     when: function (t) {
       var seg = this._findSegByT(t);
