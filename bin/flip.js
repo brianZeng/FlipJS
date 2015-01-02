@@ -129,7 +129,7 @@ function arrSameSeq(arr, func_ProName, des) {
   var compare = arrMapFun(func_ProName);
   des = !!des;
   for (var i = 1, len = arr.length; i < len; i++)
-    if (des != (compare(arr[i]) < compare(arr[i-1])))return false;
+    if (des != (compare(arr[i]) < compare(arr[i - 1])))return false;
   return true;
 }
 array.remove = arrRemove;
@@ -283,12 +283,12 @@ function cloneFunc(value, key) {
 function Interpolation(opt) {
   if (!(this instanceof Interpolation))return new Interpolation(opt);
   if (opt.data instanceof Array) {
-    var pts=opt.data,len=pts.length,xs=new Float32Array(len),ys=new Float32Array(len);
-    for(var i= 0,p=pts[0];i<len;p=pts[++i]){
-      xs[i]= p.x;
-      ys[i]= p.y;
+    var pts = opt.data, len = pts.length, xs = new Float32Array(len), ys = new Float32Array(len);
+    for (var i = 0, p = pts[0]; i < len; p = pts[++i]) {
+      xs[i] = p.x;
+      ys[i] = p.y;
     }
-    this.axis={x:xs,y:ys}
+    this.axis = {x: xs, y: ys}
   }
   else {
     if (pts = opt.x)this.axis = {x: new Float32Array(pts)};
@@ -302,7 +302,7 @@ inherit(Interpolation, {
   init: function (points) {
   },
   useSeg: function (seg) {
-    this.interpolateSeg(seg.t,[seg.x0,seg.x1],[seg.y0,seg.y1]);
+    this.interpolateSeg(seg.t, [seg.x0, seg.x1], [seg.y0, seg.y1]);
   },
   interpolate: function (x, skip) {
     return this.useSeg(this._findSegByX0(x, skip));
@@ -311,9 +311,9 @@ inherit(Interpolation, {
     return this.useSeg(this._findSegByT(t));
   },
   itor: function (opt) {
-    var xs = this.axis.x, interval, count, self = this;
+    var interval, count, self = this;
     opt = createProxy(opt);
-    count = opt.source('count') || (Math.max.apply(null, xs) - Math.min.apply(null, xs));
+    count = opt.source('count') ||100;
     opt('interval', 1 / count, 'when', function (t) {
       return self.when(t);
     });
@@ -343,7 +343,7 @@ inherit(Interpolation, {
     var xs = this.axis.x, segCount = xs.length - 1, i0, i1, r, ts;
     i0 = Math.floor(ts = segCount * t);
     if (i0 < 0)i0 = 0;
-    else if (i0 > segCount)i0 = segCount;
+    else if (i0 >= segCount-1)i0 = segCount-1;
     i1 = i0 + 1;
     r = this._getSeg(i0, i1, xs);
     r.t = ts - i0;
@@ -357,16 +357,15 @@ inherit(Interpolation, {
     var axis = this.axis;
     if (axis.x.length !== axis.y.length)throw Error('x and y must have same amount of data');
   },
-  _ensureAxisOrder:function(axisName,asc){
-    var arr=this.axis[axisName],order;
-    if(arr.length<2)return;
-    if(asc==undefined)
-    {
-      asc=arr[0]<arr[1];
-      order='asc or des';
-    }else order=asc? 'asc':'des';
-    if(!arrSameSeq(this.axis[axisName],null,!asc))
-      throw Error ('data of axis '+axisName+' should in '+order+' order')
+  _ensureAxisOrder: function (axisName, asc) {
+    var arr = this.axis[axisName], order;
+    if (arr.length < 2)return;
+    if (asc == undefined) {
+      asc = arr[0] < arr[1];
+      order = 'asc or des';
+    } else order = asc ? 'asc' : 'des';
+    if (!arrSameSeq(this.axis[axisName], null, !asc))
+      throw Error('data of axis ' + axisName + ' should in ' + order + ' order')
   }
 });
 function InterItor(opt) {
@@ -376,14 +375,14 @@ function InterItor(opt) {
     return end = t = 0;
   };
   this.hasNext = function () {
-    return !end ;
+    return !end;
   };
   this.next = function () {
     if (end)return false;
     curPoint = opt.when(t);
-    if(t==1)end=1;
-    t+=interval;
-    if(t>1)t=1;
+    if (t == 1)end = 1;
+    t += interval;
+    if (t > 1)t = 1;
     return curPoint;
   };
   Object.defineProperty(this, 'current', {
@@ -395,9 +394,9 @@ function InterItor(opt) {
 }
 InterItor.prototype = {
   all: function () {
-    var cache = [],p;
+    var cache = [], p;
     this.reset();
-    while (p=this.next())
+    while (p = this.next())
       cache.push(p);
     this.reset();
     return cache;
@@ -449,7 +448,7 @@ InterItor.prototype = {
         return {x: pv.dot(vx), y: pv.dot(vy)}
       }
     }
-  };
+  },cache={};
   function main(opt) {
     var Constructor, name = opt.name;
     Constructor = function (opt) {
@@ -458,12 +457,13 @@ InterItor.prototype = {
       Interpolation.call(this, opt);
     };
     inherit(Constructor, Interpolation.prototype, addPrototype(opt.prototype, opt));
-    if (name) main.cache[name] = Constructor;
+    if (name) (name+'').split(',').forEach(function(alias){
+      cache[alias] = Constructor;
+    });
     Object.seal(Constructor.prototype);
     return Constructor;
   }
-
-  main.cache = {};
+  main.cache = cache;
   function addPrototype(proto, opt) {
     objForEach(handler, function (fun, name) {
       var v = opt[name];
@@ -471,18 +471,15 @@ InterItor.prototype = {
     });
     return proto;
   }
-  Flip.interpolate = function (nameOrOpt, dataOrXData, YData) {
-    var opt;
-    if (typeof nameOrOpt == "string") {
-      opt = {name: nameOrOpt};
-      if (dataOrXData instanceof Array) {
-        opt.x = dataOrXData;
-        opt.y = YData;
-      }
-      else opt.data = dataOrXData;
-    }
-    else opt = nameOrOpt;
-    return new main.cache[opt.name](opt);
+  Flip.interpolate = function (nameOrOpt, data) {
+    var opt,constructor;
+    if (typeof nameOrOpt == "string")
+      opt = {name: nameOrOpt,data:data};
+    else if (typeof (opt = nameOrOpt)!=="object")
+       throw Error('interpolation name and data needed');
+    constructor=cache[opt.name];
+    if(constructor)return new constructor(opt);
+    throw Error('interpolation '+opt.name+' not found');
   };
   return Flip.interpolation = main;
 })(Flip);
@@ -702,7 +699,9 @@ Vec.multi = Vec.concat = function (v1, v2) {
 };
 Vec.get = function (vec, index) {
   if (isNaN(index))
-    return index == 'x' ? index[0] : index == 'y' ? index[1] : undefined;
+    if('x'=== index)return vec.hasOwnProperty('x')? vec.x:vec[0];
+    else if('y'===index) return vec.hasOwnProperty('y')? vec.y:vec[1];
+    else return undefined;
   return vec[index];
 };
 Vec.multiMat = function (vec, mat) {
@@ -1571,6 +1570,100 @@ Flip.interpolation({
         y += ys[i] * sum / ws[i];
       }
       return {x: x, y: y}
+    }
+  }
+});
+Flip.interpolation({
+  name: 'beizerCubic,beizer-3,cubicBeizer',
+  degree: 3,
+  weightMat: [[1, 3, -3, 1], [3, -6, 3, 0], [-3, 3, 0, 0], [1, 0, 0, 0]],
+  options: {
+    cps: [
+      [{x: 1, y: 1}, [1, 0]]
+    ],
+    cx: [[10, 2]],
+    cy: [[0, 1]]
+  },
+  prototype: {
+    init: function (opt) {
+      this._ensureAxisAlign();
+      this._initControlPoints(opt);
+    },
+    setCP: (function () {
+      var vec = Flip.Vec.get;
+      return function (i, cp0, cp1, x1, y1) {
+        var xs, ys;
+        if (arguments.length == 3) {
+          xs = [vec(cp0, 'x'), vec(cp1, 'x')];
+          ys = [vec(cp0, 'y'), vec(cp1, 'y')];
+        }
+        else {
+          xs = [cp0, x1];
+          ys = [cp1, y1];
+        }
+        this.coefficeint[i] = {x: new Float32Array(xs), y: new Float32Array(ys)}
+      }
+    })(),
+    _initControlPoints: function (opt) {
+      var xs = this.axis.x, segCount = xs.length - 1, i, j, gps, cy, cx, len = segCount * 2;
+      this.coefficeint = new Array(segCount);
+      if (gps = opt.cps)
+        for (j = i = 0; i < len; i += 2, j++)
+          this.setCP(j, gps[i], gps[i + 1]);
+      else if ((cx = opt.cx) && (cy = opt.cy))
+        for (j = i = 0; i < len; i += 2, j++)
+          this.setCP(j, cx[i], cy[i], cx[i + 1], cy[i + 1]);
+      else
+        throw Error('');
+    },
+    _ensureControlPoints: function () {
+    },
+    useSeg: function (seg) {
+      var i0 = seg.i0, cs = this.coefficeint, co = cs[i0], cx = co.x, cy = co.y;
+      return this.interpolateSeg(seg.t, [seg.x0, seg.x1, cx[0], cx[1]], [seg.y0, seg.y1, cy[0], cy[1]]);
+    }
+  }
+});
+Flip.interpolation({
+  name:'beizerQuadratic,beizer-2,quadraticBeizer',
+  degree:2,
+  weightMat:[[1,-2,1],[-2,2,0],[1,0,0]],
+  options:{
+    startVec:null,
+    cps:[],
+    cx:[],
+    cy:[]
+  },
+  prototype:{
+    init:function(opt){
+      this._ensureAxisAlign();
+      this._initControlPoints(opt);
+    },
+    _ensureControlPoints:function(coefficient,xs,ys){
+      //C(i+1)+Ci=2P(i+1);
+      for(var i= 0,len=coefficient.length-1,cp=coefficient[0],ni;i<len;cp=coefficient[++i])
+        if(coefficient[(ni=i+1)]===undefined)
+          coefficient[ni]=[2*xs[ni]-cp[0],2*ys[ni]-cp[1]];
+    },
+    _initControlPoints:function(opt){
+      var xs=this.axis.x,segLen=xs.length- 1,ys=this.axis.y,co=new Array(segLen),cx,cy,vec;
+      if(opt.cps)
+        opt.cps.forEach(function(cp,i){
+          if(i<=segLen)co[i]=[Vec.get(cp,'x'),Vec.get(cp,'y')];
+        });
+      else if((cx=opt.cx)&&(cy=opt.cy)&& cx.length==cy.length)cx.forEach(function(x,i){co[i]=[x,cy[i]]});
+      else if(typeof(vec=opt.startVec)==="object"){
+        cx=Vec.get(vec,'x');
+        cy=Vec.get(vec,'y');
+        //2(Pc-P0)=Pt0
+        co[0]=[cx/2+xs[0],cy/2+ys[0]];
+      }
+      else throw Error('cannot generate control points');
+      this._ensureControlPoints(this.coefficeint=co,xs,ys);
+    },
+    useSeg:function(seg){
+      var i0=seg.i0,cs=this.coefficeint, co=cs[i0];
+      return this.interpolateSeg(seg.t,[seg.x0,co[0],seg.x1],[seg.y0,co[1],seg.y1]);
     }
   }
 });

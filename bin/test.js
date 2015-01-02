@@ -221,10 +221,12 @@ describe('linear:',function(){
     expect(inter.when(0.75)).toEqual({x:15,y:5});
   });
   it('test Itor',function(){
-    var itor=inter.itor(),p;
+    var itor=inter.itor({count:20}),p;
+
     for(var i= 0;i<20;i++)
     {
       p=itor.next();
+      debugger;
       expect(p.x).toBeCloseTo(i);
     }
   });
@@ -335,5 +337,47 @@ describe('lagrange',function(){
     opt.x=[4,3,2,1];
     inter=Flip.interpolate(opt);
     expect(inter.axis.x).toEqual(new Float32Array(opt.x));
+  })
+});
+describe('quadraticBeizer',function(){
+  var opt={
+    x:[10,0,10],
+    y:[10,20,30],
+    startVec:[10,10],
+    name:'beizer-2'
+    },inter=Flip.interpolate(opt);
+  it('construct',function(){
+    expect(inter.coefficeint.length).toBe(2);
+    p=inter.when(1);
+    for(var i= 0, p,len=inter.coefficeint.length;i<=len;i++){
+      p=inter.when(i/len);
+      expect(p.x).toBeCloseTo(opt.x[i]);
+      expect(p.y).toBeCloseTo(opt.y[i]);
+    }
+
+  });
+});
+describe('cubicBeizer',function(){
+  var opt={
+    x:[10,0,10],
+    y:[10,20,30],
+    name:'beizer-3'
+  },inter;
+  function testCoefficient(){
+    inter=Flip.interpolate(opt);
+    var co=inter.coefficeint;
+    expect(co.length).toBe(2);
+    expect(co[0].x).toEqual(new Float32Array([0,1]));
+    expect(co[1].x).toEqual(new Float32Array([2,3]));
+    expect(co[0].y).toEqual(new Float32Array([-0,-1]));
+    expect(co[1].y).toEqual(new Float32Array([-2,-3]));
+  }
+  it('construct',function(){
+    opt.cps=[[0,-0],{x:1,y:-1},{x:2,y:-2},[3,-3]];
+    testCoefficient();
+    delete  opt.cps;
+    opt.cx=[0,1,2,3];
+    opt.cy=[-0,-1,-2,-3];
+    testCoefficient();
   })
 });

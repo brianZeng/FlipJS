@@ -8,6 +8,7 @@ angular.module('flipEditor').controller('cvsController', ['$element', 'lineFacto
       drawAxis();
       lineFactory.lines.forEach(drawLine);
       lineFactory.points.forEach(drawPoint);
+      lineFactory.controlPoints.forEach(drawPoint);
       ctx.restore();
       self._invalid = false;
     }
@@ -67,6 +68,6 @@ angular.module('flipEditor').controller('cvsController', ['$element', 'lineFacto
   redraw(self._invalid = true);
   $element.on('click', function (e) {
     var x = e.clientX - cvs.offsetLeft - cvs.width / 2, y = cvs.height / 2 - (e.clientY - cvs.offsetTop);
-    lineFactory.addPoint({x: x, y: y, color: 'red', r: 2});
+    lineFactory.addPoint({x: x, y: y, r: 2});
   });
 }]);

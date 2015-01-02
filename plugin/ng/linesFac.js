@@ -1,17 +1,21 @@
 angular.module('flipEditor').factory('lineFactory', ['$rootScope', function ($rootScope) {
-  var lines = [], pts = [], arr = Flip.util.Array, evtEmitter = Flip.util.Object({
+  var lines = [], pts = [], cps = [], arr = Flip.util.Array, evtEmitter = Flip.util.Object({
     get lines() {
       return lines;
     },
     get points() {
       return pts;
     },
+    get controlPoints() {
+      return cps;
+    },
     get interpolations() {
       return Object.getOwnPropertyNames(Flip.interpolation.cache);
     },
     set onchange(f) {
       this.on('change', f);
-    }
+    },
+    pointModel: 0
   }), pointIndex = 0;
 
   function findLine(name) {
@@ -35,22 +39,24 @@ angular.module('flipEditor').factory('lineFactory', ['$rootScope', function ($ro
   }
 
   function addPoint(opt) {
-    var p = {};
+    var p = {}, pt = evtEmitter.pointModel;
     p.r = opt.r || 1;
     p.x = opt.x;
     p.y = opt.y;
     p.i = pointIndex++;
-    p.color = opt.color || '#000';
-    pts.push(p);
+    p.color = opt.color || pt.color;
+    p.type = pt.type;
+    p.type == 'control' ? cps.push(p) : pts.push(p);
     emitChange({point: p});
   }
 
   evtEmitter.addLine = addLine;
   evtEmitter.addPoint = addPoint;
   evtEmitter.clearPoints = function () {
-    var s = pts;
+    var s = pts, cs = cps;
     pts = [];
-    emitChange({points: s});
+    cps = [];
+    emitChange({points: s, controlPoints: cs});
   };
   return evtEmitter;
 }]);

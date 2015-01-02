@@ -32,9 +32,9 @@ inherit(Interpolation, {
     return this.useSeg(this._findSegByT(t));
   },
   itor: function (opt) {
-    var xs = this.axis.x, interval, count, self = this;
+    var interval, count, self = this;
     opt = createProxy(opt);
-    count = opt.source('count') || (Math.max.apply(null, xs) - Math.min.apply(null, xs));
+    count = opt.source('count') || 100;
     opt('interval', 1 / count, 'when', function (t) {
       return self.when(t);
     });
@@ -64,7 +64,7 @@ inherit(Interpolation, {
     var xs = this.axis.x, segCount = xs.length - 1, i0, i1, r, ts;
     i0 = Math.floor(ts = segCount * t);
     if (i0 < 0)i0 = 0;
-    else if (i0 > segCount)i0 = segCount;
+    else if (i0 >= segCount - 1)i0 = segCount - 1;
     i1 = i0 + 1;
     r = this._getSeg(i0, i1, xs);
     r.t = ts - i0;
@@ -169,7 +169,7 @@ InterItor.prototype = {
         return {x: pv.dot(vx), y: pv.dot(vy)}
       }
     }
-  };
+  }, cache = {};
   function main(opt) {
     var Constructor, name = opt.name;
     Constructor = function (opt) {
@@ -178,12 +178,14 @@ InterItor.prototype = {
       Interpolation.call(this, opt);
     };
     inherit(Constructor, Interpolation.prototype, addPrototype(opt.prototype, opt));
-    if (name) main.cache[name] = Constructor;
+    if (name) (name + '').split(',').forEach(function (alias) {
+      cache[alias] = Constructor;
+    });
     Object.seal(Constructor.prototype);
     return Constructor;
   }
 
-  main.cache = {};
+  main.cache = cache;
   function addPrototype(proto, opt) {
     objForEach(handler, function (fun, name) {
       var v = opt[name];
@@ -191,18 +193,16 @@ InterItor.prototype = {
     });
     return proto;
   }
-  Flip.interpolate = function (nameOrOpt, dataOrXData, YData) {
-    var opt;
-    if (typeof nameOrOpt == "string") {
-      opt = {name: nameOrOpt};
-      if (dataOrXData instanceof Array) {
-        opt.x = dataOrXData;
-        opt.y = YData;
-      }
-      else opt.data = dataOrXData;
-    }
-    else opt = nameOrOpt;
-    return new main.cache[opt.name](opt);
+
+  Flip.interpolate = function (nameOrOpt, data) {
+    var opt, constructor;
+    if (typeof nameOrOpt == "string")
+      opt = {name: nameOrOpt, data: data};
+    else if (typeof (opt = nameOrOpt) !== "object")
+      throw Error('interpolation name and data needed');
+    constructor = cache[opt.name];
+    if (constructor)return new constructor(opt);
+    throw Error('interpolation ' + opt.name + ' not found');
   };
   return Flip.interpolation = main;
 })(Flip);
