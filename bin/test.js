@@ -379,5 +379,16 @@ describe('cubicBeizer',function(){
     opt.cx=[0,1,2,3];
     opt.cy=[-0,-1,-2,-3];
     testCoefficient();
+  });
+  function optPoint(i){
+    return {x:opt.x[i],y:opt.y[i]}
+  }
+  it('interpolate',function(){
+    opt.cps=[[0,-0],{x:1,y:-1},{x:2,y:-2},[3,-3]];
+    inter=Flip.interpolate(opt);
+    expect(inter.when(0)).toEqual(optPoint(0));
+    expect(inter.when(0.5)).toEqual(optPoint(1));
+    debugger;
+    expect(inter.when(1)).toEqual(optPoint(2));
   })
 });

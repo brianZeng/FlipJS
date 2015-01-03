@@ -43,6 +43,13 @@ Flip.interpolation({
     useSeg: function (seg) {
       var i0 = seg.i0, cs = this.coefficeint, co = cs[i0];
       return this.interpolateSeg(seg.t, [seg.x0, co[0], seg.x1], [seg.y0, co[1], seg.y1]);
-    }
+    },
+    setCP: (function () {
+      var vec = Flip.Vec.get;
+      return function (i, cpOrx1, y) {
+        this.coefficeint[i] = arguments.length == 2 ?
+          [vec(cpOrx1, 'x'), vec(cpOrx1, 'y')] : [cpOrx1, y]
+      }
+    })()
   }
 });

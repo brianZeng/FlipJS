@@ -313,7 +313,7 @@ inherit(Interpolation, {
   itor: function (opt) {
     var interval, count, self = this;
     opt = createProxy(opt);
-    count = opt.source('count') ||100;
+    count = opt.source('count') || 100;
     opt('interval', 1 / count, 'when', function (t) {
       return self.when(t);
     });
@@ -343,7 +343,7 @@ inherit(Interpolation, {
     var xs = this.axis.x, segCount = xs.length - 1, i0, i1, r, ts;
     i0 = Math.floor(ts = segCount * t);
     if (i0 < 0)i0 = 0;
-    else if (i0 >= segCount-1)i0 = segCount-1;
+    else if (i0 >= segCount - 1)i0 = segCount - 1;
     i1 = i0 + 1;
     r = this._getSeg(i0, i1, xs);
     r.t = ts - i0;
@@ -448,7 +448,7 @@ InterItor.prototype = {
         return {x: pv.dot(vx), y: pv.dot(vy)}
       }
     }
-  },cache={};
+  }, cache = {};
   function main(opt) {
     var Constructor, name = opt.name;
     Constructor = function (opt) {
@@ -457,12 +457,13 @@ InterItor.prototype = {
       Interpolation.call(this, opt);
     };
     inherit(Constructor, Interpolation.prototype, addPrototype(opt.prototype, opt));
-    if (name) (name+'').split(',').forEach(function(alias){
+    if (name) (name + '').split(',').forEach(function (alias) {
       cache[alias] = Constructor;
     });
     Object.seal(Constructor.prototype);
     return Constructor;
   }
+
   main.cache = cache;
   function addPrototype(proto, opt) {
     objForEach(handler, function (fun, name) {
@@ -471,15 +472,16 @@ InterItor.prototype = {
     });
     return proto;
   }
+
   Flip.interpolate = function (nameOrOpt, data) {
-    var opt,constructor;
+    var opt, constructor;
     if (typeof nameOrOpt == "string")
-      opt = {name: nameOrOpt,data:data};
-    else if (typeof (opt = nameOrOpt)!=="object")
-       throw Error('interpolation name and data needed');
-    constructor=cache[opt.name];
-    if(constructor)return new constructor(opt);
-    throw Error('interpolation '+opt.name+' not found');
+      opt = {name: nameOrOpt, data: data};
+    else if (typeof (opt = nameOrOpt) !== "object")
+      throw Error('interpolation name and data needed');
+    constructor = cache[opt.name];
+    if (constructor)return new constructor(opt);
+    throw Error('interpolation ' + opt.name + ' not found');
   };
   return Flip.interpolation = main;
 })(Flip);
@@ -699,8 +701,8 @@ Vec.multi = Vec.concat = function (v1, v2) {
 };
 Vec.get = function (vec, index) {
   if (isNaN(index))
-    if('x'=== index)return vec.hasOwnProperty('x')? vec.x:vec[0];
-    else if('y'===index) return vec.hasOwnProperty('y')? vec.y:vec[1];
+    if ('x' === index)return vec.hasOwnProperty('x') ? vec.x : vec[0];
+    else if ('y' === index) return vec.hasOwnProperty('y') ? vec.y : vec[1];
     else return undefined;
   return vec[index];
 };
@@ -1576,7 +1578,7 @@ Flip.interpolation({
 Flip.interpolation({
   name: 'beizerCubic,beizer-3,cubicBeizer',
   degree: 3,
-  weightMat: [[1, 3, -3, 1], [3, -6, 3, 0], [-3, 3, 0, 0], [1, 0, 0, 0]],
+  weightMat: [[-1, 3, -3, 1], [3, -6, 3, 0], [-3, 3, 0, 0], [1, 0, 0, 0]],
   options: {
     cps: [
       [{x: 1, y: 1}, [1, 0]]
@@ -1594,8 +1596,8 @@ Flip.interpolation({
       return function (i, cp0, cp1, x1, y1) {
         var xs, ys;
         if (arguments.length == 3) {
-          xs = [vec(cp0, 'x'), vec(cp1, 'x')];
-          ys = [vec(cp0, 'y'), vec(cp1, 'y')];
+          xs = [vec(cp0, 'x'),cp1? vec(cp1, 'x'):NaN];
+          ys = [vec(cp0, 'y'), cp1? vec(cp1, 'y'):NaN];
         }
         else {
           xs = [cp0, x1];
@@ -1605,66 +1607,100 @@ Flip.interpolation({
       }
     })(),
     _initControlPoints: function (opt) {
-      var xs = this.axis.x, segCount = xs.length - 1, i, j, gps, cy, cx, len = segCount * 2;
+      var xs = this.axis.x, segCount = xs.length - 1, i, j, gps, cy, cx, len = segCount * 2,cpLen;
       this.coefficeint = new Array(segCount);
       if (gps = opt.cps)
-        for (j = i = 0; i < len; i += 2, j++)
+        for (j = i = 0,cpLen=gps.length; i < len && i<cpLen; i += 2, j++)
           this.setCP(j, gps[i], gps[i + 1]);
       else if ((cx = opt.cx) && (cy = opt.cy))
         for (j = i = 0; i < len; i += 2, j++)
           this.setCP(j, cx[i], cy[i], cx[i + 1], cy[i + 1]);
-      else
-        throw Error('');
+      this._ensureControlPoints(opt);
     },
-    _ensureControlPoints: function () {
+    _ensureControlPoints: function (opt) {
+      var vec,co=this.coefficeint,cp0x=co[0].x[0],cp0y=co[0].y[0],xs=this.axis.x,ys=this.axis.y,segCount=xs.length-1;
+      if(isNaN(cp0x)||isNaN(cp0y)){
+        if(vec=opt.startVec){
+          co[0].x[0]=xs[0]+Vec.get(vec,'x');
+          co[0].y[0]=ys[0]+Vec.get(vec,'y');
+        }
+        else throw Error('the first control point needed');
+      }
+      for(var i= 0,coefficient=co[0],r;i<segCount;i++){
+        r=this.calCP(xs[i],ys[i],xs[i+1],ys[i+1],coefficient.x[0],coefficient.y[0]);
+        setCP(1,r[0],r[1]);
+        coefficient=co[i+1];
+        setCP(0,r[2],r[3]);
+      }
+      function setCP(i,x,y){
+        if(isNaN(coefficient.x[i]))
+          coefficient.x[i]=x;
+        if(isNaN(coefficient.y[i]))
+          coefficient.y[i]=y;
+      }
     },
     useSeg: function (seg) {
       var i0 = seg.i0, cs = this.coefficeint, co = cs[i0], cx = co.x, cy = co.y;
-      return this.interpolateSeg(seg.t, [seg.x0, seg.x1, cx[0], cx[1]], [seg.y0, seg.y1, cy[0], cy[1]]);
+      return this.interpolateSeg(seg.t, [seg.x0, cx[0], cx[1], seg.x1], [seg.y0, cy[0], cy[1], seg.y1]);
+    },
+    calCP:function(P0x,P0y,P1x,P1y,CP0x,CP0y){
+      //Pt1_i=Pt0_i+1 => 2P1_i=CP1_i+CP0_i+1
+      //Ptt0_i=0 => 2CP0_i=CP1_i+P0_i
+      var CP1x=2*CP0x-P0x,CP1y=2*CP0y-P0y;
+      return[CP1x,CP1y,2*P1x-CP1x,2*P1y-CP1y];
     }
   }
 });
 Flip.interpolation({
-  name:'beizerQuadratic,beizer-2,quadraticBeizer',
-  degree:2,
-  weightMat:[[1,-2,1],[-2,2,0],[1,0,0]],
-  options:{
-    startVec:null,
-    cps:[],
-    cx:[],
-    cy:[]
+  name: 'beizerQuadratic,beizer-2,quadraticBeizer',
+  degree: 2,
+  weightMat: [[1, -2, 1], [-2, 2, 0], [1, 0, 0]],
+  options: {
+    startVec: null,
+    cps: [],
+    cx: [],
+    cy: []
   },
-  prototype:{
-    init:function(opt){
+  prototype: {
+    init: function (opt) {
       this._ensureAxisAlign();
       this._initControlPoints(opt);
     },
-    _ensureControlPoints:function(coefficient,xs,ys){
+    _ensureControlPoints: function (coefficient, xs, ys) {
       //C(i+1)+Ci=2P(i+1);
-      for(var i= 0,len=coefficient.length-1,cp=coefficient[0],ni;i<len;cp=coefficient[++i])
-        if(coefficient[(ni=i+1)]===undefined)
-          coefficient[ni]=[2*xs[ni]-cp[0],2*ys[ni]-cp[1]];
+      for (var i = 0, len = coefficient.length - 1, cp = coefficient[0], ni; i < len; cp = coefficient[++i])
+        if (coefficient[(ni = i + 1)] === undefined)
+          coefficient[ni] = [2 * xs[ni] - cp[0], 2 * ys[ni] - cp[1]];
     },
-    _initControlPoints:function(opt){
-      var xs=this.axis.x,segLen=xs.length- 1,ys=this.axis.y,co=new Array(segLen),cx,cy,vec;
-      if(opt.cps)
-        opt.cps.forEach(function(cp,i){
-          if(i<=segLen)co[i]=[Vec.get(cp,'x'),Vec.get(cp,'y')];
+    _initControlPoints: function (opt) {
+      var xs = this.axis.x, segLen = xs.length - 1, ys = this.axis.y, co = new Array(segLen), cx, cy, vec;
+      if (opt.cps)
+        opt.cps.forEach(function (cp, i) {
+          if (i <= segLen)co[i] = [Vec.get(cp, 'x'), Vec.get(cp, 'y')];
         });
-      else if((cx=opt.cx)&&(cy=opt.cy)&& cx.length==cy.length)cx.forEach(function(x,i){co[i]=[x,cy[i]]});
-      else if(typeof(vec=opt.startVec)==="object"){
-        cx=Vec.get(vec,'x');
-        cy=Vec.get(vec,'y');
+      else if ((cx = opt.cx) && (cy = opt.cy) && cx.length == cy.length)cx.forEach(function (x, i) {
+        co[i] = [x, cy[i]]
+      });
+      else if (typeof(vec = opt.startVec) === "object") {
+        cx = Vec.get(vec, 'x');
+        cy = Vec.get(vec, 'y');
         //2(Pc-P0)=Pt0
-        co[0]=[cx/2+xs[0],cy/2+ys[0]];
+        co[0] = [cx / 2 + xs[0], cy / 2 + ys[0]];
       }
       else throw Error('cannot generate control points');
-      this._ensureControlPoints(this.coefficeint=co,xs,ys);
+      this._ensureControlPoints(this.coefficeint = co, xs, ys);
     },
-    useSeg:function(seg){
-      var i0=seg.i0,cs=this.coefficeint, co=cs[i0];
-      return this.interpolateSeg(seg.t,[seg.x0,co[0],seg.x1],[seg.y0,co[1],seg.y1]);
-    }
+    useSeg: function (seg) {
+      var i0 = seg.i0, cs = this.coefficeint, co = cs[i0];
+      return this.interpolateSeg(seg.t, [seg.x0, co[0], seg.x1], [seg.y0, co[1], seg.y1]);
+    },
+    setCP: (function () {
+      var vec = Flip.Vec.get;
+      return function (i, cpOrx1,y) {
+        this.coefficeint[i] = arguments.length==2?
+        [vec(cpOrx1,'x'),vec(cpOrx1,'y')]:[cpOrx1,y]
+      }
+    })()
   }
 });
 Flip.interpolation({

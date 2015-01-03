@@ -34,8 +34,8 @@
 <div ng-controller="editorController as editorCtrl">
     <canvas ng-controller="cvsController as cvsCtrl"></canvas>
     <nav class="right">
-        <button ng-repeat=" inter in editorCtrl.interpolations" ng-click="editorCtrl.addInterpolation(inter)">
-            {{inter}}
+        <button ng-repeat=" inter in editorCtrl.interpolations" ng-click="editorCtrl.addInterpolation(inter.name)">
+            {{inter.name}}
         </button>
     </nav>
     <p>
@@ -45,7 +45,7 @@
         </select>
     </p>
 
-    <p ng-repeat="point in editorCtrl.points" class="{{point.color}}">x:{{point.x}} y:{{point.y}}</p>
+    <p ng-repeat="point in editorCtrl.allPoints" class="{{point.color}}">x:{{point.x}} y:{{point.y}}</p>
 </div>
 <script src="../bower_components/angular/angular.js"></script>
 <script>

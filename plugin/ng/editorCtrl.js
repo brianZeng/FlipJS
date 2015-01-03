@@ -1,22 +1,29 @@
 angular.module('flipEditor').controller('editorController', ['lineFactory', '$scope', function (lineFactory, $scope) {
   var self = this;
-  ['lines', 'points', 'interpolations'].forEach(function (pro) {
+  ['lines', 'interpolations'].forEach(function (pro) {
     Object.defineProperty(self, pro, Object.getOwnPropertyDescriptor(lineFactory, pro));
   });
+  this.allPoints = [];
   this.pointTypes = [{type: 'data', color: 'red'}, {type: 'control', color: 'green'}];
+  lineFactory.on('change', function () {
+    self.allPoints = lineFactory.points.concat(lineFactory.controlPoints).sort(function (a, b) {
+      return a.i > b.i
+    });
+  });
   self.modelChange = function () {
     lineFactory.pointModel = self.pointModel;
   };
   lineFactory.pointModel = this.pointModel = this.pointTypes[0];
   self.addInterpolation = function (name) {
-    var inter = Flip.interpolate({
-      name: name, data: self.points.sort(function (a, b) {
+    lineFactory.addInterpolation(name, 'blue');
+    /*var inter = Flip.interpolate({
+     name: name, data: lineFactory.sort(function (a, b) {
         return a.i > b.i
-      })
+     }),cps:lineFactory
     });
     lineFactory.clearPoints();
     lineFactory.addLine({
       color: 'blue', points: inter.itor().all(), name: name
-    });
+     });*/
   }
 }]);

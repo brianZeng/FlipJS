@@ -1,4 +1,4 @@
-angular.module('flipEditor').factory('lineFactory', ['$rootScope', function ($rootScope) {
+angular.module('flipEditor').factory('lineFactory', ['$rootScope', 'libFactory', function ($rootScope, libFactory) {
   var lines = [], pts = [], cps = [], arr = Flip.util.Array, evtEmitter = Flip.util.Object({
     get lines() {
       return lines;
@@ -10,7 +10,7 @@ angular.module('flipEditor').factory('lineFactory', ['$rootScope', function ($ro
       return cps;
     },
     get interpolations() {
-      return Object.getOwnPropertyNames(Flip.interpolation.cache);
+      return libFactory.interpolations;
     },
     set onchange(f) {
       this.on('change', f);
@@ -50,6 +50,9 @@ angular.module('flipEditor').factory('lineFactory', ['$rootScope', function ($ro
     emitChange({point: p});
   }
 
+  function sortByIndex(a, b) {
+    return a.i > b.i
+  }
   evtEmitter.addLine = addLine;
   evtEmitter.addPoint = addPoint;
   evtEmitter.clearPoints = function () {
@@ -57,6 +60,17 @@ angular.module('flipEditor').factory('lineFactory', ['$rootScope', function ($ro
     pts = [];
     cps = [];
     emitChange({points: s, controlPoints: cs});
+  };
+  evtEmitter.addInterpolation = function (name, color) {
+    var opt = {
+      name: name,
+      data: pts.sort(sortByIndex),
+      cps: cps.sort(sortByIndex)
+    };
+    addLine({
+      color: 'blue', points: Flip.interpolate(opt).itor().all(), name: name
+    });
+    evtEmitter.clearPoints();
   };
   return evtEmitter;
 }]);
