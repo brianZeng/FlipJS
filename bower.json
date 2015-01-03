@@ -1,0 +1,21 @@
+{
+  "name": "flip",
+  "version": "0.0.0",
+  "authors": [
+    "borian <borian@vip.qq.com>"
+  ],
+  "description": "javascript animation framework",
+  "main": "bin/flip.js",
+  "keywords": [
+    "interpolation",
+    "animation"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}

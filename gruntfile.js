@@ -5,9 +5,13 @@ var config = {
   concat: {
     animation: {
       files: {
-        'bin/flip.js': ['src/util.js', 'src/*.js', 'src/animations/*.js'],
+        'bin/flip.js': ['src/util.js', 'src/*.js', 'src/animations/*.js', 'src/interpolation/*.js'],
         'bin/Flip.js': ['bin/flip.js']
       }
+    },
+    ng: {
+      src: 'plugin/ng/*.js',
+      dest: 'bin/ng.js'
     },
     test: {
       src: 'test/*.js',
@@ -26,7 +30,7 @@ var config = {
 config.watch = {
   scripts: {
     files: 'src/**/*.js',
-    tasks: ['concat:animation', 'uglify:flip'],
+    tasks: ['concat:animation'],
     options: {
       interrupt: true
     }
@@ -37,12 +41,23 @@ config.watch = {
     options: {
       interrupt: true
     }
+  },
+  ng: {
+    files: 'plugin/ng/*.js',
+    tasks: ['concat:ng']
   }
 };
 config.uglify = {
   flip: {
     files: {
       'bin/flip.min.js': 'bin/flip.js'
+    }
+  },
+  atrk: {
+    files: {
+      "bin/atrk.min.js": "bin/atrk.js"
+    }, options: {
+      banner: '/* borian@vip.qq.com */'
     }
   }
 };
@@ -51,4 +66,5 @@ module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.initConfig(config);
+  grunt.registerTask('con-ugly', ['concat', 'uglify:flip']);
 };

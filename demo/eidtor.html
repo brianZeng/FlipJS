@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <link type="text/css" href="../bower_components/angular/angular-csp.css">
+    <script src="../bin/flip.js"></script>
+    <style>
+        .right {
+            float: right;
+        }
+
+        .red {
+            color: red;
+        }
+
+        .green {
+            color: lightgreen;
+        }
+
+        select option {
+            color: #000000;
+        }
+        nav {
+            width: 280px;
+        }
+
+        .right > button {
+            display: block;
+        }
+    </style>
+</head>
+<body ng-app="flipEditor">
+<div ng-controller="editorController as editorCtrl">
+    <canvas ng-controller="cvsController as cvsCtrl"></canvas>
+    <nav class="right">
+        <button ng-repeat=" inter in editorCtrl.interpolations" ng-click="editorCtrl.addInterpolation(inter.name)">
+            {{inter.name}}
+        </button>
+    </nav>
+    <p>
+        <b>choose point Type</b>
+        <select ng-model="editorCtrl.pointModel" ng-options="pt.type for pt in editorCtrl.pointTypes"
+                ng-change="editorCtrl.modelChange()" ng-class="editorCtrl.pointModel.color">
+        </select>
+    </p>
+
+    <p ng-repeat="point in editorCtrl.allPoints" class="{{point.color}}">x:{{point.x}} y:{{point.y}}</p>
+</div>
+<script src="../bower_components/angular/angular.js"></script>
+<script>
+    angular.module('flipEditor', []);
+</script>
+<script src="../bin/ng.js"></script>
+</body>
+</html>

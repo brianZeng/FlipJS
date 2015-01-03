@@ -1,7 +1,9 @@
-# Created by .gitignore support plugin (hsz.mobi)
 node_modules
 .idea
 .git
 lib
 test
+images
+projectFilesBackup
+bower_components
 

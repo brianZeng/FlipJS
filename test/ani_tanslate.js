@@ -1,7 +1,7 @@
 /**
  * Created by 柏然 on 2014/12/13.
  */
-describe('Construct translate animation:', function () {
+xdescribe('Construct translate animation:', function () {
   it('1. .dx .dy stands for the translation distance:', function () {
     var ani = Flip.animation.translate({dx: 100, dy: 200});
     expect(ani.dx).toBe(100);

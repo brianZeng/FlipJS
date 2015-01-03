@@ -2,8 +2,8 @@
  * Created by 柏然 on 2014/12/12.
  */
 var Flip = function () {
-  var first = arguments[0];
-  if (typeof first === "function") arrAdd(FlipScope.readyFuncs, first);
+  var first = arguments[0], readyFuncs = FlipScope.readyFuncs;
+  if (typeof first === "function") readyFuncs ? arrAdd(FlipScope.readyFuncs, first) : first(Flip);
 }, FlipScope = {readyFuncs: []};
 Object.defineProperty(Flip, 'instance', {get: function () {
   return FlipScope.global;
@@ -91,12 +91,49 @@ function arrAdd(array, item) {
     return !!array.push(item);
   return false;
 }
-
+function arrSort(array, func_ProName, des) {
+  var compare = arrMapFun(func_ProName);
+  return array.sort(des ? function (a, b) {
+    return compare(a) < compare(b)
+  } : function (a, b) {
+    return compare(a) > compare(b)
+  });
+}
+function arrUnique(array, func_ProName) {
+  var compare = arrMapFun(func_ProName);
+  return array.reduce(function (r, item) {
+    var res = compare(item);
+    if (r.indexOf(res) == -1)r.push(item);
+    return r;
+  }, []);
+}
+function arrFirst(array, func_ProName) {
+  for (var i = 0, item, len = array.length, compare = arrMapFun(func_ProName); i < len; i++)
+    if (compare(item = array[i]))return item;
+}
 function arrRemove(array, item) {
   var i = array.indexOf(item);
   if (i >= 0)
     return !!array.splice(i, 1);
   return false;
+}
+function arrMapFun(func_ProName) {
+  var ct = typeof func_ProName;
+  if (ct === "string")return function (item) {
+    return item[func_ProName]
+  };
+  else if (ct === "function")return func_ProName;
+  return function (item) {
+    return item
+  };
+}
+function arrSameSeq(arr, func_ProName, des) {
+  if (arr.length == 1)return true;
+  var compare = arrMapFun(func_ProName);
+  des = !!des;
+  for (var i = 1, len = arr.length; i < len; i++)
+    if (des != (compare(arr[i]) < compare(arr[i - 1])))return false;
+  return true;
 }
 array.remove = arrRemove;
 array.add = arrAdd;
@@ -126,9 +163,12 @@ function arrSafeFilter(array, filter, thisObj) {
   if (thisObj == undefined)thisObj = array;
   return copy.filter(filter, thisObj).filter(function (item) {
     return array.indexOf(item) > -1;
-  });
+  }).concat(array.filter(function (item) {
+    return copy.indexOf(item) == -1;
+  }));
 }
 array.safeFilter = arrSafeFilter;
+array.sort = arrSort;
 inherit(array, Array, {
   add: function (item) {
     return arrAdd(this, item);
@@ -147,8 +187,11 @@ inherit(array, Array, {
 function obj(from) {
   if (!(this instanceof obj))return new obj(from);
   if (typeof from === "object")
-    objForEach(from, function (key, value) {
-      this[key] = value;
+    objForEach(from, function (value, key) {
+      var pro;
+      if (pro = Object.getOwnPropertyDescriptor(from, key))
+        Object.defineProperty(this, key, pro);
+      else this[key] = value;
     }, this);
 }
 function addEventListener(obj, evtName, handler) {
@@ -196,7 +239,7 @@ function objForEach(object, callback, thisObj, arg) {
   if (object) {
     if (thisObj == undefined)thisObj = object;
     for (var i = 0, names = Object.getOwnPropertyNames(object), name = names[0]; name; name = names[++i])
-      callback.apply(thisObj, [name, object[name], arg]);
+      callback.apply(thisObj, [object[name], name, arg]);
   }
   return object;
 }
@@ -237,6 +280,6 @@ inherit(obj, null, {
     return objForEach(this, callback, thisObj, arg);
   }
 });
-function cloneFunc(key, value) {
+function cloneFunc(value, key) {
   this[key] = value;
 }

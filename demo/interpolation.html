@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <script src="../bin/flip.js"></script>
+</head>
+<body>
+<canvas id="cvs" width="200" height="200"></canvas>
+<div id="info"></div>
+<script>
+    var cvs = document.querySelector('#cvs'), ctx = cvs.getContext('2d');
+    function concatPoints(points, color) {
+        var h = cvs.height, start = points[0];
+        ctx.strokeStyle = color || '#000';
+        ctx.beginPath();
+        ctx.moveTo(start.x, h - start.y);
+        for (var i = 1, len = points.length, p; i < len; i++) {
+            p = points[i];
+            ctx.lineTo(p.x, h - p.y);
+        }
+        ctx.stroke();
+    }
+    function fillPoints(pts, color, width) {
+        var h = cvs.height;
+        width = width || 1;
+        ctx.fillStyle = color || 'red';
+        pts.forEach(function (p) {
+            ctx.fillRect(p.x, h - p.y, width, width);
+        });
+    }
+    function testLinear() {
+        var px = [0, 40, 60, 80, 120, 160], //80],
+                py = [100, 30, 120, 60, 90, 40];//, ];
+        var inter = Flip.interpolate('cubic', px, py), itor = inter.itor(), ps;
+        concatPoints(itor.all(), 'red');
+        ps = px.map(function (x, i) {
+            var p = {x: x, y: py[i]};
+            addInfo(p.x, p.y);
+            return p;
+        });
+        // concatPoints(ps, 'blue');
+        console.log(itor.all().filter(function (p, i) {
+            // return i < 10;
+            p.i = i;
+
+            // return p;
+            return px.indexOf(p.x) > -1;
+        }).map(function (p) {
+            // return p.x+':'+inter._getT(p.x);
+            return p.i + ' x:' + p.x + ',y:' + parseInt(p.y) + ' ';
+        }).join('\n'));
+
+        debugger;
+        // concatPoints([{x:0,y:100},{x:70,y:30},{x:140,y:120}],'red');
+
+    }
+    function testQu() {
+        var opt = {
+            x: [0, 20, 40, 60, 80, 120],
+            y: [0, 10, 22, 44, 50, 90],
+            startVec: {x: 1, y: 1},
+            name: 'quadratic-spline'
+        }, inter = Flip.interpolate(opt), itor = inter.itor();
+        concatPoints(itor.all(), 'black');
+        opt.name = 'quadratic';
+        concatPoints(Flip.interpolate(opt).itor().all(), 'red');
+    }
+    function $(slt) {
+        return document.querySelector(slt);
+    }
+    function addInfo(x, y) {
+        var p = document.createElement('p');
+        p.innerHTML = 'x:*,y:^'.replace('*', x).replace('^', y);
+        $('#info').appendChild(p);
+    }
+    // testLinear();
+    testQu();
+    cvs.addEventListener('click', function (e) {
+        var x = e.clientX - cvs.clientLeft - cvs.offsetLeft, y = cvs.height - e.clientY + cvs.clientTop + cvs.offsetTop;
+        addInfo(x, y);
+        // debugger;
+    });
+</script>
+<script>
+    function NewtonInterpolate(points) {
+        var t0, t1, xs, ys, ts, dt;
+        points = sortArrByProName(points, 'x');
+        xs = points.map(function (p) {
+            return p.x;
+        });
+        ys = points.map(function (p) {
+            return p.y;
+        });
+        t0 = xs[0];
+        t1 = xs[xs.length - 1];
+        dt = t1 - t0;
+        ts = points.map(function (p) {
+            return (p.x - t0) / dt
+        });
+
+    }
+    function sortArrByProName(arr, name) {
+        return arr.sort(function (a, b) {
+            return a[name] > b[name]
+        });
+    }
+    function QuadraticInterpolate(points) {
+        var pts = sortArrByProName(points, 'x'), xs = pts.map(function (p) {
+                    return p.x
+                }), x0 = xs[0], x1 = xs[1], x2 = xs[2],
+                dx = x2 - x0, cur, ys = pts.map(function (p) {
+                    return p.y
+                });
+
+        function getT(x) {
+            return (x - x0) / dx;
+        }
+
+        function cac(t) {
+            var v0 = 2 * t * t - 3 * t + 1, v1 = 4 * t - 4 * t * t, v2 = 2 * t * t - t;
+            return {
+                x: v0 * x0 + v1 * x1 + v2 * x2 + x0,
+                y: v0 * ys[0] + v1 * ys[1] + v2 * ys[2]
+            }
+        }
+
+        return {
+            reset: function () {
+                cur = x0;
+            },
+            next: function () {
+                var t = getT(cur += 1);
+                return cac(t);
+            },
+            isEnd: function () {
+                return cur >= x2;
+            }, all: function () {
+                var pts = [];
+                this.reset();
+                while (!this.isEnd())
+                    pts.push(this.next());
+                return pts;
+
+            }
+        }
+
+    }
+    function CubicInterpolate(points) {
+        var pts = sortArrByProName(points, 'x'), xs = pts.map(function (p) {
+                    return p.x
+                }), x0 = xs[0], x1 = xs[xs.length - 1],
+                dx = x1 - x0, cur, ys = pts.map(function (p) {
+                    return p.y
+                });
+
+        function getT(x) {
+            return (x - x0) / dx;
+        }
+
+        function cac(t) {
+            var vec = new Array(4), t2 = t * t, t3 = t2 * t, rx = 0, ry = 0;
+            vec[0] = -4.5 * t3 + 9 * t2 - 5.5 * t + 1;
+            vec[1] = 13.5 * t3 - 22.5 * t2 + 9 * t;
+            vec[2] = -13.5 * t3 + 18 * t2 - 4.5 * t;
+            vec[3] = 4.5 * t3 - 4.5 * t2 + t;
+            for (var i = 0; i < 4; i++) {
+                rx += vec[i] * xs[i];
+                ry += vec[i] * ys[i];
+            }
+            return {x: rx + x0, y: ry}
+        }
+
+        return {
+            reset: function () {
+                cur = x0;
+            },
+            next: function () {
+                var t = getT(cur += 1);
+                return cac(t);
+            },
+            isEnd: function () {
+                return cur >= x1;
+            }, all: function () {
+                var pts = [];
+                this.reset();
+                while (!this.isEnd())
+                    pts.push(this.next());
+                return pts;
+
+            }
+        }
+    }
+
+    (function () {
+        var pts = ['10,20', '100,100', '150,12', '180,25'].map(function (str) {
+            var ps = str.split(',');
+            return {x: parseInt(ps[0]), y: parseInt(ps[1])}
+        }), inter = QuadraticInterpolate(pts);
+        concatPoints(inter.all(), 'red');
+        fillPoints(pts, 'black');
+        concatPoints(CubicInterpolate(pts).all(), 'green');
+    });
+</script>
+</body>
+</html>
