@@ -43,7 +43,7 @@ angular.module('flipEditor').factory('lineFactory', ['$rootScope', 'libFactory',
     p.r = opt.r || 1;
     p.x = opt.x;
     p.y = opt.y;
-    p.i = pointIndex++;
+    p.id = pointIndex++;
     p.color = opt.color || pt.color;
     p.type = pt.type;
     p.type == 'control' ? cps.push(p) : pts.push(p);
@@ -51,7 +51,7 @@ angular.module('flipEditor').factory('lineFactory', ['$rootScope', 'libFactory',
   }
 
   function sortByIndex(a, b) {
-    return a.i > b.i
+    return a.id > b.id
   }
   evtEmitter.addLine = addLine;
   evtEmitter.addPoint = addPoint;

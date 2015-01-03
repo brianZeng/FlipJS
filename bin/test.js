@@ -226,7 +226,7 @@ describe('linear:',function(){
     for(var i= 0;i<20;i++)
     {
       p=itor.next();
-      debugger;
+
       expect(p.x).toBeCloseTo(i);
     }
   });
@@ -347,7 +347,8 @@ describe('quadraticBeizer',function(){
     name:'beizer-2'
     },inter=Flip.interpolate(opt);
   it('construct',function(){
-    expect(inter.coefficeint.length).toBe(2);
+    expect(inter.coefficeint.x.length).toBe(2);
+    expect(inter.coefficeint.y.length).toBe(2);
     p=inter.when(1);
     for(var i= 0, p,len=inter.coefficeint.length;i<=len;i++){
       p=inter.when(i/len);
@@ -366,11 +367,10 @@ describe('cubicBeizer',function(){
   function testCoefficient(){
     inter=Flip.interpolate(opt);
     var co=inter.coefficeint;
-    expect(co.length).toBe(2);
-    expect(co[0].x).toEqual(new Float32Array([0,1]));
-    expect(co[1].x).toEqual(new Float32Array([2,3]));
-    expect(co[0].y).toEqual(new Float32Array([-0,-1]));
-    expect(co[1].y).toEqual(new Float32Array([-2,-3]));
+    expect(co.x.length).toBe(4);
+    expect(co.y.length).toBe(4);
+    expect(co.x).toEqual(new Float32Array([0,1,2,3]));
+    expect(co.y).toEqual(new Float32Array([-0,-1,-2,-3]));
   }
   it('construct',function(){
     opt.cps=[[0,-0],{x:1,y:-1},{x:2,y:-2},[3,-3]];
@@ -383,12 +383,33 @@ describe('cubicBeizer',function(){
   function optPoint(i){
     return {x:opt.x[i],y:opt.y[i]}
   }
-  it('interpolate',function(){
+  it('interpolate:',function(){
     opt.cps=[[0,-0],{x:1,y:-1},{x:2,y:-2},[3,-3]];
     inter=Flip.interpolate(opt);
     expect(inter.when(0)).toEqual(optPoint(0));
     expect(inter.when(0.5)).toEqual(optPoint(1));
-    debugger;
     expect(inter.when(1)).toEqual(optPoint(2));
+  });
+  it('generate controlPoints',function(){
+    opt={
+      x:[10,20,30,40,50,60],
+      y:[0,10,0,10,0,10],
+      name:opt.name,
+      startVec:[10,10]
+    };
+    inter=Flip.interpolate(opt);
+    expect(inter.coefficeint.x.length).toBe(10);
+    ensureCoefficient();
+    delete opt.startVec;
+    opt.cx=[20];
+    opt.cy=[10];
+    inter=Flip.interpolate(opt);
+    expect(inter.coefficeint.y.length).toBe(10);
+    ensureCoefficient();
+    function ensureCoefficient(){
+      for(var i= 0,co=inter.coefficeint,ce=co[0];ce;ce=co[++i])
+        if(isNaN(ce.x[0])||isNaN(ce.y[0])||isNaN(ce.x[1])||isNaN(ce.y[1]))
+           throw Error('coefficient:'+i+'not valid');
+    }
   })
 });

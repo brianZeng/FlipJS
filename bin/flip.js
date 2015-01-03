@@ -1591,29 +1591,37 @@ Flip.interpolation({
       this._ensureAxisAlign();
       this._initControlPoints(opt);
     },
-    setCP: (function () {
-      var vec = Flip.Vec.get;
-      return function (i, cp0, cp1, x1, y1) {
-        var xs, ys;
+    setCP:function (i, cp0, cp1, x1, y1) {
+        var xs=[], ys=[];
         if (arguments.length == 3) {
-          if(cp0){
-            xs = [vec(cp0, 'x'), cp1 ? vec(cp1, 'x') : NaN];
-            ys = [vec(cp0, 'y'), cp1 ? vec(cp1, 'y') : NaN];
-          }else xs=ys=[NaN,NaN];
+          if (cp0) {
+            xs[0]=Vec.get(cp0, 'x');
+            ys[0]=Vec.get(cp0, 'y');
+            if(cp1)
+            {
+              xs[1]= Vec.get(cp1, 'x');
+              ys[1]= Vec.get(cp1, 'y')
+            }
+          }
         }
-        else if(arguments.length==5) {
+        else if (arguments.length == 5) {
           xs = [cp0, x1];
           ys = [cp1, y1];
         }
         else throw  Error('invalid arguments');
-        this.coefficeint[i] = {x: new Float32Array(xs), y: new Float32Array(ys)}
-      }
-    })(),
+        for(var j= 0,co=this.coefficeint,cox=co.x,coy=co.y,len=xs.length,index;j<len;j++){
+          cox[index=i*2+j]=xs[j];
+          coy[index]=ys[j];
+        }
+      },
     _initControlPoints: function (opt) {
-      var xs = this.axis.x, segCount = xs.length - 1, i, j, gps, cy, cx, len = segCount * 2,vec;
-      this.coefficeint = new Array(segCount);
-      if(!opt.cps&&!opt.cx&&!opt.cy&&(vec=opt.startVec))
-        opt={cps:[[xs[0]+Vec.get(vec,'x'),this.axis.y[0]+Vec.get(vec,'y')]]};
+      var xs = this.axis.x, segCount = xs.length - 1, i, j, gps, cy, cx, len = segCount * 2, vec;
+      this.coefficeint={
+        x:new Float32Array(new Array(len)),
+        y:new Float32Array(new Array(len))
+      } ;
+      if (!opt.cps && !opt.cx && !opt.cy && (vec = opt.startVec))
+        opt = {cps: [[xs[0] + Vec.get(vec, 'x'), this.axis.y[0] + Vec.get(vec, 'y')]]};
       if (gps = opt.cps)
         for (j = i = 0; i < len; i += 2, j++)
           this.setCP(j, gps[i], gps[i + 1]);
@@ -1624,27 +1632,24 @@ Flip.interpolation({
       this._ensureControlPoints();
     },
     _ensureControlPoints: function () {
-      var co = this.coefficeint,xs = this.axis.x, ys = this.axis.y, segCount = xs.length - 1,cp;
-      if (!(cp=co[0]))
+      var co = this.coefficeint, xs = this.axis.x, ys = this.axis.y, segCount = xs.length - 1,ci,cox,coy;
+      if (isNaN((cox=co.x)[0])||isNaN((coy=co.y)[0]))
         throw Error('the first control point needed');
       for (var i = 0, r; i < segCount; i++) {
-        r = this.calCP(xs[i], ys[i], xs[i + 1], ys[i + 1], cp.x[0], cp.y[0]);
-        setCPWhenNaN(1, r[0], r[1]);
-        cp = co[i + 1];
-        setCPWhenNaN(0, r[2], r[3]);
+        r = this.calCP(xs[i], ys[i], xs[i + 1], ys[i + 1], cox[ci=i*2], coy[ci]);
+        setCPWhenNaN(ci+1, r[0], r[1]);
+        setCPWhenNaN(ci+2, r[2], r[3]);
       }
       function setCPWhenNaN(index, x, y) {
-        if(cp){
-          if (isNaN(cp.x[index]))
-            cp.x[index] = x;
-          if (isNaN(cp.y[index]))
-            cp.y[index] = y;
-        }
+        if (isNaN(cox[index]))
+            cox[index] = x;
+        if (isNaN(coy[index]))
+            coy[index] = y;
       }
     },
     useSeg: function (seg) {
-      var i0 = seg.i0, cs = this.coefficeint, co = cs[i0], cx = co.x, cy = co.y;
-      return this.interpolateSeg(seg.t, [seg.x0, cx[0], cx[1], seg.x1], [seg.y0, cy[0], cy[1], seg.y1]);
+      var i0 = seg.i0, co = this.coefficeint, cx = co.x, cy = co.y,ci=i0*2;
+      return this.interpolateSeg(seg.t, [seg.x0, cx[ci], cx[ci+1], seg.x1], [seg.y0, cy[ci], cy[ci+1], seg.y1]);
     },
     calCP: function (P0x, P0y, P1x, P1y, CP0x, CP0y) {
       //Pt1_i=Pt0_i+1 => 2P1_i=CP1_i+CP0_i+1
@@ -1669,41 +1674,52 @@ Flip.interpolation({
       this._ensureAxisAlign();
       this._initControlPoints(opt);
     },
-    _ensureControlPoints: function (coefficient, xs, ys) {
+    _ensureControlPoints: function () {
+      var co=this.coefficeint,xs=this.axis.x,ys=this.axis.y,cox=co.x,coy=co.y;
       //C(i+1)+Ci=2P(i+1);
-      for (var i = 0, len = coefficient.length - 1, cp = coefficient[0], ni; i < len; cp = coefficient[++i])
-        if (coefficient[(ni = i + 1)] === undefined)
-          coefficient[ni] = [2 * xs[ni] - cp[0], 2 * ys[ni] - cp[1]];
+      for (var i = 0, len = co.length, ni; i < len; i++){
+        if(isNaN(cox[ni=i+1]))cox[ni]=2*xs[ni]-cox[i];
+        if(isNaN(coy[ni]))coy[ni]=2*ys[ni]-coy[i];
+      }
     },
     _initControlPoints: function (opt) {
-      var xs = this.axis.x, segLen = xs.length - 1, ys = this.axis.y, co = new Array(segLen), cx, cy, vec;
+      var xs = this.axis.x, segLen = xs.length - 1, ys = this.axis.y, co , cx, cy, vec;
+      this.coefficeint=co={
+        x:new Float32Array(new Array(segLen)),y:new Float32Array(new Array(segLen))
+      };
       if (opt.cps)
         opt.cps.forEach(function (cp, i) {
-          if (i <= segLen)co[i] = [Vec.get(cp, 'x'), Vec.get(cp, 'y')];
+          if (i <= segLen)
+            co.x[i]= Vec.get(cp, 'x');
+            co.y[i]=Vec.get(cp, 'y');
         });
-      else if ((cx = opt.cx) && (cy = opt.cy) && cx.length == cy.length)cx.forEach(function (x, i) {
-        co[i] = [x, cy[i]]
-      });
+      else if ((cx = opt.cx) && (cy = opt.cy) && cx.length == cy.length)
+        cx.forEach(function (x, i) {
+          co.x[i] = x;
+          co.y[i]= cy[i];
+        });
       else if (typeof(vec = opt.startVec) === "object") {
-        cx = Vec.get(vec, 'x');
-        cy = Vec.get(vec, 'y');
         //2(Pc-P0)=Pt0
-        co[0] = [cx / 2 + xs[0], cy / 2 + ys[0]];
+        co.x[0] = Vec.get(vec, 'x');
+        co.y[0] = Vec.get(vec, 'y');
       }
       else throw Error('cannot generate control points');
-      this._ensureControlPoints(this.coefficeint = co, xs, ys);
+      this._ensureControlPoints(co, xs, ys);
     },
     useSeg: function (seg) {
-      var i0 = seg.i0, cs = this.coefficeint, co = cs[i0];
-      return this.interpolateSeg(seg.t, [seg.x0, co[0], seg.x1], [seg.y0, co[1], seg.y1]);
+      var i0 = seg.i0, co= this.coefficeint;
+      return this.interpolateSeg(seg.t, [seg.x0, co.x[i0], seg.x1], [seg.y0, co.y[i0], seg.y1]);
     },
-    setCP: (function () {
-      var vec = Flip.Vec.get;
-      return function (i, cpOrx1, y) {
-        this.coefficeint[i] = arguments.length == 2 ?
-          [vec(cpOrx1, 'x'), vec(cpOrx1, 'y')] : [cpOrx1, y]
+    setCP: function (i, cpOrx1, y) {
+      var co=this.coefficeint, x;
+      if(typeof cpOrx1=="object"){
+        co.x[i]=Vec.get(cpOrx1,'x');
+        co.y[i]=Vec.get(cpOrx1,'y');
+      }else{
+        co.x[i]=cpOrx1;
+        co.y[i]=y;
       }
-    })()
+    }
   }
 });
 Flip.interpolation({

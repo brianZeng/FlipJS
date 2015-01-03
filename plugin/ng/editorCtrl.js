@@ -7,7 +7,7 @@ angular.module('flipEditor').controller('editorController', ['lineFactory', '$sc
   this.pointTypes = [{type: 'data', color: 'red'}, {type: 'control', color: 'green'}];
   lineFactory.on('change', function () {
     self.allPoints = lineFactory.points.concat(lineFactory.controlPoints).sort(function (a, b) {
-      return a.i > b.i
+      return a.id > b.id
     });
   });
   self.modelChange = function () {
