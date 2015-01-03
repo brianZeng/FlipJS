@@ -15,7 +15,7 @@
         }
 
         .green {
-            color: lightgreen;
+            color: forestgreen;
         }
 
         select option {
@@ -28,25 +28,41 @@
         .right > button {
             display: block;
         }
+
+        body {
+            margin: 0 auto;
+            width: 1280px;
+            overflow-x: hidden;
+        }
+
+        .ptsList {
+            float: right;
+            width: 40%;
+        }
     </style>
 </head>
 <body ng-app="flipEditor">
 <div ng-controller="editorController as editorCtrl">
     <canvas ng-controller="cvsController as cvsCtrl"></canvas>
-    <nav class="right">
-        <button ng-repeat=" inter in editorCtrl.interpolations" ng-click="editorCtrl.addInterpolation(inter.name)">
-            {{inter.name}}
-        </button>
-    </nav>
+    <ol class="ptsList">
+        <li ng-repeat="point in editorCtrl.allPoints track by point.id" class="{{point.color}}">x:{{point.x}}
+            y:{{point.y}}
+        </li>
+    </ol>
     <p>
         <b>choose point Type</b>
         <select ng-model="editorCtrl.pointModel" ng-options="pt.type for pt in editorCtrl.pointTypes"
                 ng-change="editorCtrl.modelChange()" ng-class="editorCtrl.pointModel.color">
         </select>
+        <button ng-click="editorCtrl.removePoint()">remove</button>
+    </p>
+    <p>
+        <b>interpolation Type</b>
+        <select ng-model="editorCtrl.itplModel" ng-options="itpl.name for itpl in editorCtrl.interpolations"
+                ></select>
+        <button ng-click="editorCtrl.addInterpolation()">addLine</button>
     </p>
 
-    <p ng-repeat="point in editorCtrl.allPoints track by point.id" class="{{point.color}}">x:{{point.x}}
-        y:{{point.y}}</p>
 </div>
 <script src="../bower_components/angular/angular.js"></script>
 <script>

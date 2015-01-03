@@ -47,11 +47,28 @@ angular.module('flipEditor').factory('lineFactory', ['$rootScope', 'libFactory',
     p.color = opt.color || pt.color;
     p.type = pt.type;
     p.type == 'control' ? cps.push(p) : pts.push(p);
-    emitChange({point: p});
+    emitChange({point: p, type: 'add'});
   }
 
   function sortByIndex(a, b) {
     return a.id > b.id
+  }
+
+  function removePoint() {
+    var pt1 = pts.pop(), pt2 = cps.pop(), p;
+    if (!pt1 && !pt2)return;
+    if (!pt2)p = pt1;
+    else if (!pt1)p = pt2;
+    else if (pt1.id > pt2.id) {
+      cps.push(pt2);
+      p = pt1;
+    }
+    else {
+      p = pt2;
+      pts.push(pt1);
+    }
+    debugger;
+    emitChange({point: p, type: 'remove'})
   }
   evtEmitter.addLine = addLine;
   evtEmitter.addPoint = addPoint;
@@ -61,6 +78,7 @@ angular.module('flipEditor').factory('lineFactory', ['$rootScope', 'libFactory',
     cps = [];
     emitChange({points: s, controlPoints: cs});
   };
+  evtEmitter.removePoint = removePoint;
   evtEmitter.addInterpolation = function (name, color) {
     var opt = {
       name: name,

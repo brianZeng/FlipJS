@@ -4,10 +4,11 @@
 angular.module('flipEditor').factory('libFactory', function () {
   var interpolations = [];
 
-  function InterDef(name, requireCP) {
-    if (!(this instanceof InterDef))return new InterDef(name, requireCP);
+  function InterDef(name, requireCP, color) {
+    if (!(this instanceof InterDef))return new InterDef(name, requireCP, color);
     this.name = name;
     this.requireCP = !!requireCP;
+    this.color = color || 'blue';
     interpolations.push(this);
   }
 
