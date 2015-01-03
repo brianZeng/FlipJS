@@ -16,14 +16,5 @@ angular.module('flipEditor').controller('editorController', ['lineFactory', '$sc
   lineFactory.pointModel = this.pointModel = this.pointTypes[0];
   self.addInterpolation = function (name) {
     lineFactory.addInterpolation(name, 'blue');
-    /*var inter = Flip.interpolate({
-     name: name, data: lineFactory.sort(function (a, b) {
-        return a.i > b.i
-     }),cps:lineFactory
-    });
-    lineFactory.clearPoints();
-    lineFactory.addLine({
-      color: 'blue', points: inter.itor().all(), name: name
-     });*/
   }
 }]);

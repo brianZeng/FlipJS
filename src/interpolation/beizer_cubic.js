@@ -22,47 +22,50 @@ Flip.interpolation({
       return function (i, cp0, cp1, x1, y1) {
         var xs, ys;
         if (arguments.length == 3) {
-          xs = [vec(cp0, 'x'), cp1 ? vec(cp1, 'x') : NaN];
-          ys = [vec(cp0, 'y'), cp1 ? vec(cp1, 'y') : NaN];
+          if (cp0) {
+            xs = [vec(cp0, 'x'), cp1 ? vec(cp1, 'x') : NaN];
+            ys = [vec(cp0, 'y'), cp1 ? vec(cp1, 'y') : NaN];
+          } else xs = ys = [NaN, NaN];
         }
-        else {
+        else if (arguments.length == 5) {
           xs = [cp0, x1];
           ys = [cp1, y1];
         }
+        else throw  Error('invalid arguments');
         this.coefficeint[i] = {x: new Float32Array(xs), y: new Float32Array(ys)}
       }
     })(),
     _initControlPoints: function (opt) {
-      var xs = this.axis.x, segCount = xs.length - 1, i, j, gps, cy, cx, len = segCount * 2, cpLen;
+      var xs = this.axis.x, segCount = xs.length - 1, i, j, gps, cy, cx, len = segCount * 2, vec;
       this.coefficeint = new Array(segCount);
+      if (!opt.cps && !opt.cx && !opt.cy && (vec = opt.startVec))
+        opt = {cps: [[xs[0] + Vec.get(vec, 'x'), this.axis.y[0] + Vec.get(vec, 'y')]]};
       if (gps = opt.cps)
-        for (j = i = 0, cpLen = gps.length; i < len && i < cpLen; i += 2, j++)
+        for (j = i = 0; i < len; i += 2, j++)
           this.setCP(j, gps[i], gps[i + 1]);
       else if ((cx = opt.cx) && (cy = opt.cy))
         for (j = i = 0; i < len; i += 2, j++)
           this.setCP(j, cx[i], cy[i], cx[i + 1], cy[i + 1]);
-      this._ensureControlPoints(opt);
+      else throw Error('can not generate controlPoints');
+      this._ensureControlPoints();
     },
-    _ensureControlPoints: function (opt) {
-      var vec, co = this.coefficeint, cp0x = co[0].x[0], cp0y = co[0].y[0], xs = this.axis.x, ys = this.axis.y, segCount = xs.length - 1;
-      if (isNaN(cp0x) || isNaN(cp0y)) {
-        if (vec = opt.startVec) {
-          co[0].x[0] = xs[0] + Vec.get(vec, 'x');
-          co[0].y[0] = ys[0] + Vec.get(vec, 'y');
+    _ensureControlPoints: function () {
+      var co = this.coefficeint, xs = this.axis.x, ys = this.axis.y, segCount = xs.length - 1, cp;
+      if (!(cp = co[0]))
+        throw Error('the first control point needed');
+      for (var i = 0, r; i < segCount; i++) {
+        r = this.calCP(xs[i], ys[i], xs[i + 1], ys[i + 1], cp.x[0], cp.y[0]);
+        setCPWhenNaN(1, r[0], r[1]);
+        cp = co[i + 1];
+        setCPWhenNaN(0, r[2], r[3]);
+      }
+      function setCPWhenNaN(index, x, y) {
+        if (cp) {
+          if (isNaN(cp.x[index]))
+            cp.x[index] = x;
+          if (isNaN(cp.y[index]))
+            cp.y[index] = y;
         }
-        else throw Error('the first control point needed');
-      }
-      for (var i = 0, coefficient = co[0], r; i < segCount; i++) {
-        r = this.calCP(xs[i], ys[i], xs[i + 1], ys[i + 1], coefficient.x[0], coefficient.y[0]);
-        setCP(1, r[0], r[1]);
-        coefficient = co[i + 1];
-        setCP(0, r[2], r[3]);
-      }
-      function setCP(i, x, y) {
-        if (isNaN(coefficient.x[i]))
-          coefficient.x[i] = x;
-        if (isNaN(coefficient.y[i]))
-          coefficient.y[i] = y;
       }
     },
     useSeg: function (seg) {
