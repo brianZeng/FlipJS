@@ -62,8 +62,8 @@
         <select ng-model="editorCtrl.itplModel" ng-options="itpl.name for itpl in editorCtrl.interpolations"
                 ></select>
         <button ng-click="editorCtrl.addInterpolation()">Add Line</button>
-        <button>Decompose Line</button>
-        <button>Remove Line</button>
+        <button ng-click="editorCtrl.decomposeLine()">Decompose Line</button>
+        <button ng-click="editorCtrl.removeLine()">Remove Line</button>
     </p>
 
 </div>

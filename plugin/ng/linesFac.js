@@ -1,5 +1,5 @@
 angular.module('flipEditor').factory('lineFactory', ['$rootScope', 'libFactory', function ($rootScope, libFactory) {
-  var lines = [], pts = [], cps = [], arr = Flip.util.Array, evtEmitter = Flip.util.Object({
+  var lines = [], pts = [], cps = [], itpls = [], arr = Flip.util.Array, evtEmitter = Flip.util.Object({
     get lines() {
       return lines;
     },
@@ -29,18 +29,20 @@ angular.module('flipEditor').factory('lineFactory', ['$rootScope', 'libFactory',
 
   function addLine(opt) {
     var line = {};
-    if (findLine(line.name = opt.name))return false;
+    if (findLine(line.name = opt.name)) {
+      line.name += pointIndex;
+    }
     line.points = opt.points.slice();
     line.color = opt.color || '#000';
     line.lineWidth = opt.lineWidth || 1;
     lines.push(line);
-    emitChange({line: line});
+    emitChange({line: line, type: 'add'});
     return line;
   }
 
   function addPoint(opt) {
     var p = {}, pt = evtEmitter.pointModel;
-    p.r = opt.r || 1;
+    p.r = opt.r || 2;
     p.x = opt.x;
     p.y = opt.y;
     p.id = pointIndex++;
@@ -50,9 +52,6 @@ angular.module('flipEditor').factory('lineFactory', ['$rootScope', 'libFactory',
     emitChange({point: p, type: 'add'});
   }
 
-  function sortByIndex(a, b) {
-    return a.id > b.id
-  }
 
   function removePoint() {
     var pt1 = pts.pop(), pt2 = cps.pop(), p;
@@ -77,6 +76,22 @@ angular.module('flipEditor').factory('lineFactory', ['$rootScope', 'libFactory',
     cps = [];
     emitChange({points: s, controlPoints: cs});
   };
+  evtEmitter.removeLine = function () {
+    var l = lines.pop();
+    if (l) {
+      itpls.pop();
+      emitChange({line: l, type: 'remove'});
+    }
+  };
+
+  evtEmitter.decomposeLine = function () {
+    var opt = itpls[itpls.length - 1];
+    if (opt) {
+      opt.points.forEach(function (p) {
+        addPoint(p);
+      });
+    }
+  };
   evtEmitter.removePoint = removePoint;
   evtEmitter.addInterpolation = function (name, color) {
     var opt = {
@@ -84,9 +99,14 @@ angular.module('flipEditor').factory('lineFactory', ['$rootScope', 'libFactory',
       data: pts.slice(),
       cps: cps.slice()
     }, itpl = Flip.interpolate(opt);
-    console.log(itpl.when(0), pts[0]);
     addLine({
-      color: 'blue', points: itpl.itor().all(), name: name
+      color: color, points: itpl.itor().all(), name: name
+    });
+    itpls.push({
+      name: name,
+      points: pts.concat(cps).map(Flip.util.Object).sort(function (a, b) {
+        return a.id - b.id;
+      })
     });
     evtEmitter.clearPoints();
   };

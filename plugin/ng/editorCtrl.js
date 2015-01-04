@@ -3,6 +3,9 @@ angular.module('flipEditor').controller('editorController', ['lineFactory', '$sc
   ['lines', 'interpolations'].forEach(function (pro) {
     Object.defineProperty(self, pro, Object.getOwnPropertyDescriptor(lineFactory, pro));
   });
+  ['removeLine', 'removePoint', 'decomposeLine'].forEach(function (n) {
+    self[n] = lineFactory[n];
+  });
   this.itplModel = lineFactory.interpolations[0];
   this.allPoints = [];
   this.pointTypes = [{type: 'data', color: 'red'}, {type: 'control', color: 'green'}];
@@ -19,5 +22,5 @@ angular.module('flipEditor').controller('editorController', ['lineFactory', '$sc
     var model = self.itplModel;
     lineFactory.addInterpolation(model.name, model.color || 'blue');
   };
-  self.removePoint = lineFactory.removePoint;
+
 }]);

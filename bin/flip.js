@@ -1628,36 +1628,36 @@ Flip.interpolation({
       this._ensureControlPoints(opt);
     },
     _ensureControlPoints: function (opt) {
-      var co = this.coefficeint, cox=co.x, coy=co.y, vec,
+      var co = this.coefficeint, cox = co.x, coy = co.y, vec,
         xs = this.axis.x, ys = this.axis.y, segCount = xs.length - 1;
-      if(isNaN(cox[0])||isNaN(cox[1])){
-        vec=opt.startVec||[0,0];
-        r=this.calCP(xs[0],ys[0],xs[1],ys[1],xs[0]+Vec.get(vec,'x'),ys[0]+Vec.get(vec,'y'));
-        setCPWhenNaN(0,r);
+      if (isNaN(cox[0]) || isNaN(cox[1])) {
+        vec = opt.startVec || [0, 0];
+        r = this.calCP(xs[0], ys[0], xs[1], ys[1], xs[0] + Vec.get(vec, 'x'), ys[0] + Vec.get(vec, 'y'));
+        setCPWhenNaN(0, r);
       }
-      for (var i = 1,ci= 2, r; i < segCount; ci=2*(++i)) {
-        r = this.calCP(xs[i], ys[i], xs[i + 1], ys[i + 1], xs[i-1], ys[i-1]);
+      for (var i = 1, ci = 2, r; i < segCount; ci = 2 * (++i)) {
+        r = this.calCP(xs[i], ys[i], xs[i + 1], ys[i + 1], xs[i - 1], ys[i - 1]);
         setCPWhenNaN(ci, r);
       }
-      function setCPWhenNaN(index,cps) {
+      function setCPWhenNaN(index, cps) {
         if (isNaN(cox[index]))
           cox[index] = cps[0];
         if (isNaN(coy[index]))
           coy[index] = cps[1];
-        if (isNaN(cox[index+1]))
-          cox[index+1] = cps[2];
-        if (isNaN(coy[index+1]))
-          coy[index+1] = cps[3];
+        if (isNaN(cox[index + 1]))
+          cox[index + 1] = cps[2];
+        if (isNaN(coy[index + 1]))
+          coy[index + 1] = cps[3];
       }
     },
     useSeg: function (seg) {
       var i0 = seg.i0, co = this.coefficeint, cx = co.x, cy = co.y, ci = i0 * 2;
       return this.interpolateSeg(seg.t, [seg.x0, cx[ci], cx[ci + 1], seg.x1], [seg.y0, cy[ci], cy[ci + 1], seg.y1]);
     },
-    calCP: function (P0x, P0y, P1x, P1y,P_1x,P_1y) {
+    calCP: function (P0x, P0y, P1x, P1y, P_1x, P_1y) {
       //CP0=P0+(P1-P_1)/2;CP1=P0-(P1-P_1)/2;
-      var dx=(P1x-P_1x)/ 6,dy=(P1y-P_1y)/6;
-      return [P0x+dx,P0y+dy,P0x-dx,P0y-dy];
+      var dx = (P1x - P_1x) / 6, dy = (P1y - P_1y) / 6;
+      return [P0x + dx, P0y + dy, P0x - dx, P0y - dy];
     }
   }
 });
@@ -1677,13 +1677,12 @@ Flip.interpolation({
       this._initControlPoints(opt);
     },
     _ensureControlPoints: function (opt) {
-      var co = this.coefficeint, xs = this.axis.x, ys = this.axis.y, cox = co.x, coy = co.y,vec;
+      var co = this.coefficeint, xs = this.axis.x, ys = this.axis.y, cox = co.x, coy = co.y, vec;
       //C(i+1)+Ci=2P(i+1);
-      if(isNaN(cox[0])||isNaN(cox[1]))
-      {  //2(Pc-P0)=Pt0
-        vec = opt.startVec||[1,1];
-        cox[0] = Vec.get(vec, 'x')+xs[0];
-        coy[0] = Vec.get(vec, 'y')+ys[0];
+      if (isNaN(cox[0]) || isNaN(cox[1])) {  //2(Pc-P0)=Pt0
+        vec = opt.startVec || [1, 1];
+        cox[0] = Vec.get(vec, 'x') + xs[0];
+        coy[0] = Vec.get(vec, 'y') + ys[0];
       }
       for (var i = 0, len = cox.length, ni; i < len; i++) {
         if (isNaN(cox[ni = i + 1]))cox[ni] = 2 * xs[ni] - cox[i];
@@ -1691,7 +1690,7 @@ Flip.interpolation({
       }
     },
     _initControlPoints: function (opt) {
-      var xs = this.axis.x, segLen = xs.length - 1,co, cx, cy;
+      var xs = this.axis.x, segLen = xs.length - 1, co, cx, cy;
       this.coefficeint = co = {
         x: new Float32Array(new Array(segLen)), y: new Float32Array(new Array(segLen))
       };

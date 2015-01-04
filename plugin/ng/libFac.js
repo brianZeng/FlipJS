@@ -12,7 +12,10 @@ angular.module('flipEditor').factory('libFactory', function () {
     interpolations.push(this);
   }
 
-  ['linear', 'quadratic', 'cubic', 'lagrange'].forEach(InterDef);
+  InterDef('linear');
+  InterDef('quadratic');
+  InterDef('cubic');
+  InterDef('lagrange');
   InterDef('beizer-2', 1);
   InterDef('beizer-3', 1);
   return {
