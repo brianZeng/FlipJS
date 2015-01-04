@@ -54,13 +54,16 @@
         <select ng-model="editorCtrl.pointModel" ng-options="pt.type for pt in editorCtrl.pointTypes"
                 ng-change="editorCtrl.modelChange()" ng-class="editorCtrl.pointModel.color">
         </select>
-        <button ng-click="editorCtrl.removePoint()">remove</button>
+        <button ng-click="editorCtrl.removePoint()">Remove Point</button>
+
     </p>
     <p>
         <b>interpolation Type</b>
         <select ng-model="editorCtrl.itplModel" ng-options="itpl.name for itpl in editorCtrl.interpolations"
                 ></select>
-        <button ng-click="editorCtrl.addInterpolation()">addLine</button>
+        <button ng-click="editorCtrl.addInterpolation()">Add Line</button>
+        <button>Decompose Line</button>
+        <button>Remove Line</button>
     </p>
 
 </div>

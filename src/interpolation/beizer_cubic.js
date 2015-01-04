@@ -40,47 +40,50 @@ Flip.interpolation({
       }
     },
     _initControlPoints: function (opt) {
-      var xs = this.axis.x, segCount = xs.length - 1, i, j, gps, cy, cx, len = segCount * 2, vec;
+      var xs = this.axis.x, segCount = xs.length - 1, i, j, gps, cy, cx, len = segCount * 2;
       this.coefficeint = {
         x: new Float32Array(new Array(len)),
         y: new Float32Array(new Array(len))
       };
-      if (!opt.cps && !opt.cx && !opt.cy && (vec = opt.startVec))
-        opt = {cps: [[xs[0] + Vec.get(vec, 'x'), this.axis.y[0] + Vec.get(vec, 'y')]]};
       if (gps = opt.cps)
         for (j = i = 0; i < len; i += 2, j++)
           this.setCP(j, gps[i], gps[i + 1]);
       else if ((cx = opt.cx) && (cy = opt.cy))
         for (j = i = 0; i < len; i += 2, j++)
           this.setCP(j, cx[i], cy[i], cx[i + 1], cy[i + 1]);
-      else throw Error('can not generate controlPoints');
-      this._ensureControlPoints();
+      this._ensureControlPoints(opt);
     },
-    _ensureControlPoints: function () {
-      var co = this.coefficeint, xs = this.axis.x, ys = this.axis.y, segCount = xs.length - 1, ci, cox, coy;
-      if (isNaN((cox = co.x)[0]) || isNaN((coy = co.y)[0]))
-        throw Error('the first control point needed');
-      for (var i = 0, r; i < segCount; i++) {
-        r = this.calCP(xs[i], ys[i], xs[i + 1], ys[i + 1], cox[ci = i * 2], coy[ci]);
-        setCPWhenNaN(ci + 1, r[0], r[1]);
-        setCPWhenNaN(ci + 2, r[2], r[3]);
+    _ensureControlPoints: function (opt) {
+      var co = this.coefficeint, cox = co.x, coy = co.y, vec,
+        xs = this.axis.x, ys = this.axis.y, segCount = xs.length - 1;
+      if (isNaN(cox[0]) || isNaN(cox[1])) {
+        vec = opt.startVec || [0, 0];
+        r = this.calCP(xs[0], ys[0], xs[1], ys[1], xs[0] + Vec.get(vec, 'x'), ys[0] + Vec.get(vec, 'y'));
+        setCPWhenNaN(0, r);
       }
-      function setCPWhenNaN(index, x, y) {
+      for (var i = 1, ci = 2, r; i < segCount; ci = 2 * (++i)) {
+        r = this.calCP(xs[i], ys[i], xs[i + 1], ys[i + 1], xs[i - 1], ys[i - 1]);
+        setCPWhenNaN(ci, r);
+      }
+      function setCPWhenNaN(index, cps) {
         if (isNaN(cox[index]))
-          cox[index] = x;
+          cox[index] = cps[0];
         if (isNaN(coy[index]))
-          coy[index] = y;
+          coy[index] = cps[1];
+        if (isNaN(cox[index + 1]))
+          cox[index + 1] = cps[2];
+        if (isNaN(coy[index + 1]))
+          coy[index + 1] = cps[3];
       }
     },
     useSeg: function (seg) {
       var i0 = seg.i0, co = this.coefficeint, cx = co.x, cy = co.y, ci = i0 * 2;
       return this.interpolateSeg(seg.t, [seg.x0, cx[ci], cx[ci + 1], seg.x1], [seg.y0, cy[ci], cy[ci + 1], seg.y1]);
     },
-    calCP: function (P0x, P0y, P1x, P1y, CP0x, CP0y) {
-      //Pt1_i=Pt0_i+1 => 2P1_i=CP1_i+CP0_i+1
-      //Ptt0_i=0 => 2CP0_i=CP1_i+P0_i
-      var CP1x = 2 * CP0x - P0x, CP1y = 2 * CP0y - P0y;
-      return [CP1x, CP1y, 2 * P1x - CP1x, 2 * P1y - CP1y];
+    calCP: function (P0x, P0y, P1x, P1y, P_1x, P_1y) {
+      //CP0=P0+(P1-P_1)/2;CP1=P0-(P1-P_1)/2;
+      var dx = (P1x - P_1x) / 6, dy = (P1y - P_1y) / 6;
+      return [P0x + dx, P0y + dy, P0x - dx, P0y - dy];
     }
   }
 });

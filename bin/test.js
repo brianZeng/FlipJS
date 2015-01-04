@@ -355,8 +355,26 @@ describe('quadraticBeizer',function(){
       expect(p.x).toBeCloseTo(opt.x[i]);
       expect(p.y).toBeCloseTo(opt.y[i]);
     }
-
   });
+  it('generate cps:',function(){
+    opt={
+      x:[10,0,10],
+      y:[10,20,30],
+      cps:[[2,2]],
+      name:'beizer-2'
+    };
+    inter=Flip.interpolate(opt);
+    expect(coefficientNaN).not.toThrow();
+    delete  opt.cps;
+    opt.cx=[1];
+    opt.cy=[2];
+    expect(coefficientNaN).not.toThrow();
+    function coefficientNaN(){
+      for(var i= 0,ys=inter.coefficeint.y,xs=inter.coefficeint.x,len=ys.length;i<len;i++){
+        if(isNaN(ys[i])||isNaN(xs[i]))throw Error('invalid coefficient:'+i)
+      }
+    }
+  })
 });
 describe('cubicBeizer',function(){
   var opt={
@@ -374,11 +392,11 @@ describe('cubicBeizer',function(){
   }
   it('construct',function(){
     opt.cps=[[0,-0],{x:1,y:-1},{x:2,y:-2},[3,-3]];
-    testCoefficient();
+    expect(testCoefficient).not.toThrow();
     delete  opt.cps;
     opt.cx=[0,1,2,3];
     opt.cy=[-0,-1,-2,-3];
-    testCoefficient();
+    expect(testCoefficient).not.toThrow();
   });
   function optPoint(i){
     return {x:opt.x[i],y:opt.y[i]}
@@ -395,7 +413,7 @@ describe('cubicBeizer',function(){
       x:[10,20,30,40,50,60],
       y:[0,10,0,10,0,10],
       name:opt.name,
-      startVec:[10,10]
+      startVec:[4,4]
     };
     inter=Flip.interpolate(opt);
     expect(inter.coefficeint.x.length).toBe(10);
@@ -406,10 +424,15 @@ describe('cubicBeizer',function(){
     inter=Flip.interpolate(opt);
     expect(inter.coefficeint.y.length).toBe(10);
     ensureCoefficient();
+    opt.cps=[[20,10]];
+    inter=Flip.interpolate(opt);
+    expect(inter.coefficeint.y.length).toBe(10);
+    ensureCoefficient();
     function ensureCoefficient(){
-      for(var i= 0,co=inter.coefficeint,ce=co[0];ce;ce=co[++i])
-        if(isNaN(ce.x[0])||isNaN(ce.y[0])||isNaN(ce.x[1])||isNaN(ce.y[1]))
+      for(var i= 0,co=inter.coefficeint,cex=co.x,cey=co.y,len=cex.length;i<len;i++)
+        if(isNaN(cex[i])||isNaN(cey[i]))
            throw Error('coefficient:'+i+'not valid');
     }
+
   })
 });

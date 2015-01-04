@@ -67,7 +67,6 @@ angular.module('flipEditor').factory('lineFactory', ['$rootScope', 'libFactory',
       p = pt2;
       pts.push(pt1);
     }
-    debugger;
     emitChange({point: p, type: 'remove'})
   }
   evtEmitter.addLine = addLine;
@@ -82,11 +81,12 @@ angular.module('flipEditor').factory('lineFactory', ['$rootScope', 'libFactory',
   evtEmitter.addInterpolation = function (name, color) {
     var opt = {
       name: name,
-      data: pts.sort(sortByIndex),
-      cps: cps.sort(sortByIndex)
-    };
+      data: pts.slice(),
+      cps: cps.slice()
+    }, itpl = Flip.interpolate(opt);
+    console.log(itpl.when(0), pts[0]);
     addLine({
-      color: 'blue', points: Flip.interpolate(opt).itor().all(), name: name
+      color: 'blue', points: itpl.itor().all(), name: name
     });
     evtEmitter.clearPoints();
   };
