@@ -56,8 +56,12 @@ angular.module('flipEditor').controller('cvsController', ['$element', 'lineFacto
 
   function invalid() {
     self._invalid = true;
+
   }
 
+  function correlatePosition(e) {
+    return {x: e.clientX - cvs.offsetLeft - cvs.width / 2, y: cvs.height / 2 - (e.clientY - cvs.offsetTop)};
+  }
   this.axisColor = 'black';
   self.background = 'rgba(0,0,0,0.3)';
   this.lineWidth = 1;
@@ -65,9 +69,12 @@ angular.module('flipEditor').controller('cvsController', ['$element', 'lineFacto
   lineFactory.onchange = function (e) {
     self.invalid();
   };
+
+  cvs.height = (cvs.width = $element.parent()[0].clientWidth / 2) / 4 * 3;
   redraw(self._invalid = true);
   $element.on('click', function (e) {
-    var x = e.clientX - cvs.offsetLeft - cvs.width / 2, y = cvs.height / 2 - (e.clientY - cvs.offsetTop);
-    lineFactory.addPoint({x: x, y: y, r: 2});
+    var p = correlatePosition(e);
+    p.r = 2;
+    lineFactory.addPoint(p);
   });
 }]);
