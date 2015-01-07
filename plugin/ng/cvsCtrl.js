@@ -56,6 +56,7 @@ angular.module('flipEditor').controller('cvsController', ['$element', 'lineFacto
 
   function invalid() {
     self._invalid = true;
+
   }
 
   function correlatePosition(e) {
@@ -70,7 +71,6 @@ angular.module('flipEditor').controller('cvsController', ['$element', 'lineFacto
   };
 
   cvs.height = (cvs.width = $element.parent()[0].clientWidth / 2) / 4 * 3;
-
   redraw(self._invalid = true);
   $element.on('click', function (e) {
     var p = correlatePosition(e);

@@ -3,10 +3,17 @@
  */
 var config = {
   concat: {
-    animation: {
+    flipBasic: {
       files: {
         'bin/flip.js': ['src/util.js', 'src/*.js', 'src/animations/*.js', 'src/interpolation/*.js'],
         'bin/Flip.js': ['bin/flip.js']
+      }
+    },
+    flipExtra: {
+      files: {
+        'bin/flip_extra.js': ['src/util.js', 'src/*.js', 'src/animations/*.js', 'src/interpolation/*.js',
+          'plugin/flip/*.js'],
+        'bin/Flip_extra.js': ['bin/flip_extra.js']
       }
     },
     ng: {
@@ -19,8 +26,9 @@ var config = {
     },
     options: {
       process: function (src, path) {
-        if (path.indexOf('bin/flip.js') == 0)
+        if (path.indexOf('bin/flip') == 0) {
           return '(function(){*})();'.replace('*', src);
+        }
         return src;
       },
       stripBanners: true
@@ -28,9 +36,16 @@ var config = {
   }
 };
 config.watch = {
-  scripts: {
+  flipBasic: {
     files: 'src/**/*.js',
-    tasks: ['concat:animation'],
+    tasks: ['concat:flipBasic'],
+    options: {
+      interrupt: true
+    }
+  },
+  flipExtra: {
+    files: ['src/**/*.js', 'plugin/flip/*.js'],
+    tasks: ['concat:flipExtra'],
     options: {
       interrupt: true
     }
@@ -50,7 +65,8 @@ config.watch = {
 config.uglify = {
   flip: {
     files: {
-      'bin/flip.min.js': 'bin/flip.js'
+      'bin/flip.min.js': 'bin/flip.js',
+      'bin/flip_extra.min.js': 'bin/flip_extra.js'
     }
   },
   atrk: {

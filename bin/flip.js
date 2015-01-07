@@ -134,6 +134,7 @@ function arrSameSeq(arr, func_ProName, des) {
 }
 array.remove = arrRemove;
 array.add = arrAdd;
+array.first=arrFirst;
 function mapProName(proNameOrFun) {
   if (typeof proNameOrFun == "function")return proNameOrFun;
   else if (proNameOrFun && typeof proNameOrFun == "string")
@@ -178,6 +179,8 @@ inherit(array, Array, {
   },
   safeFilter: function (callback, thisObj) {
     return arrSafeFilter(this, callback, thisObj);
+  },first:function(func_proName){
+    return arrFirst(this,func_proName);
   }
 });
 
