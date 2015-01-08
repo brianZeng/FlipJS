@@ -134,7 +134,7 @@ function arrSameSeq(arr, func_ProName, des) {
 }
 array.remove = arrRemove;
 array.add = arrAdd;
-array.first=arrFirst;
+array.first = arrFirst;
 function mapProName(proNameOrFun) {
   if (typeof proNameOrFun == "function")return proNameOrFun;
   else if (proNameOrFun && typeof proNameOrFun == "string")
@@ -179,8 +179,8 @@ inherit(array, Array, {
   },
   safeFilter: function (callback, thisObj) {
     return arrSafeFilter(this, callback, thisObj);
-  },first:function(func_proName){
-    return arrFirst(this,func_proName);
+  }, first: function (func_proName) {
+    return arrFirst(this, func_proName);
   }
 });
 
@@ -262,6 +262,7 @@ function objReduce(object, callback, initialValue, thisObj, arg) {
   }
   return initialValue;
 }
+
 obj.reduce = objReduce;
 inherit(obj, null, {
   on: function (evtName, handler) {
@@ -283,6 +284,7 @@ inherit(obj, null, {
 function cloneFunc(value, key) {
   this[key] = value;
 }
+
 function Interpolation(opt) {
   if (!(this instanceof Interpolation))return new Interpolation(opt);
   if (opt.data instanceof Array) {

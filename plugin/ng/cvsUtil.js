@@ -38,14 +38,13 @@ angular.module('flipEditor').factory('cvsUtil', [function () {
         ctx.restore();
         ctx.translate(w / 2, h / 2);
       },
-      point: function (p) {
+      point: function drawPoint (p) {
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, PI2);
         ctx.fillStyle = p.color;
         ctx.fill();
       },
       line: function (line) {
-
         var i, point, pts = line.points;
         ctx.save();
         ctx.beginPath();

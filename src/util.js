@@ -265,6 +265,7 @@ function objReduce(object, callback, initialValue, thisObj, arg) {
   }
   return initialValue;
 }
+
 obj.reduce = objReduce;
 inherit(obj, null, {
   on: function (evtName, handler) {

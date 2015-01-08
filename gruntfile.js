@@ -20,6 +20,10 @@ var config = {
       src: 'plugin/ng/*.js',
       dest: 'bin/ng.js'
     },
+    editor_ng:{
+      src: 'plugin/ng/editor/*.js',
+      dest: 'bin/editor-ng.js'
+    },
     test: {
       src: 'test/*.js',
       dest: 'bin/test.js'
@@ -56,6 +60,10 @@ config.watch = {
     options: {
       interrupt: true
     }
+  },
+  editor_ng: {
+    files: 'plugin/ng/editor/*.js',
+    tasks: ['concat:editor_ng']
   },
   ng: {
     files: 'plugin/ng/*.js',

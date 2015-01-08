@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <link rel="stylesheet" href="../bower_components/angular/angular-csp.css">
+    <script src="../bin/flip.js"></script>
+    <style>
+        canvas {
+            background: #ffffff;
+        }
+    </style>
+</head>
+<body ng-app="flipEditor">
+<div>
+<canvas ng-controller="cvsCtrl"></canvas>
+</div>
+<script src="../bower_components/angular/angular.js"></script>
+<script>
+    angular.module('flipEditor', []);
+</script>
+<script src="../bin/editor-ng.js"></script>
+</body>
+</html>
