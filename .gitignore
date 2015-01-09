@@ -2,9 +2,7 @@ node_modules
 .idea
 .git
 lib
-test
 images
 projectFilesBackup
 bower_components
-bin/atrk.js
 bin
