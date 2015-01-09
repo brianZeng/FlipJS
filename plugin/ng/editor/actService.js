@@ -25,17 +25,17 @@ angular.module('flipEditor').factory('actMng',['actDefs',function(defs){
     },
     act:function(idOrName,arg,trace){
       if(this.disabled)return;
-      var rds=this.records,action,defMap=this.actDefs,record,actName,def;
+      var rds=this.records,action,defMap=this.actDefs,actName,def;
       action={
         save:function(confirm){ trace=confirm;},
         previous:rds[rds.length-1]
       };
       if(isNaN(idOrName))
-        def=action.defination=isNaN(idOrName)?defMap[idOrName]:objFindValue(defMap,function(def){return def.id==idOrName});
+        def=action.definition=isNaN(idOrName)?defMap[idOrName]:objFindValue(defMap,function(def){return def.id==idOrName});
       actName=def? def.name:idOrName;
       this.emit('act:'+actName,[arg,action]);
       if(trace){
-        (rds=this.records).push(record={name:actName,arg:arg,previous:action.previous});
+        (rds=this.records).push({name:actName,arg:arg,previous:action.previous});
         if(rds.length>this.maxRecords)
           this.unshift();
       }
@@ -43,7 +43,7 @@ angular.module('flipEditor').factory('actMng',['actDefs',function(defs){
     undo:function(){
       var res=this.records, rec=res.pop();
       if(rec)
-        this.emit('undo:'+rec.name,[rec.arg,{action:this.actDefs[rec.name],previous:rec.previous}]);
+        this.emit('undo:'+rec.name,[rec.arg,{definition:this.actDefs[rec.name],previous:rec.previous}]);
     },
     react:function(actionName,handler,once){
       var evtName='act:'+actionName,h=once?'once':'on';
@@ -58,6 +58,10 @@ angular.module('flipEditor').factory('actMng',['actDefs',function(defs){
     pair:function(actionName,react,fallback,once){
       this.react(actionName,react,once);
       return this.fallback(actionName,fallback,once);
+    },
+    clearRecords:function(){
+      this.records=[];
+      return this;
     }
   });
   mng=new ActionManger();

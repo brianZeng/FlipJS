@@ -2,7 +2,7 @@
  * Created by 柏子 on 2015/1/8.
  */
 angular.module('flipEditor').controller('cvsCtrl',['$element','dataFac','actMng',function($element,dataFac,actMng){
-  var cvs = $element[0], ctx = cvs.getContext('2d'), self = this, PI2 = Math.PI * 2,invalid;
+  var cvs = $element[0], ctx = cvs.getContext('2d'), self = this, PI2 = Math.PI * 2,invalid,arr=Flip.util.Array;
   invalid=(function(_invalid){
     Flip.instance.on('frameStart',function(){
       if(_invalid){
@@ -55,7 +55,7 @@ angular.module('flipEditor').controller('cvsCtrl',['$element','dataFac','actMng'
     return {target:target,type:type,position:p};
   }
   function hitPoints(p){
-    return dataFac.points.first(function(point){return ptContain(point,p)});
+    return arr.first(dataFac.points,function(point){return ptContain(point,p)});
   }
   function hitLines(p){
 

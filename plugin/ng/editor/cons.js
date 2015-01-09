@@ -39,6 +39,7 @@ angular.module('flipEditor').constant('actDefs',{
     def.cp=def.cp||0;
     def.name=name;
     r.push(def);
+    r[name]=def;
   });
   return r;
 }(

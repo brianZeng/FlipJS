@@ -103,7 +103,7 @@
         if (!event.combine(this._lastKey)) {
           this.kEvents.push(event);
           this._lastKey = event;
-          event.defination = this.getKeyDefinition(event.keyCode);
+          event.definition = this.getKeyDefinition(event.keyCode);
         }
       return this;
     },
@@ -169,7 +169,7 @@
   function KeyEvent(e, action) {
     this.action = action;
     this.keyCode = e.keyCode || e.which;
-    this.defination = undefined;
+    this.definition = undefined;
     this.repeat = 1;
     this.event = action == actionType.DOWN ? eventType.PRESS : eventType.RELEASE;
     this.startTime = this.timeStamp = Date.now();
@@ -267,7 +267,7 @@
     get eventType() {
       return eventTypeName(this.event);
     },
-    get defination() {
+    get definition() {
       return eventTypeName(this.event);
     },
     type: 'point'
