@@ -14,6 +14,9 @@
 <body ng-app="flipEditor">
 <div>
 <canvas ng-controller="cvsCtrl"></canvas>
+    <ol ng-controller="actionCtrl as actCtrl">
+        <li><button ng-click="actCtrl.undo()">undo</button></li>
+    </ol>
 </div>
 <script src="../bower_components/angular/angular.js"></script>
 <script>

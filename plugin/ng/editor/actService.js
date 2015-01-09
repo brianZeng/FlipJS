@@ -11,6 +11,7 @@ angular.module('flipEditor').factory('actMng',['actDefs',function(defs){
     this.actDefs={};
     this.records=[];
     this.maxRecords=100;
+    this.disabled=false;
   }
   Flip.util.inherit(ActionManger,Flip.util.Object,{
     register:function(name,def){
@@ -23,23 +24,26 @@ angular.module('flipEditor').factory('actMng',['actDefs',function(defs){
       return this;
     },
     act:function(idOrName,arg,trace){
-      var action,defMap=this.actDefs,rds,record;
+      if(this.disabled)return;
+      var rds=this.records,action,defMap=this.actDefs,record,actName,def;
+      action={
+        save:function(confirm){ trace=confirm;},
+        previous:rds[rds.length-1]
+      };
       if(isNaN(idOrName))
-        action=isNaN(idOrName)?defMap[idOrName]:objFindValue(defMap,function(def){return def.id==idOrName});
-      if(action){
-        this.emit('act:'+action.name,[arg,action]);
-        if(trace){
-          (rds=this.records).push(record={name:action.name,arg:arg});
-          record.previous=rds[rds.length-2];
-          if(rds.length>this.maxRecords)
-            this.unshift();
-        }
-      }else this.emit('act:'+idOrName,arg);
+        def=action.defination=isNaN(idOrName)?defMap[idOrName]:objFindValue(defMap,function(def){return def.id==idOrName});
+      actName=def? def.name:idOrName;
+      this.emit('act:'+actName,[arg,action]);
+      if(trace){
+        (rds=this.records).push(record={name:actName,arg:arg,previous:action.previous});
+        if(rds.length>this.maxRecords)
+          this.unshift();
+      }
     },
     undo:function(){
       var res=this.records, rec=res.pop();
       if(rec)
-        this.on('undo:'+rec.name,[rec.arg,{action:this.actDefs[rec.name],previous:rec.previous}]);
+        this.emit('undo:'+rec.name,[rec.arg,{action:this.actDefs[rec.name],previous:rec.previous}]);
     },
     react:function(actionName,handler,once){
       var evtName='act:'+actionName,h=once?'once':'on';

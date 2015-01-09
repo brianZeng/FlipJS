@@ -2,11 +2,12 @@
  * Created by 柏子 on 2015/1/7.
  */
 angular.module('flipEditor').factory('dataFac',['actMng','itpls','$rootScope',function(actMng,itpls,rootScope){
-  var arr=Flip.util.Array, ex={invalid:function(){}},
+  var arr=Flip.util.Array, ex={invalid:noop,changeCursor:noop},
     lines=ex.lines=arr(),points=ex.points=arr(),itplModel,activePoint,fp,fl;
-  actMng.react('choose',function(e){
-    ex.activePoint=activePoint= e.target;
-  }).
+   actMng.react('choose',function(e){
+     ex.activePoint=activePoint= e.target;
+     e.position={x:activePoint.x,y:activePoint.y}
+   }).
     react('move',function(e){
       if(activePoint)
         movePoint(e.position);
@@ -23,19 +24,28 @@ angular.module('flipEditor').factory('dataFac',['actMng','itpls','$rootScope',fu
       }
     }).
     react('leave',releaseActivePoint).
-    pair('release',function(e){
-      if(!releaseActivePoint())
-        actMng.act('add point',{ point:createPoint(e.position)}
-      );
-    },function(e,ee){
-      var pre= ee.previous;
-      if(pre.name==='choose point'){
-        movePoint(pre.position);
+    pair('release',function(e,action){
+       if(activePoint){
+         movePoint(e.position);
+         releaseActivePoint(e.position);
+         action.save(true);
+       }
+       else
+         ex.addPoint(e.position);
+     }
+     ,function(e,ee){
+      var pre= ee.previous,pname;
+       if(pre){
+        movePoint(pre.arg.position,pre.arg.point);
+        //undo choose record
+        if(pre.name==='choose')
+          actMng.undo();
       }
     })
     .pair('add point',function(e){
-      addPoint(e.point);
-    },function(e){
+      var point=addPoint(e.point);
+       e.position={x:point.x,y:point.y};
+     },function(e){
       removePoint(e.point.id);
     });
   function releaseActivePoint(){
@@ -46,10 +56,11 @@ angular.module('flipEditor').factory('dataFac',['actMng','itpls','$rootScope',fu
       return true;
     }
   }
-  function movePoint(pos){
-     if(activePoint){
-       activePoint.x=pos.x;
-       activePoint.y=pos.y;
+  function movePoint(pos,point){
+    point=point||activePoint;
+     if(point){
+       point.x=pos.x;
+       point.y=pos.y;
        invalid();
      }
   }
@@ -61,6 +72,7 @@ angular.module('flipEditor').factory('dataFac',['actMng','itpls','$rootScope',fu
     if(points.findBy('id',point.id))throw Error('point has been added:'+point.id);
     points.add(point);
     invalid();
+    return point;
   }
   function removePoint(id){
     points.remove(points.findBy('id',id));
@@ -96,5 +108,11 @@ angular.module('flipEditor').factory('dataFac',['actMng','itpls','$rootScope',fu
       return type+(++cache[type])
     }
   })({});
+  ex.addPoint=function(pos,type){
+    var point=createPoint(pos);
+    actMng.act('add point',{point:point},true);
+    return point;
+  };
   return ex;
+  function noop(){}
 }]);

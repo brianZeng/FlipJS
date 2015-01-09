@@ -2,14 +2,11 @@
  * Created by 柏子 on 2015/1/7.
  */
 angular.module('flipEditor').constant('actDefs',{
-  'add dp':{
-    des:'click to add a data point'
+  'add point':{
+    des:'click to add a point'
   },
   'remove point':{
     des:'click to remove a point'
-  },
-  'add cp':{
-    des:'click to add a control point'
   },
   'select line':{
     des:'click to select a line'
