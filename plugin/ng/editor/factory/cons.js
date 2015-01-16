@@ -48,7 +48,7 @@ angular.module('flipEditor').constant('actDefs',{
     quadratic:{},
     lagrange:{},
     linear:{dp:2},
-    beizer_cubic:{ dp:2,cp:2 },
-    beizer_quadratic:{cp:1,dp:2}
+    beizerCubic:{ dp:2,cp:2 },
+    beizerQuadratic:{cp:1,dp:2}
   }
 ));

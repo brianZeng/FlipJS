@@ -3,6 +3,7 @@
  */
 angular.module('flipEditor').controller('cvsCtrl',['$element','dataFac','actMng',function($element,dataFac,actMng){
   var cvs = $element[0], ctx = cvs.getContext('2d'), self = this, PI2 = Math.PI * 2,invalid,arr=Flip.util.Array;
+  var objForEach=Flip.util.Object.forEach;
   invalid=(function(_invalid){
     Flip.instance.on('frameStart',function(){
       if(_invalid){
@@ -17,13 +18,21 @@ angular.module('flipEditor').controller('cvsCtrl',['$element','dataFac','actMng'
     }
   })(true);
   dataFac.changeCursor=changeCursor;
+  var pointColor={
+    data:'red',
+    control:'green',
+    data_f:'orange',
+    control_f:'darkgreen'
+  };
   function draw(){
     drawAxis();
     dataFac.lines.forEach(drawLine);
     dataFac.points.forEach(drawPoint);
+    dataFac.usedCps.forEach(drawPoint);
   }
   Flip.util.Object.forEach({
     mousedown:function(e){
+      if(e.button!==0)return;
       var pos=correlatePos(e),hit;
       if(hit=hitTest(pos))
         actMng.act('choose',hit);
@@ -36,6 +45,7 @@ angular.module('flipEditor').controller('cvsCtrl',['$element','dataFac','actMng'
       actMng.act('move',{position: pos,hitTest:function(){return hitTest(pos)}});
     },
     mouseup:function(e){
+      if(e.button!==0)return;
       actMng.act('release',{position:correlatePos(e)});
       e.preventDefault();
     }
@@ -55,14 +65,18 @@ angular.module('flipEditor').controller('cvsCtrl',['$element','dataFac','actMng'
     return {target:target,type:type,position:p};
   }
   function hitPoints(p){
-    return arr.first(dataFac.points,function(point){return ptContain(point,p)});
+    return arr.first(dataFac.points,hitPoint)||arr.first(dataFac.usedCps,hitPoint);
+    function hitPoint(point){
+      return ptContain(point,p)
+    }
   }
   function hitLines(p){
 
   }
+
   function ptContain(cir, p) {
-    var x, y, r;
-    return p.x > ((x = cir.x) - (r = cir.r)) && p.x < x + r && p.y > ((y = cir.y) - r) && p.y < y + r;
+    var x, y, r=cir.focus? 4:2 ;
+    return p.x > ((x = cir.x) - r) && p.x < x + r && p.y > ((y = cir.y) - r) && p.y < y + r;
   }
   function drawAxis(color) {
     var w = cvs.width, h = cvs.height;
@@ -84,8 +98,8 @@ angular.module('flipEditor').controller('cvsCtrl',['$element','dataFac','actMng'
   }
   function drawPoint (p) {
     ctx.beginPath();
-    ctx.arc(p.x, p.y, p.r, 0, PI2);
-    ctx.fillStyle = p.color;
+    ctx.arc(p.x, p.y, p.focus? 4:2, 0, PI2);
+    ctx.fillStyle = pointColor[p.type];
     ctx.fill();
   }
   function drawLine(line) {

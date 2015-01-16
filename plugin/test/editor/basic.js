@@ -13,17 +13,30 @@ describe('flipEditor', function () {
 
   describe('undo:', function () {
     var dataFac, actMng, point, line;
-
-    function hasRecord(n, aMng) {
-      expect((aMng || actMng).records.length).toBe(n);
+     var prefix={
+       line:'has lines ',
+       record:'has records ',
+       point:'has points '
+     };
+    function hasRecord(n, aMng,pre) {
+      var r=(pre||'')+'has records ';
+      expect(r+(aMng || actMng).records.length).toBe(r+n);
     }
 
-    function hasLine(n, dFac) {
-      expect((dFac || dataFac).lines.length).toBe(n);
+    function hasLine(n, dFac,pre) {
+      var l=(pre||'')+'has lines ';
+      expect(l+(dFac || dataFac).lines.length).toBe(l+n);
     }
 
-    function hasPoint(n, dFac) {
-      expect((dFac || dataFac).points.length).toBe(n);
+    function hasPoint(n, dFac,pre) {
+      var p=(pre||'')+'has points ';
+      expect(p+(dFac || dataFac).points.length).toBe(p+n);
+    }
+    function has(record,line,point,pre){
+      pre=pre||'';
+      hasLine(line,0,pre);
+      hasPoint(point,0,pre);
+      hasRecord(record,0,pre);
     }
 
     beforeEach(inject(['dataFac', 'actMng', function (a, b) {
@@ -63,56 +76,33 @@ describe('flipEditor', function () {
       dataFac.interpolation = 'cubic';
       addTestPoints();
       actMng.clearRecords();
-      hasRecord(0);
-      hasLine(0);
-      hasPoint(3);
+      has(0,0,3,'after clear:');
       dataFac.addLine();
-      hasRecord(1);
-      hasLine(1);
-      hasPoint(0);
+      has(1,1,0,'add Line:');
       actMng.undo();
-      hasRecord(0);
-      hasLine(0);
-      hasPoint(3);
+      has(0,0,3,'undo add line:');
     });
     it('remove line',function(){
       addTestPoints();
       actMng.clearRecords();
-      hasRecord(0);
-      hasLine(0);
-      hasPoint(3);
+      has(0,0,3,'after clear:');
       dataFac.addLine();
-      hasRecord(1);
-      hasLine(1);
-      hasPoint(0);
+      has(1,1,0,'add Line:');
       dataFac.removeLine();
-      hasRecord(2);
-      hasLine(0);
-      hasPoint(0);
-      dataFac.undo();
-      hasRecord(1);
-      hasLine(1);
-      hasPoint(0);
+      has(2,0,0,'after remove l');
+      actMng.undo();
+      has(1,1,0,'after undo remove');
     });
     it('decompose line',function(){
       addTestPoints();
       actMng.clearRecords();
-      hasRecord(0);
-      hasLine(0);
-      hasPoint(3);
+      has(0,0,3,'after clear:');
       dataFac.addLine();
-      hasRecord(1);
-      hasLine(1);
-      hasPoint(0);
+      has(1,1,0,'add Line:');
       dataFac.decomposeLine();
-      hasRecord(2);
-      hasLine(0);
-      hasPoint(3);
-      dataFac.undo();
-      hasRecord(1);
-      hasLine(1);
-      hasPoint(0);
-
+      has(2,0,3,'after decompose:');
+      actMng.undo();
+      has(1,1,0,'after undo decompose:');
     });
   });
 

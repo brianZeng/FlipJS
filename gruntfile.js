@@ -25,7 +25,7 @@ var config = {
       dest:'bin/ng_test_suit.js'
     },
     editor_ng:{
-      src: ['main','*'].map(concat('plugin/ng/editor/')),
+      src: ['main','**/*'].map(concat('plugin/ng/editor/')),
       dest: 'bin/editor-ng.js'
     },
     editor_test:{
@@ -67,7 +67,7 @@ config.watch = {
     }
   },
   editor_ng: {
-    files: 'plugin/ng/editor/*.js',
+    files: 'plugin/ng/editor/**/*.js',
     tasks: ['concat:editor_ng']
   },
   editor_test:{
