@@ -1,9 +1,25 @@
 /**
  * Created by 柏子 on 2015/1/8.
  */
-angular.module('flipEditor').controller('cvsCtrl',['$element','dataFac','actMng',function($element,dataFac,actMng){
+angular.module('flipEditor').controller('cvsCtrl',['$element','dataFac','actMng',
+  function($element,dataFac,actMng){
   var cvs = $element[0], ctx = cvs.getContext('2d'), self = this, PI2 = Math.PI * 2,invalid,arr=Flip.util.Array;
-  var objForEach=Flip.util.Object.forEach;
+  var dotStyle=(function(color){
+    cvs.width=cvs.height=2;
+    ctx.fillStyle=color;
+    ctx.fillRect(0,0,1,1);
+    ctx.fillRect(1,1,1,1);
+    ctx.fillStyle='rgba(0,0,0,0)';
+    ctx.fillRect(1,0,1,1);
+    ctx.fillRect(0,1,1,1);
+    var img=new Image();
+    img.src=cvs.toDataURL();
+    img.onload=function(){
+     dotStyle= ctx.createPattern(img,'repeat');
+      img=null;
+    };
+    return color;
+  })('#555');
   invalid=(function(_invalid){
     Flip.instance.on('frameStart',function(){
       if(_invalid){
@@ -48,6 +64,9 @@ angular.module('flipEditor').controller('cvsCtrl',['$element','dataFac','actMng'
       if(e.button!==0)return;
       actMng.act('release',{position:correlatePos(e)});
       e.preventDefault();
+    },
+    mousewheel:function(e){
+      dataFac.pointType= e.wheelDelta>0?'control':'data';
     }
   },function(handler,name){cvs.addEventListener(name,handler)});
   cvs.width=(cvs.height=600)/3*4;
@@ -114,7 +133,20 @@ angular.module('flipEditor').controller('cvsCtrl',['$element','dataFac','actMng'
     ctx.strokeStyle = line.color;
     ctx.stroke();
     ctx.restore();
+    drawCPDPdotLine(line.cps,line.dps);
   }
+    function drawCPDPdotLine(cps,dps){
+      ctx.save();
+      ctx.beginPath();
+      for(var i= 0,cp=cps[i],dp=dps[i];cp&&dp;cp=cps[++i],dp=dps[i]){
+        ctx.moveTo(dp.x,dp.y);
+        ctx.lineTo(cp.x,cp.y);
+      }
+      ctx.lineCap='dot';
+      ctx.strokeStyle=dotStyle;
+      ctx.stroke();
+      ctx.restore();
+    }
   function changeCursor(pointer){
     cvs.style.cursor=pointer?'pointer':'';
   }

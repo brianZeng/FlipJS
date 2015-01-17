@@ -1,20 +1,21 @@
 /**
  * Created by 柏子 on 2015/1/16.
  */
-angular.module('flipEditor').controller('dataCtrl',['dataFac','itpls',function(dataFac,itpls){
+angular.module('flipEditor').controller('dataCtrl',['dataFac','itpls','$scope',function(dataFac,itpls,$scope){
   var self=this;
   this.interpolations=itpls;
-  this.interpolate=function(){
-    dataFac.addLine();
-  };
   this.changePointType=function(){
-    self.pointType=dataFac.pointType=dataFac.pointType=='data'? 'control':'data';
+    dataFac.pointType=false;
   };
-  this.pointType=dataFac.pointType;
+  $scope.$watch(function(){
+    return dataFac.pointType;
+  },function(pointType){
+    self.pointType=pointType;
+  });
   angular.forEach({
-    selectedItpl:Object.getOwnPropertyDescriptor(dataFac,'interpolation')
+    selectedItpl:'interpolation'
   },function(pro,name){
+    if(typeof pro==="string") pro=Object.getOwnPropertyDescriptor(dataFac,pro);
     Object.defineProperty(self,name,pro);
   });
-
 }]);

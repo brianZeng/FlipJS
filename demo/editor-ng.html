@@ -13,17 +13,17 @@
 </head>
 <body ng-app="flipEditor">
 <div>
-<canvas ng-controller="cvsCtrl"></canvas>
+    <canvas ng-controller="cvsCtrl"></canvas>
     <div ng-controller="dataCtrl as dataCtrl">
         <select ng-options="itpl.name for itpl in dataCtrl.interpolations track by itpl.name"
                 ng-model="dataCtrl.selectedItpl" ng-model-options="{gettersetter:true}">
         </select>
         <button ng-click="dataCtrl.changePointType()">{{dataCtrl.pointType}} point </button>
-        <button ng-click="dataCtrl.interpolate()">interpolate</button>
-        <p>require <b>{{dataCtrl.selectedItpl.dp}}</b> data points and <b>{{dataCtrl.selectedItpl.cp}}</b> control points</p>
+        <p>{{dataCtrl.selectedItpl.pre}} requires at least <b>{{dataCtrl.selectedItpl.dp}}</b> data points
+            <span ng-show="dataCtrl.selectedItpl.cp>0" >and <b>{{dataCtrl.selectedItpl.cp}}</b> control points</span></p>
     </div>
     <div ng-controller="actionCtrl as actCtrl">
-        <button ng-repeat="action in actCtrl.actions" ng-click="action.handler()">{{action.name}}</button>
+        <button enable="action.enable"  ng-repeat="action in actCtrl.actions" ng-click="action.handler()" >{{action.name}}</button>
     </div>
 </div>
 <script src="../bower_components/angular/angular.js"></script>

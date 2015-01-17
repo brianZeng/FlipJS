@@ -150,6 +150,7 @@ function mapProName(proNameOrFun) {
 }
 function arrFind(array, proNameOrFun, value, unstrict) {
   var fun = mapProName(proNameOrFun), i, item;
+  if(value===undefined)value=true;
   if (unstrict) {
     for (i = 0, item = array[0]; item; item = array[++i]) if (fun(item) == value)return item;
   }

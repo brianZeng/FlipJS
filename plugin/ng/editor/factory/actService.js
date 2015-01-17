@@ -1,7 +1,7 @@
 /**
  * Created by 柏子 on 2015/1/7.
  */
-angular.module('flipEditor').factory('actMng',['actDefs',function(defs){
+angular.module('flipEditor').factory('actMng',[function(defs){
   var mng;
   function objFindValue(obj,func){
     for(var i= 0,keys=Object.getOwnPropertyNames(obj),key,len=keys.length;i<len;i++)
@@ -65,6 +65,6 @@ angular.module('flipEditor').factory('actMng',['actDefs',function(defs){
     }
   });
   mng=new ActionManger();
-  Flip.util.Object.forEach(defs,function(def,name){mng.register(name,def)});
+  //Flip.util.Object.forEach(defs,function(def,name){mng.register(name,def)});
   return mng;
 }]);

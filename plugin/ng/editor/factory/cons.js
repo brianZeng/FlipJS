@@ -1,54 +1,28 @@
 /**
  * Created by 柏子 on 2015/1/7.
  */
-angular.module('flipEditor').constant('actDefs',{
-  'add point':{
-    des:'click to add a point'
-  },
-  'remove point':{
-    des:'click to remove a point'
-  },
-  'select line':{
-    des:'click to select a line'
-  },
-  'select point':{
-    des:'click to select a point'
-  },
-  'blur point':{
-    hide:true
-  },
-  'focus point':{
-    hide:true
-  },
-  'move point':{
-    des:'drag to move the point',
-    hide:true
-  },
-  'move line':{
-    des:'drag to move the line',
-    hide:true
-  },
-  'chg itpl':{
-    hide:true
-  }
-}).
+angular.module('flipEditor').
   constant('itpls',function(itpls){
     var r=[];
   Flip.util.Object.forEach(itpls,function(def,name){
     def.dp=def.dp||3;
-    def.cp=def.cp||0;
     def.name=name;
+    def.pre=getPre(def.pre,def.cp=def.cp||0);
     r.push(def);
     r[name]=def;
   });
+    function getPre(pre,cp){
+      if(typeof  pre==="string")return pre;
+      return cp? 'Each segment':'The curve';
+    }
   return r;
 }(
   {
-    cubic:{},
-    quadratic:{},
-    lagrange:{},
-    linear:{dp:2},
-    beizerCubic:{ dp:2,cp:2 },
-    beizerQuadratic:{cp:1,dp:2}
+    cubic:{s:'c',pre:1},
+    quadratic:{s:'q',pre:1},
+    lagrange:{dp:2,pre:1,s:'l'},
+    linear:{dp:2,pre:1},
+    beizerCubic:{ dp:2,cp:2 ,s:'c'},
+    beizerQuadratic:{cp:1,dp:2,s:'q'}
   }
 ));
