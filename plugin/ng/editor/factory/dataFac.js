@@ -3,11 +3,14 @@
  */
 angular.module('flipEditor').factory('dataFac', ['actMng', 'itpls', '$rootScope',
   function (actMng, itpls, rootScope) {
-    var arr = Flip.util.Array, ex, lines = [], points = [], itplModel, activePoint, fp, usedCps = [], pointType = 'data';
+    var arr = Flip.util.Array, ex, lines = [], points = [], itplModel, activePoint, fp, usedCps = [];
+    var pointTypes=['data','control','remove'],pointType=pointTypes[0];
     actMng.react('choose', function (e, action) {
-      ex.activePoint = activePoint = e.point = e.target;
-      e.position = {x: activePoint.x, y: activePoint.y};
-      action.save(true);
+      if(e.button==0){
+        ex.activePoint = activePoint = e.point = e.target;
+        e.position = {x: activePoint.x, y: activePoint.y};
+        action.save(pointType!=='remove');
+      }
     }).
       react('move', function (e) {
         if (activePoint)
@@ -27,7 +30,9 @@ angular.module('flipEditor').factory('dataFac', ['actMng', 'itpls', '$rootScope'
       react('leave', releaseActivePoint).
       pair('release',
       function (e, action) {
-        if (activePoint) {
+        if(pointType=='remove')
+          return ex.removePoint(activePoint)&&action.save(false);
+        else if (activePoint) {
           var lineId = activePoint.lineId, cp = activePoint;
           movePoint(e.position);
           releaseActivePoint(e.position);
@@ -40,7 +45,7 @@ angular.module('flipEditor').factory('dataFac', ['actMng', 'itpls', '$rootScope'
           action.save(true);
         }
         else
-          ex.addPoint(e.position);
+          ex.addPoint(e.position,getClickPointType(e.button) );
       },
       function (e, ee) {
         var pre = ee.previous;
@@ -61,6 +66,11 @@ angular.module('flipEditor').factory('dataFac', ['actMng', 'itpls', '$rootScope'
       },
       function (e) {
         removePoint(e.point.id);
+      }).
+      pair('remove point',function(e){
+        removePoint(e.point);
+      },function(e){
+        addPoint(e.point);
       }).
       fallback('add line', function (e) {
         decomposeLine(e.line, true);
@@ -96,15 +106,23 @@ angular.module('flipEditor').factory('dataFac', ['actMng', 'itpls', '$rootScope'
         return pointType
       },
       set pointType(v) {
-        if (v != 'data' || v !== 'control')
-          v = pointType == 'control' ? 'data' : 'control';
+        if (pointTypes.indexOf(v)==-1)
+          v = nextPointType(pointType);
         if (v !== pointType)
           invalid(pointType = v);
       },
-      addPoint: function (pos) {
-        var point = createPoint(pos, pointType);
+      addPoint: function (pos,type) {
+        var point = createPoint(pos, type||pointType);
         actMng.act('add point', {point: point}, true);
         return point;
+      },
+      removePoint:function(pointOrId){
+        var point=typeof pointOrId==="string"? arr.findBy(points,'id',pointOrId):pointOrId;
+        if(!point)return null;
+        if(point==activePoint)
+          releaseActivePoint();
+        actMng.act('remove point',{point:point},true);
+        return pointOrId;
       },
       get interpolation() {
         return itplModel || (itplModel = itpls['cubic']);
@@ -130,10 +148,17 @@ angular.module('flipEditor').factory('dataFac', ['actMng', 'itpls', '$rootScope'
         console.warn('this is for debug only');
       }
     };
-    ex.interpolation = 'beizerCubic';
+    ex.interpolation = 'cubic';
     return ex;
 
-
+    function nextPointType(cur){
+     var curIndex= pointTypes.indexOf(pointType);
+      if(curIndex==pointTypes.length-1)curIndex=-1;
+      return pointTypes[curIndex+1];
+    }
+    function getClickPointType(button){
+      return button==0? pointType:(pointType=='data'?'control':'data')
+    }
     function removeLine(lineOrId, notRecord) {
       var line;
       line = (typeof lineOrId == "string") ? arr.findBy(lines, 'id', lineOrId) : lineOrId;
@@ -199,7 +224,8 @@ angular.module('flipEditor').factory('dataFac', ['actMng', 'itpls', '$rootScope'
       points=points.filter(removePoint);
       itpl = Flip.interpolate({name: itplModel.name, data: dps.sort(sortId), cps: cps.sort(sortId)});
       line = {id: lid, dps: dps, cps: cps, points: itpl.itor().all(), itplName: itplModel.name};
-      cps.forEach(transformCps);
+      if(line.drawCP=itplModel.cp)
+        cps.forEach(transformCps);
       ascInsert(lines, line, 'id');
       invalid(actMng.act('add line', {line: line}, true));
       return line;
@@ -253,8 +279,8 @@ angular.module('flipEditor').factory('dataFac', ['actMng', 'itpls', '$rootScope'
       };
       return p;
     }
-    function removePoint(id) {
-      arr.remove(points, arr.findBy(points, 'id', id));
+    function removePoint(idOrPoint) {
+      arr.remove(points,typeof idOrPoint==="string"?arr.findBy(points, 'id', idOrPoint):idOrPoint);
       invalid();
     }
     function blurPoint(p) {

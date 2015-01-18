@@ -1682,10 +1682,11 @@ Flip.interpolation({
       this._ensureAxisAlign();
       this._initControlPoints(opt);
     },
+    //TODO:this has some bugs
     _ensureControlPoints: function (opt) {
       var co = this.coefficeint, xs = this.axis.x, ys = this.axis.y, cox = co.x, coy = co.y, vec;
       //C(i+1)+Ci=2P(i+1);
-      if (isNaN(cox[0]) || isNaN(cox[1])) {  //2(Pc-P0)=Pt0
+      if (isNaN(cox[0]) || isNaN(coy[0])) {  //2(Pc-P0)=Pt0
         vec = opt.startVec || [1, 1];
         cox[0] = Vec.get(vec, 'x') + xs[0];
         coy[0] = Vec.get(vec, 'y') + ys[0];

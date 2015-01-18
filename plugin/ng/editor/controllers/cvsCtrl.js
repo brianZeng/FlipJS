@@ -47,11 +47,14 @@ angular.module('flipEditor').controller('cvsCtrl',['$element','dataFac','actMng'
     dataFac.usedCps.forEach(drawPoint);
   }
   Flip.util.Object.forEach({
+    click:function(e){e.preventDefault();},
     mousedown:function(e){
-      if(e.button!==0)return;
+      e.preventDefault();
       var pos=correlatePos(e),hit;
-      if(hit=hitTest(pos))
+      if(hit=hitTest(pos)){
+        hit.button= e.button;
         actMng.act('choose',hit);
+      }
     },
     mouseleave:function(e){
       actMng.act('leave',{position:correlatePos(e)});
@@ -61,12 +64,13 @@ angular.module('flipEditor').controller('cvsCtrl',['$element','dataFac','actMng'
       actMng.act('move',{position: pos,hitTest:function(){return hitTest(pos)}});
     },
     mouseup:function(e){
-      if(e.button!==0)return;
-      actMng.act('release',{position:correlatePos(e)});
+      actMng.act('release',{position:correlatePos(e),button: e.button});
       e.preventDefault();
     },
     mousewheel:function(e){
       dataFac.pointType= e.wheelDelta>0?'control':'data';
+    },contextmenu:function(e){
+      e.preventDefault();
     }
   },function(handler,name){cvs.addEventListener(name,handler)});
   cvs.width=(cvs.height=600)/3*4;
@@ -133,19 +137,33 @@ angular.module('flipEditor').controller('cvsCtrl',['$element','dataFac','actMng'
     ctx.strokeStyle = line.color;
     ctx.stroke();
     ctx.restore();
-    drawCPDPdotLine(line.cps,line.dps);
+    drawCPDPdotLine(line.cps,line.dps,line.drawCP);
   }
-    function drawCPDPdotLine(cps,dps){
+    function drawCPDPdotLine(cps,dps,n){
+      if(n<1)return;
+      var paint=n==1?cp1:cp2;
       ctx.save();
       ctx.beginPath();
-      for(var i= 0,cp=cps[i],dp=dps[i];cp&&dp;cp=cps[++i],dp=dps[i]){
-        ctx.moveTo(dp.x,dp.y);
-        ctx.lineTo(cp.x,cp.y);
-      }
+      pathLine(dps[0],cps[0]);
+      for(var i= 1,segCount=dps.length- 1,dp=dps[i];i<segCount;dp=dps[++i])
+        paint(dp,i);
+      if(n==2)
+        pathLine(dps[segCount],cps[cps.length-1]);
       ctx.lineCap='dot';
       ctx.strokeStyle=dotStyle;
       ctx.stroke();
       ctx.restore();
+      function cp1(dp,i){
+        pathLine(dp,cps[i]);
+      }
+      function cp2(dp,i){
+        pathLine(dp,cps[i]);
+        pathLine(dp,cps[i+1]);
+      }
+    }
+    function pathLine(p0,p1){
+      ctx.moveTo(p0.x,p0.y);
+      ctx.lineTo(p1.x,p1.y);
     }
   function changeCursor(pointer){
     cvs.style.cursor=pointer?'pointer':'';

@@ -5,14 +5,14 @@
     <title></title>
     <link rel="stylesheet" href="../bower_components/angular/angular-csp.css">
     <script src="../bin/flip.js"></script>
-    <style>
-        canvas {
-            background: #ffffff;
-        }
-    </style>
+    <link rel="stylesheet" href="../plugin/ng/editor/styles/style.css">
 </head>
 <body ng-app="flipEditor">
-<div>
+<main>
+    <nav ng-controller="actionCtrl as actCtrl" class="actions">
+        <button class="action orange" enable="action.enable" title="{{action.shortCut}}"
+                ng-repeat="action in actCtrl.actions" ng-click="action.handler()" >{{action.name}}</button>
+    </nav>
     <canvas ng-controller="cvsCtrl"></canvas>
     <div ng-controller="dataCtrl as dataCtrl">
         <select ng-options="itpl.name for itpl in dataCtrl.interpolations track by itpl.name"
@@ -22,14 +22,13 @@
         <p>{{dataCtrl.selectedItpl.pre}} requires at least <b>{{dataCtrl.selectedItpl.dp}}</b> data points
             <span ng-show="dataCtrl.selectedItpl.cp>0" >and <b>{{dataCtrl.selectedItpl.cp}}</b> control points</span></p>
     </div>
-    <div ng-controller="actionCtrl as actCtrl">
-        <button enable="action.enable"  ng-repeat="action in actCtrl.actions" ng-click="action.handler()" >{{action.name}}</button>
-    </div>
-</div>
+
+</main>
 <script src="../bower_components/angular/angular.js"></script>
 <script>
     angular.module('flipEditor', []);
 </script>
 <script src="../bin/editor-ng.js"></script>
+<link rel="stylesheet" href="../plugin/ng/editor/styles/button.css" />
 </body>
 </html>
