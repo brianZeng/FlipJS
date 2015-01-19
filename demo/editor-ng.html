@@ -5,30 +5,27 @@
     <title></title>
     <link rel="stylesheet" href="../bower_components/angular/angular-csp.css">
     <script src="../bin/flip.js"></script>
-    <link rel="stylesheet" href="../plugin/ng/editor/styles/style.css">
 </head>
 <body ng-app="flipEditor">
-<main>
+<main ng-controller="dataCtrl as dataCtrl">
     <nav ng-controller="actionCtrl as actCtrl" class="actions">
         <button class="action orange" enable="action.enable" title="{{action.shortCut}}"
                 ng-repeat="action in actCtrl.actions" ng-click="action.handler()" >{{action.name}}</button>
+        <p>curve type:</p>
+        <p class="select-warp"><select ng-options="itpl.name for itpl in dataCtrl.interpolations track by itpl.name"
+                ng-model="dataCtrl.selectedItpl" ng-model-options="{gettersetter:true}">
+        </select></p>
+        <button ng-click="dataCtrl.changePointType()" title="when click" class="leaf" ng-class="dataCtrl.pointType">{{dataCtrl.pointType}} point </button>
     </nav>
     <canvas ng-controller="cvsCtrl"></canvas>
-    <div ng-controller="dataCtrl as dataCtrl">
-        <select ng-options="itpl.name for itpl in dataCtrl.interpolations track by itpl.name"
-                ng-model="dataCtrl.selectedItpl" ng-model-options="{gettersetter:true}">
-        </select>
-        <button ng-click="dataCtrl.changePointType()">{{dataCtrl.pointType}} point </button>
-        <p>{{dataCtrl.selectedItpl.pre}} requires at least <b>{{dataCtrl.selectedItpl.dp}}</b> data points
-            <span ng-show="dataCtrl.selectedItpl.cp>0" >and <b>{{dataCtrl.selectedItpl.cp}}</b> control points</span></p>
-    </div>
-
+    <p>{{dataCtrl.selectedItpl.pre}} requires at least <b class="text-red">{{dataCtrl.selectedItpl.dp}}</b> data points
+        <span ng-show="dataCtrl.selectedItpl.cp>0" >and <b class="text-green">{{dataCtrl.selectedItpl.cp}}</b> control points</span></p>
 </main>
 <script src="../bower_components/angular/angular.js"></script>
 <script>
     angular.module('flipEditor', []);
 </script>
 <script src="../bin/editor-ng.js"></script>
-<link rel="stylesheet" href="../plugin/ng/editor/styles/button.css" />
+<link rel="stylesheet" href="../plugin/editor/styles/bss.css" />
 </body>
 </html>

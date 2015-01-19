@@ -1,0 +1,15 @@
+@sheetname default;
+*{
+  box-sizing: border-box;
+}
+canvas {
+  background: #ffffff;
+}
+main{
+  width: 80%;
+  min-width: 960px;
+  margin: 0 auto;
+}
+body{
+  overflow-x: hidden;
+}

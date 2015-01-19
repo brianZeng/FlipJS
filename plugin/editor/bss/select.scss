@@ -1,0 +1,33 @@
+.select-warp($height:$action-item-height;$width:$action-item-width){
+position: relative;
+&:hover::after{
+  transform: rotate(45deg);
+}
+&::after($size:$height/3){
+  content: ' ';
+  transform: rotate(-45deg);
+  background: transparent;
+  position: absolute;
+  width: $size;
+  height:$size;
+  top:$size;
+  left:$width -$size*1.8;
+  border-width: 0 2px 2px 0;
+  border-color: orange;
+  border-style: solid;
+  transition: transform 0.5s;
+  cursor: default;
+}
+select{
+  height: $height;
+  width: $width;
+  -webkit-appearance: none;
+  border-radius: 5px;
+  cursor: pointer;
+  @extend .text-red;
+  border-color: orange;
+  &:focus{
+    outline: none;
+  }
+}
+}

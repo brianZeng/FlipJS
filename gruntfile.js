@@ -14,10 +14,6 @@ var config = {
         'bin/Flip.js': ['bin/flip.js']
       }
     },
-    ng: {
-      src: 'plugin/ng/*.js',
-      dest: 'bin/ng.js'
-    },
     ng_test_suit:{
       src:['angular','angular-mocks'].map(function(name){
         return 'bower_components/'+name+'/'+name+'.js';
@@ -25,7 +21,7 @@ var config = {
       dest:'bin/ng_test_suit.js'
     },
     editor_ng:{
-      src: ['main','**/*'].map(concat('plugin/ng/editor/')),
+      src: ['main','**/*'].map(concat('plugin/editor/')),
       dest: 'bin/editor-ng.js'
     },
     editor_test:{
@@ -67,8 +63,12 @@ config.watch = {
     }
   },
   editor_ng: {
-    files: 'plugin/ng/editor/**/*.js',
+    files: 'plugin/editor/**/*.js',
     tasks: ['concat:editor_ng']
+  },
+  editro_style:{
+    files:'plugin/editor/bss/*.scss',
+    tasks:['changess:editor']
   },
   editor_test:{
     files: 'plugin/test/editor/*.js',
@@ -94,10 +94,17 @@ config.uglify = {
     }
   }
 };
+config.changess={
+  editor:{
+    src:'plugin/editor/bss/*.scss',
+    dest:'plugin/editor/styles/bss.css'
+  }
+};
 module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-contrib-uglify');
+  grunt.loadNpmTasks('changess-grunt');
   grunt.initConfig(config);
   grunt.registerTask('begin_editor',['concat:editor_test','concat:editor_ng','watch:editor_ng','watch:editor_test']);
   grunt.registerTask('con-ugly', ['concat', 'uglify:flip']);

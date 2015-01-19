@@ -3,6 +3,8 @@ node_modules
 .git
 lib
 images
+plugin/ng
+plugin/test
 projectFilesBackup
 bower_components
 bin

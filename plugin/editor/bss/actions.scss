@@ -1,0 +1,64 @@
+
+.actions{
+  float: right;
+  > *{
+    display: block;
+    max-width: 100px;
+    margin: 5px;
+  }
+}
+@mixin $color-struc($bk:transparent;$bdc:$bk;$tc:white){
+  background:$bk;
+  border-color:$bdc;
+  color:$tc;
+}
+@mixin $leaf($width:100px;$height:25px){
+  height:$height;
+  width:$width;
+  border-radius:($height - 2px) 2px ($height -2px) 2px
+}
+button.action($top-color:#f24537;$bottom-color:#c62d1f;$border-color: #d02718;
+$text-color:whitesmoke;$shadow-color:#f5978e){
+  border:1px solid;
+  @include $color-struc(
+  $bk:linear-gradient($top-color 5%,$bottom-color 100%);
+  $bdk:$border-color;
+  $tc:$text-color;
+);
+  &:hover{
+    background:linear-gradient($bottom-color 5%,$top-color 100%);
+    cursor: pointer;
+    box-shadow:1px 1px 1px 1px $shadow-color ;
+  }
+  &:disabled,&:disabled:hover{
+   @include $color-struc(
+    $bk:linear-gradient(#ededed 5%, darkgray 100%);
+    $tc:#0d3349;
+    $bdc:gray;
+   )
+    box-shadow:none;
+  }
+}
+button{
+  &.leaf{
+    @include $leaf($height:$action-item-height);
+  }
+  &.data{
+    background: linear-gradient(#f0c911 5%, #f2ab1e 100% );
+    @extend .text-red;
+    border-color:#e65f44 ;
+  }
+  &.control{
+    background:linear-gradient(#77d42a 5%, #5cb811 100% );
+    @extend  .text-green;
+    border-color: #268a16;
+  }
+  &.remove{
+    background:linear-gradient(#63b8ee 5%, #468ccf 100% );
+    @extend .text-blue;
+    border-color:#14396a;
+  }
+}
+
+
+
