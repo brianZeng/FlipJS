@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>友谊卡</title>
+    <script src="../bin/flip.js"></script>
+    <style>
+        main{
+            min-width: 320px;
+            max-width: 420px;
+            height: 100%;
+            margin: 0 auto;
+        }
+        main img{
+
+        }
+        body{
+            margin:  0;
+            background: #000000;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <img src="../images/card_front.jpg" id="card-back">
+</main>
+
+<script>
+    Flip(function(){
+        var h=window.screen.availHeight+'px',w=window.screen.availWidth+'px',animation;
+        var style=document.createElement('style');
+        style.innerHTML='img{width:'+w+';height:'+h+';}';
+        animation=Flip.animate('flip',{selector:'#card-back',angle:Math.PI*6,duration:4,keepWhenFinished:1});
+        animation.css(
+                {
+                    width:w,height:h
+                });
+        animation.start();
+    })
+</script>
+</body>
+</html>

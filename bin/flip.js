@@ -45,6 +45,8 @@ function createProxy(obj) {
       else v = from[prop];
       result[prop] = v;
     }
+    if(len==1)
+      return v;
   };
   func.source = function () {
     if (arguments.length == 1)return from[arguments[0]];
@@ -749,17 +751,21 @@ Flip.Vec = Vec;
 function Animation(opt) {
   if (!(this instanceof Animation))return new Animation(opt);
   var r = Animation.createOptProxy(opt).result;
-  this.elements = r.elements;
+  this.selector= r.selector||Error('Elements selector required');
   this.clock = r.clock;
+  this.lastStyleRule='';
+  this.keepWhenFinished= r.keepWhenFinished;
+  this._cssMap={};
+  this._matCallback={};
+  this._cssCallback={};
+  this.init(opt);
 }
-Animation.createOptProxy = function (setter, elements) {
-  var selector;
+Animation.createOptProxy = function (setter) {
   setter = createProxy(setter);
   if (!setter.proxy.clock)
     setter('clock', new Clock(setter));
-  if ((selector = setter.proxy.selector) && !setter.proxy.elements)
-    elements = Flip.$(selector);
-  setter('elements', elements || []);
+  setter('selector');
+  setter('keepWhenFinished');
   return setter;
 };
 Flip.ANIMATION_TYPE = {};
@@ -803,11 +809,6 @@ Animation.EVENT_NAMES = {
     return ele.currentStyle || window.getComputedStyle(ele)
   }
 
-  function normalizeEleTransformStyle(ele) {
-    var style = ele.style, position = getCSS(ele).position;
-    style.transformOrigin = 'center';
-  }
-
   function getAniId(type) {
     type = type || 'Animation';
     var i = idCache[type] || 0;
@@ -821,13 +822,44 @@ Animation.EVENT_NAMES = {
   }
 
   function removeWhenFinished(state) {
-    debugger;
     var ani = state.animation;
     ani.render(state);
     ani.emit(Animation.EVENT_NAMES.FINISHED, state);
-    ani.destroy(state);
+    if(ani.keepWhenFinished){
+      state.global.on(RenderGlobal.EVENT_NAMES.FRAME_START,function(styleRule){
+        return function(state){
+          state.styleStack.push(styleRule);
+        }
+      }(ani.lastStyleRule))
+    }
+    else ani.destroy(state);
   }
-
+  function updateAnimation(animation,renderState){
+    var cssMap=animation._cssMap,ts=animation.selector;
+    renderState.animation=animation;
+    animation.clock.update(renderState);
+    objForEach(animation._cssCallback,function(cbs,selector){
+      var cssRule={};
+      cbs.forEach(function(cb){
+        cb.apply(animation,[cssRule,renderState])
+      });
+      selector.split(',').forEach(function(se){cssMap[se.replace(/&/g,ts)]=cssRule;});
+    });
+    objForEach(animation._matCallback,function(cbs,selector){
+      var mat=new Mat3(),matRule;
+      cbs.forEach(function(cb){mat=cb.apply(animation,[mat,renderState])||mat});
+      matRule=mat.toString();
+      selector.split(',').forEach(function(se){
+        var key=se.replace(/&/g,ts),cssObj=cssMap[key]||(cssMap[key]={});
+        cssObj.transform=matRule;
+      });
+    });
+  }
+  function addMap(key,Map,cb){
+    var cbs=Map[key];
+    if(!cbs)Map[key]=[cb];
+    else arrAdd(cbs,cb);
+  }
   inherit(Animation, Flip.util.Object, {
     set clock(c) {
       var oc = this._clock;
@@ -858,21 +890,34 @@ Animation.EVENT_NAMES = {
       if (!this._id)this._id = getAniId(this.type);
       return this._id;
     },
-    set elements(eles) {
-      var oe = this._eles;
-      if (oe == eles)return;
-      if (eles instanceof Element) eles = [eles];
-      else if (!eles) return this._eles = null;
-      else if (this._eles) throw Error('remove elements before add');
-      (this._eles = eles).forEach(normalizeEleTransformStyle);
-    },
     get elements() {
-      return this._eles.slice();
+      return Flip.$(this.selector);
+    },
+    init:function(){},
+    mat:function(selector,matCallback){
+      if(typeof selector==="function") {
+        matCallback= selector;
+        selector ='&';
+      }
+      addMap(selector,this._matCallback,matCallback);
+      return this;
+    },
+    css:function(selector,cssCallBack){
+      if(typeof selector!=="string") {
+        cssCallBack = selector;
+        selector ='&';
+      }
+      if(typeof cssCallBack=="object"){
+        var cssTo=cssCallBack;
+        cssCallBack=function(cssObj){
+          objForEach(cssTo,cloneFunc,cssObj);
+        }
+      }
+      addMap(selector,this._cssCallback,cssCallBack);
+      return this;
     },
     update: function (state) {
-      state.animation = this;
-      this._clock.update(state);
-      state.animation = null;
+      updateAnimation(this,state);
       return true;
     },
     render: function (state) {
@@ -888,39 +933,40 @@ Animation.EVENT_NAMES = {
       var task, clock;
       if (task = this._task)
         task.remove(this);
-      this.elements = null;
       if ((clock = this.clock))clock.emit(Animation.EVENT_NAMES.DESTROY, state);
+      this.off();
       this.clock = null;
+      Animation.apply(this,[{selector:this.selector}]);
+    },
+    getStyleRule:function(){
+      var styles=[];
+      objForEach(this._cssMap,function(ruleObj,selector){
+        var rules=[];
+        objForEach(ruleObj,function(sty,name){rules.push(name+":"+sty)});
+        if(rules.length){
+          styles.push(selector+'\n{\n'+rules.join(';\n')+'}');
+        }
+      });
+      return this.lastStyleRule=styles.join('\n');
     },
     apply: function (state) {
-      var mat = this.getMatrix(state).toString(), css = this.getCss();
-      this.elements.forEach(function (ele) {
-        var style = ele.style;
-        style.transform = mat;
-        objForEach(css, cloneFunc, style);
-      });
+      state.styleStack.push(this.getStyleRule());
     },
-    getCss: function () {
-      return 0;
+    start:function(){
+      var clock=this.clock;
+      if(clock){
+        clock.start();
+      }
+      return this;
     },
-    getMatrix: function () {
-      return new Mat3();
-    }
-  });
-  'start,stop'.split(',').forEach(function (funcName) {
-    Animation.prototype[funcName] = function () {
-      var clock = this._clock;
-      if (clock)
-        clock[funcName].apply(clock, arguments);
+    stop:function(){
+      var clock=this.clock;
+      if(clock)clock.stop();
       return this;
     }
   });
 })();
 Flip.animation = (function () {
-  function _beforeCallBase(proxy, opt, instance) {
-    return proxy;
-  }
-
   function register(option) {
     var beforeCallBase, defParam, name = option.name, Constructor;
     beforeCallBase = option.beforeCallBase || _beforeCallBase;
@@ -939,11 +985,29 @@ Flip.animation = (function () {
       register[name] = Constructor;
       Constructor.name = name;
     }
-    inherit(Constructor, Animation.prototype, option.prototype);
+    inherit(Constructor, Animation.prototype,{
+      init:function(){
+        addHandler(option,this,'mat');
+        addHandler(option,this,'css');
+      }
+    });
     return Constructor;
   }
-
   return register;
+  function _beforeCallBase(proxy, opt, instance) {
+    return proxy;
+  }
+  function addHandler(opt,animation,pro){
+    var map=opt[pro];
+    if(typeof map==="function"){
+      animation[pro](map);
+    }else{
+      objForEach(map,function(handler,selector){
+        animation[pro](selector,handler)
+      })
+    }
+  }
+
 })();
 
 
@@ -1235,6 +1299,7 @@ Flip.EASE = Clock.EASE = (function () {
 Flip.RenderGlobal = RenderGlobal;
 function RenderGlobal() {
   this._tasks = new Flip.util.Array();
+  this.styleElement=document.createElement('style');
 }
 RenderGlobal.EVENT_NAMES = {
   FRAME_START: 'frameStart',
@@ -1275,6 +1340,8 @@ inherit(RenderGlobal, Flip.util.Object, {
     this.activeTask = taskName;
     this.loop();
     this.activeTask.timeline.start();
+    if(!this.styleElement.parentNode)
+      document.head.appendChild(this.styleElement);
     typeof window === "object" && Flip.fallback(window);
     this.init = function () {
       console.warn('The settings have been initiated,do not init twice');
@@ -1290,13 +1357,14 @@ inherit(RenderGlobal, Flip.util.Object, {
   },
   render: function (state) {
     state.task.render(state);
+    this.styleElement.innerHTML=state.styleStack.join('\n');
   },
   update: function (state) {
     state.global.emit(RenderGlobal.EVENT_NAMES.UPDATE, [state, this]);
     state.task.update(state);
   },
   createRenderState: function () {
-    return {global: this, task: this.activeTask}
+    return {global: this, task: this.activeTask,styleStack:[]}
   }
 });
 FlipScope.global = new RenderGlobal();
@@ -1367,6 +1435,16 @@ Mat3.prototype = {
     r = new Mat3([m11 * n11 + m12 * n21, m21 * n11 + m22 * n21, mx * n11 + my * n21 + nx, m11 * n12 + m12 * n22, m21 * n12 + m22 * n22, mx * n12 + my * n22 + ny]);
     if (overwrite) this.elements = new Float32Array(r.elements);
     return r;
+  },
+  set:function(x1, y1, dx, x2, y2, dy,overwrite){
+    if(arguments.length<=2){
+      var eles=x1;
+      overwrite=arguments[1];
+    }else{
+      eles=[x1, y1, dx, x2, y2, dy];
+    }
+    if(overwrite) this.elements=new Float32Array(eles);
+    return new Mat3(eles);
   }
 };
 function RenderTask(name) {
@@ -1452,15 +1530,18 @@ inherit(TimeLine, Flip.util.Object, {
 Flip.animation({
   name: 'flip',
   defParam: {
-    vertical: true, angle: Math.PI
-  }, beforeCallBase: function (proxy) {
-    proxy.source('timingFunction', Clock.EASE.bounceOut);
+    vertical: true,
+    angle: Math.PI
   },
-  prototype: {
-    getMatrix: function () {
+  beforeCallBase: function (proxy) {
+    proxy.source('timingFunction', Clock.EASE.sineInOut);
+  },
+  mat:function(){
       var angle = this.angle * this.clock.value, sin = Math.sin(angle), cos = Math.cos(angle);
       return new Mat3(this.vertical ? [cos, 0, 0, sin, 1, 0] : [1, -sin, 0, 0, cos, 0])
-    }
+  },
+  css:{
+    '&':{'transform-origin':'center'}
   }
 });
 (function (register) {
@@ -1504,8 +1585,6 @@ Flip.animation({
       }
     }
   )
-
-
 })(Flip.animation);
 Flip.animation({
   name: 'rotate',
@@ -1515,10 +1594,8 @@ Flip.animation({
   beforeCallBase: function (proxy) {
     proxy.source('timingFunction', Flip.EASE.circInOut);
   },
-  prototype: {
-    getMatrix: function () {
-      return Flip.Mat3.setRotate(this.angle * this.clock.value);
-    }
+  mat: function () {
+    return Flip.Mat3.setRotate(this.angle * this.clock.value);
   }
 });
 Flip.animation({
@@ -1529,11 +1606,9 @@ Flip.animation({
   beforeCallBase: function (proxy) {
     proxy.source('timingFunction', Flip.EASE.sineInOut);
   },
-  prototype: {
-    getMatrix: function () {
-      var sx = this.sx, sy = this.sy, dx = this.dx, dy = this.dy, v = this.clock.value;
-      return Mat3.setScale(sx + (dx - sx) * v, sy + (dy - sy) * v);
-    }
+  mat: function () {
+    var sx = this.sx, sy = this.sy, dx = this.dx, dy = this.dy, v = this.clock.value;
+    return Mat3.setScale(sx + (dx - sx) * v, sy + (dy - sy) * v);
   }
 });
 Flip.animation({
@@ -1541,11 +1616,9 @@ Flip.animation({
   defParam: {
     sx: 0, dx: 100, sy: 0, dy: 0
   },
-  prototype: {
-    getMatrix: function () {
-      var v = this.clock.value, sx = this.sx, sy = this.sy;
-      return Mat3.setTranslate(sx + (this.dx - sx) * v, sy + (this.dy - sy) * v);
-    }
+  mat:function () {
+    var v = this.clock.value, sx = this.sx, sy = this.sy;
+    return Mat3.setTranslate(sx + (this.dx - sx) * v, sy + (this.dy - sy) * v);
   }
 });
 Flip.interpolation({

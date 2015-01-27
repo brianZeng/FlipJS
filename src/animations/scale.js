@@ -9,10 +9,8 @@ Flip.animation({
   beforeCallBase: function (proxy) {
     proxy.source('timingFunction', Flip.EASE.sineInOut);
   },
-  prototype: {
-    getMatrix: function () {
-      var sx = this.sx, sy = this.sy, dx = this.dx, dy = this.dy, v = this.clock.value;
-      return Mat3.setScale(sx + (dx - sx) * v, sy + (dy - sy) * v);
-    }
+  mat: function () {
+    var sx = this.sx, sy = this.sy, dx = this.dx, dy = this.dy, v = this.clock.value;
+    return Mat3.setScale(sx + (dx - sx) * v, sy + (dy - sy) * v);
   }
 });

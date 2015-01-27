@@ -67,5 +67,15 @@ Mat3.prototype = {
     r = new Mat3([m11 * n11 + m12 * n21, m21 * n11 + m22 * n21, mx * n11 + my * n21 + nx, m11 * n12 + m12 * n22, m21 * n12 + m22 * n22, mx * n12 + my * n22 + ny]);
     if (overwrite) this.elements = new Float32Array(r.elements);
     return r;
+  },
+  set:function(x1, y1, dx, x2, y2, dy,overwrite){
+    if(arguments.length<=2){
+      var eles=x1;
+      overwrite=arguments[1];
+    }else{
+      eles=[x1, y1, dx, x2, y2, dy];
+    }
+    if(overwrite) this.elements=new Float32Array(eles);
+    return new Mat3(eles);
   }
 };

@@ -92,6 +92,12 @@ config.uglify = {
     }, options: {
       banner: '/* borian@vip.qq.com */'
     }
+  },
+  editor:{
+    files:{
+      'min/flip.min.js':'bin/flip.js',
+      'min/ng.min.js':'bin/editor-ng.js'
+    }
   }
 };
 config.changess={

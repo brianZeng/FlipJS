@@ -48,6 +48,8 @@ function createProxy(obj) {
       else v = from[prop];
       result[prop] = v;
     }
+    if(len==1)
+      return v;
   };
   func.source = function () {
     if (arguments.length == 1)return from[arguments[0]];

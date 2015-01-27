@@ -4,6 +4,7 @@
 Flip.RenderGlobal = RenderGlobal;
 function RenderGlobal() {
   this._tasks = new Flip.util.Array();
+  this.styleElement=document.createElement('style');
 }
 RenderGlobal.EVENT_NAMES = {
   FRAME_START: 'frameStart',
@@ -44,6 +45,8 @@ inherit(RenderGlobal, Flip.util.Object, {
     this.activeTask = taskName;
     this.loop();
     this.activeTask.timeline.start();
+    if(!this.styleElement.parentNode)
+      document.head.appendChild(this.styleElement);
     typeof window === "object" && Flip.fallback(window);
     this.init = function () {
       console.warn('The settings have been initiated,do not init twice');
@@ -59,13 +62,14 @@ inherit(RenderGlobal, Flip.util.Object, {
   },
   render: function (state) {
     state.task.render(state);
+    this.styleElement.innerHTML=state.styleStack.join('\n');
   },
   update: function (state) {
     state.global.emit(RenderGlobal.EVENT_NAMES.UPDATE, [state, this]);
     state.task.update(state);
   },
   createRenderState: function () {
-    return {global: this, task: this.activeTask}
+    return {global: this, task: this.activeTask,styleStack:[]}
   }
 });
 FlipScope.global = new RenderGlobal();
