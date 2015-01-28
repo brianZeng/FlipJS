@@ -40,9 +40,18 @@
     <div class="square" id="scale"></div>
 </div>
 <script>
+    Flip(function(){
+        var ani=Flip.animate({animationType: 'translate', selector: '#translate',duration:0.5}).start();
+        ani.then(function(){
+            return Flip.animate({animationType: 'rotate', selector: '#rotate',duration:0.5}).start();
+        }).then(Flip.animate({animationType: 'flip', selector: '#flip',duration:0.5}))
+                .then(Flip.animate({animationType: 'scale', selector: '#scale',duration:0.5}).promise);
+
+    });
+
     Flip(function (Flip) {
         Flip.$('.square').forEach(function (ele) {
-            Flip.animate({animationType: ele.id, selector: '#' + ele.id}).start();
+
         });
     });
     /*Flip(function (Flip) {

@@ -101,6 +101,7 @@ function arrSort(array, func_ProName, des) {
     return compare(a) > compare(b)
   });
 }
+
 function arrUnique(array, func_ProName) {
   var compare = arrMapFun(func_ProName);
   return array.reduce(function (r, item) {
@@ -185,7 +186,8 @@ inherit(array, Array, {
   },
   safeFilter: function (callback, thisObj) {
     return arrSafeFilter(this, callback, thisObj);
-  }, first: function (func_proName) {
+  },
+  first: function (func_proName) {
     return arrFirst(this, func_proName);
   }
 });
@@ -250,7 +252,7 @@ function objForEach(object, callback, thisObj, arg) {
   return object;
 }
 obj.forEach = objForEach;
-function objMap(object, callback, thisObj, arg) {
+/*function objMap(object, callback, thisObj, arg) {
   var r = obj();
   if (object) {
     if (thisObj == undefined)thisObj = object;
@@ -269,7 +271,7 @@ function objReduce(object, callback, initialValue, thisObj, arg) {
   return initialValue;
 }
 
-obj.reduce = objReduce;
+obj.reduce = objReduce;*/
 inherit(obj, null, {
   on: function (evtName, handler) {
     return addEventListener(this, evtName, handler);

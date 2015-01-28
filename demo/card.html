@@ -10,10 +10,15 @@
             min-width: 320px;
             max-width: 420px;
             height: 100%;
-            margin: 0 auto;
+            //margin: 0 auto;
         }
-        main img{
-
+        .front-content p{
+            color:#DDD;
+            font: 1.8em  bolder ;
+            top: 7%;
+            left: 10%;
+            margin: 0;
+            position: relative;
         }
         body{
             margin:  0;
@@ -23,18 +28,35 @@
 </head>
 <body>
 <main>
-    <img src="../images/card_front.jpg" id="card-back">
+    <div class="flip">
+        <div class="front">
+            <img src="../images/card_front.jpg" >
+            <div class="front-content"><p>友谊の见证！</p></div>
+        </div>
+        <div class="back">
+            <img src="../images/card_back.jpg" >
+        </div>
+
+    </div>
 </main>
 
 <script>
     Flip(function(){
-        var h=window.screen.availHeight+'px',w=window.screen.availWidth+'px',animation;
-        var style=document.createElement('style');
-        style.innerHTML='img{width:'+w+';height:'+h+';}';
-        animation=Flip.animate('flip',{selector:'#card-back',angle:Math.PI*6,duration:4,keepWhenFinished:1});
-        animation.css(
-                {
-                    width:w,height:h
+        var animation=Flip.animate('flip',{selector:'.flip',angle:Math.PI*6,duration:0.1,keepWhenFinished:1})
+                .css( '& img,& .front-content', {
+                    position:'absolute',
+                    width:document.documentElement.clientWidth+'px',
+                    height:document.documentElement.clientHeight+'px'
+                })
+                .css({position:'relative'})
+                .css('& >.front',function(css){
+                    css.display=this.front?'block':'none';
+                }).css('&>.back',function(css){
+                    css.display=(!this.front)?'block':'none';
+                }).on('update',function(){
+                    var angle=(this.clock.value*this.angle),PI2=Math.PI*2;
+                    while(angle>PI2)angle-=PI2;
+                    this.front=angle<Math.PI/2||angle>Math.PI*1.5;
                 });
         animation.start();
     })

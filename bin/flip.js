@@ -98,6 +98,7 @@ function arrSort(array, func_ProName, des) {
     return compare(a) > compare(b)
   });
 }
+
 function arrUnique(array, func_ProName) {
   var compare = arrMapFun(func_ProName);
   return array.reduce(function (r, item) {
@@ -182,7 +183,8 @@ inherit(array, Array, {
   },
   safeFilter: function (callback, thisObj) {
     return arrSafeFilter(this, callback, thisObj);
-  }, first: function (func_proName) {
+  },
+  first: function (func_proName) {
     return arrFirst(this, func_proName);
   }
 });
@@ -247,7 +249,7 @@ function objForEach(object, callback, thisObj, arg) {
   return object;
 }
 obj.forEach = objForEach;
-function objMap(object, callback, thisObj, arg) {
+/*function objMap(object, callback, thisObj, arg) {
   var r = obj();
   if (object) {
     if (thisObj == undefined)thisObj = object;
@@ -266,7 +268,7 @@ function objReduce(object, callback, initialValue, thisObj, arg) {
   return initialValue;
 }
 
-obj.reduce = objReduce;
+obj.reduce = objReduce;*/
 inherit(obj, null, {
   on: function (evtName, handler) {
     return addEventListener(this, evtName, handler);
@@ -823,8 +825,10 @@ Animation.EVENT_NAMES = {
 
   function removeWhenFinished(state) {
     var ani = state.animation;
+    updateAnimationCss(ani,state);
     ani.render(state);
     ani.emit(Animation.EVENT_NAMES.FINISHED, state);
+    this._promise=null;
     if(ani.keepWhenFinished){
       state.global.on(RenderGlobal.EVENT_NAMES.FRAME_START,function(styleRule){
         return function(state){
@@ -835,9 +839,13 @@ Animation.EVENT_NAMES = {
     else ani.destroy(state);
   }
   function updateAnimation(animation,renderState){
-    var cssMap=animation._cssMap,ts=animation.selector;
     renderState.animation=animation;
     animation.clock.update(renderState);
+    updateAnimationCss(animation,renderState);
+    renderState.animatetion=null;
+  }
+  function updateAnimationCss(animation,renderState){
+    var cssMap=animation._cssMap,ts=animation.selector;
     objForEach(animation._cssCallback,function(cbs,selector){
       var cssRule={};
       cbs.forEach(function(cb){
@@ -881,6 +889,11 @@ Animation.EVENT_NAMES = {
     },
     get clock() {
       return this._clock;
+    },
+    get promise(){
+      var v=this._promise;
+      if(!v)v=this._promise=animationPromise(this);
+      return v;
     },
     get finished() {
       var clock;
@@ -963,6 +976,13 @@ Animation.EVENT_NAMES = {
       var clock=this.clock;
       if(clock)clock.stop();
       return this;
+    },
+    then:function(onFinished){
+      return this.promise.then(onFinished);
+    },
+    fellow:function(onFinished){
+      this.then(onFinished);
+      return this;
     }
   });
 })();
@@ -1009,6 +1029,42 @@ Flip.animation = (function () {
   }
 
 })();
+function animationPromise(animation){
+  var pending=[],resolved;
+  function resolve(animation){
+    if(!resolved){
+      if(!animation.finished)
+        animation.once('finished',function(renderState){
+          pending.forEach(function(call){call(renderState);});
+        });
+    }
+  }
+  function promise(animation){
+    if(!resolved&&animation instanceof Animation){
+      resolve(animation);
+      resolved=animation;
+    }
+    return resolved;
+  }
+  promise.then=function(callbackOrAnimation){
+    var promise=animationPromise(),callback;
+    if(callbackOrAnimation instanceof Animation)
+      callback=function(){return callbackOrAnimation};
+    else if(typeof callbackOrAnimation==="function")
+      callback=callbackOrAnimation;
+    else throw ('argument should be function or animation');
+    pending.push(function(renderState){
+      var opt={autoStart:true},ani=callback(renderState,opt);
+      if(ani instanceof Animation){
+        if(opt.autoStart) ani.start();
+        promise(ani);
+      }
+    });
+    return promise;
+  };
+  promise(animation);
+  return promise;
+}
 
 
 function Clock(opt) {
