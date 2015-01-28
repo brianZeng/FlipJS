@@ -148,14 +148,14 @@ function mapProName(proNameOrFun) {
       return item;
     }
 }
-function arrFind(array, proNameOrFun, value, unstrict) {
+function arrFind(array, proNameOrFun, value, unstrict,index) {
   var fun = mapProName(proNameOrFun), i, item;
   if(value===undefined)value=true;
   if (unstrict) {
-    for (i = 0, item = array[0]; item; item = array[++i]) if (fun(item) == value)return item;
+    for (i = 0, item = array[0]; item; item = array[++i]) if (fun(item) == value)return index? i:item;
   }
   else {
-    for (i = 0, item = array[0]; item; item = array[++i]) if (fun(item) === value)return item;
+    for (i = 0, item = array[0]; item; item = array[++i]) if (fun(item) === value)return index? i:item;
   }
   return undefined;
 }
@@ -807,8 +807,21 @@ Animation.EVENT_NAMES = {
     return setter;
   };
   Flip.animate = main;
-  function getCSS(ele) {
-    return ele.currentStyle || window.getComputedStyle(ele)
+  Flip.css=function(selector,rule){
+    var result={},body;
+    if(typeof rule==="function")result=rule(result)||result;
+    else if(typeof rule==="object") objForEach(rule,cloneFunc,result);
+    else throw 'css rule should be object or function';
+    if(body=getRuleBody(result)){
+      return FlipScope.global.immediate(selector+'{'+body+'}');
+    }
+  };
+  function getRuleBody(ruleObj,separator){
+    var rules=[];
+    objForEach(ruleObj,function(value,key){
+       rules.push(key.replace(/[A-Z]/g,function(c){return '-'+ c.toLowerCase()})+':'+value+';');
+    });
+    return rules.join(separator||'\n');
   }
 
   function getAniId(type) {
@@ -830,11 +843,7 @@ Animation.EVENT_NAMES = {
     ani.emit(Animation.EVENT_NAMES.FINISHED, state);
     this._promise=null;
     if(ani.keepWhenFinished){
-      state.global.on(RenderGlobal.EVENT_NAMES.FRAME_START,function(styleRule){
-        return function(state){
-          state.styleStack.push(styleRule);
-        }
-      }(ani.lastStyleRule))
+      state.global.immediate(ani.lastStyleRule);
     }
     else ani.destroy(state);
   }
@@ -844,6 +853,7 @@ Animation.EVENT_NAMES = {
     updateAnimationCss(animation,renderState);
     renderState.animatetion=null;
   }
+
   function updateAnimationCss(animation,renderState){
     var cssMap=animation._cssMap,ts=animation.selector;
     objForEach(animation._cssCallback,function(cbs,selector){
@@ -859,7 +869,7 @@ Animation.EVENT_NAMES = {
       matRule=mat.toString();
       selector.split(',').forEach(function(se){
         var key=se.replace(/&/g,ts),cssObj=cssMap[key]||(cssMap[key]={});
-        cssObj.transform=cssObj['webkit-transform']=matRule;
+        cssObj.transform=cssObj['-webkit-transform']=matRule;
       });
     });
   }
@@ -954,12 +964,9 @@ Animation.EVENT_NAMES = {
     getStyleRule:function(){
       var styles=[];
       objForEach(this._cssMap,function(ruleObj,selector){
-        var rules=[];
-        objForEach(ruleObj,function(sty,name){
-          rules.push(name.replace(/[A-Z]/g,function(c){return '-'+ c.toLowerCase()})+":"+sty)
-        });
-        if(rules.length){
-          styles.push(selector+'\n{\n'+rules.join(';\n')+'}');
+        var body=getRuleBody(ruleObj);
+        if(body){
+          styles.push(selector+'\n{\n'+body+'\n}');
         }
       });
       return this.lastStyleRule=styles.join('\n');
@@ -1355,7 +1362,9 @@ Flip.EASE = Clock.EASE = (function () {
 Flip.RenderGlobal = RenderGlobal;
 function RenderGlobal() {
   this._tasks = new Flip.util.Array();
-  this.styleElement=document.createElement('style');
+  this._persistStyles=new Flip.util.Array();
+  this._persistElement=document.createElement('style');
+  this._styleElement=document.createElement('style');
 }
 RenderGlobal.EVENT_NAMES = {
   FRAME_START: 'frameStart',
@@ -1392,12 +1401,28 @@ inherit(RenderGlobal, Flip.util.Object, {
       return this.activeTask.add(obj);
     return false;
   },
+  immediate:function(style){
+    var styles=this._persistStyles;
+    if(styles.add(style))
+    {
+      this._persistStyle=false;
+      return (function(uid,styles){
+        return function cancelImmediate(){
+          var index=arrFind(styles,'uid',uid,1,1);
+          return styles.splice(index,1)[0];
+        }
+      })(style.uid=nextUid('immediateStyle'),styles);
+    }
+  },
   init: function (taskName) {
+    var head=document.head;
     this.activeTask = taskName;
     this.loop();
     this.activeTask.timeline.start();
-    if(!this.styleElement.parentNode)
-      document.head.appendChild(this.styleElement);
+    if(!this._styleElement.parentNode){
+      head.appendChild(this._styleElement);
+      head.appendChild(this._persistElement);
+    }
     typeof window === "object" && Flip.fallback(window);
     this.init = function () {
       console.warn('The settings have been initiated,do not init twice');
@@ -1413,7 +1438,11 @@ inherit(RenderGlobal, Flip.util.Object, {
   },
   render: function (state) {
     state.task.render(state);
-    this.styleElement.innerHTML=state.styleStack.join('\n');
+    if(!this._persistStyle){
+      this._persistStyle=1;
+      this._persistElement.innerHTML=this._persistStyles.join('\n');
+    }
+    this._styleElement.innerHTML=state.styleStack.join('\n');
   },
   update: function (state) {
     state.global.emit(RenderGlobal.EVENT_NAMES.UPDATE, [state, this]);
@@ -1583,6 +1612,12 @@ inherit(TimeLine, Flip.util.Object, {
     }
   }
 });
+var nextUid=(function(map){
+  return function (type){
+    if(!map[type])map[type]=1;
+    return map[type]++;
+  }
+})({});
 Flip.animation({
   name: 'flip',
   defParam: {

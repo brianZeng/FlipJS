@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>友谊卡</title>
-    <script src="../bin/flip.min.js"></script>
+    <script src="../bin/flip.js"></script>
     <style>
         main{
             min-width: 320px;
@@ -54,15 +54,17 @@
 <script>
     Flip(function(){
         var w=document.documentElement.clientWidth,h=document.documentElement.clientHeight,wpx=w+'px',hpx=h+'px';
+        Flip.css('.flip .cover,.flip .front-content',{
+            position:'absolute',
+            width:wpx,
+            height:hpx
+        });
+        Flip.css('.flip .front,.flip .back',{
+            position:'relative',
+            width:wpx,
+            height:hpx
+        });
         var animation=Flip.animate('flip',{selector:'.flip',angle:Math.PI*6,duration:4,keepWhenFinished:1})
-                .css( '& .cover,& .front-content', {
-                    position:'absolute',
-                    width:wpx,
-                    height:hpx
-                }).css('& .front,& .back',{
-                    position:'relative',
-                    width:wpx,height:hpx
-                })
                 .css({position:'relative'})
                 .css('& >.front',function(css){
                     css.display=this.front?'block':'none';})

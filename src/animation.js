@@ -58,8 +58,21 @@ Animation.EVENT_NAMES = {
     return setter;
   };
   Flip.animate = main;
-  function getCSS(ele) {
-    return ele.currentStyle || window.getComputedStyle(ele)
+  Flip.css=function(selector,rule){
+    var result={},body;
+    if(typeof rule==="function")result=rule(result)||result;
+    else if(typeof rule==="object") objForEach(rule,cloneFunc,result);
+    else throw 'css rule should be object or function';
+    if(body=getRuleBody(result)){
+      return FlipScope.global.immediate(selector+'{'+body+'}');
+    }
+  };
+  function getRuleBody(ruleObj,separator){
+    var rules=[];
+    objForEach(ruleObj,function(value,key){
+       rules.push(key.replace(/[A-Z]/g,function(c){return '-'+ c.toLowerCase()})+':'+value+';');
+    });
+    return rules.join(separator||'\n');
   }
 
   function getAniId(type) {
@@ -81,11 +94,7 @@ Animation.EVENT_NAMES = {
     ani.emit(Animation.EVENT_NAMES.FINISHED, state);
     this._promise=null;
     if(ani.keepWhenFinished){
-      state.global.on(RenderGlobal.EVENT_NAMES.FRAME_START,function(styleRule){
-        return function(state){
-          state.styleStack.push(styleRule);
-        }
-      }(ani.lastStyleRule))
+      state.global.immediate(ani.lastStyleRule);
     }
     else ani.destroy(state);
   }
@@ -95,6 +104,7 @@ Animation.EVENT_NAMES = {
     updateAnimationCss(animation,renderState);
     renderState.animatetion=null;
   }
+
   function updateAnimationCss(animation,renderState){
     var cssMap=animation._cssMap,ts=animation.selector;
     objForEach(animation._cssCallback,function(cbs,selector){
@@ -110,7 +120,7 @@ Animation.EVENT_NAMES = {
       matRule=mat.toString();
       selector.split(',').forEach(function(se){
         var key=se.replace(/&/g,ts),cssObj=cssMap[key]||(cssMap[key]={});
-        cssObj.transform=cssObj['webkit-transform']=matRule;
+        cssObj.transform=cssObj['-webkit-transform']=matRule;
       });
     });
   }
@@ -205,12 +215,9 @@ Animation.EVENT_NAMES = {
     getStyleRule:function(){
       var styles=[];
       objForEach(this._cssMap,function(ruleObj,selector){
-        var rules=[];
-        objForEach(ruleObj,function(sty,name){
-          rules.push(name.replace(/[A-Z]/g,function(c){return '-'+ c.toLowerCase()})+":"+sty)
-        });
-        if(rules.length){
-          styles.push(selector+'\n{\n'+rules.join(';\n')+'}');
+        var body=getRuleBody(ruleObj);
+        if(body){
+          styles.push(selector+'\n{\n'+body+'\n}');
         }
       });
       return this.lastStyleRule=styles.join('\n');

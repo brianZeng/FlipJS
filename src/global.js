@@ -4,7 +4,9 @@
 Flip.RenderGlobal = RenderGlobal;
 function RenderGlobal() {
   this._tasks = new Flip.util.Array();
-  this.styleElement=document.createElement('style');
+  this._persistStyles=new Flip.util.Array();
+  this._persistElement=document.createElement('style');
+  this._styleElement=document.createElement('style');
 }
 RenderGlobal.EVENT_NAMES = {
   FRAME_START: 'frameStart',
@@ -41,12 +43,28 @@ inherit(RenderGlobal, Flip.util.Object, {
       return this.activeTask.add(obj);
     return false;
   },
+  immediate:function(style){
+    var styles=this._persistStyles;
+    if(styles.add(style))
+    {
+      this._persistStyle=false;
+      return (function(uid,styles){
+        return function cancelImmediate(){
+          var index=arrFind(styles,'uid',uid,1,1);
+          return styles.splice(index,1)[0];
+        }
+      })(style.uid=nextUid('immediateStyle'),styles);
+    }
+  },
   init: function (taskName) {
+    var head=document.head;
     this.activeTask = taskName;
     this.loop();
     this.activeTask.timeline.start();
-    if(!this.styleElement.parentNode)
-      document.head.appendChild(this.styleElement);
+    if(!this._styleElement.parentNode){
+      head.appendChild(this._styleElement);
+      head.appendChild(this._persistElement);
+    }
     typeof window === "object" && Flip.fallback(window);
     this.init = function () {
       console.warn('The settings have been initiated,do not init twice');
@@ -62,7 +80,11 @@ inherit(RenderGlobal, Flip.util.Object, {
   },
   render: function (state) {
     state.task.render(state);
-    this.styleElement.innerHTML=state.styleStack.join('\n');
+    if(!this._persistStyle){
+      this._persistStyle=1;
+      this._persistElement.innerHTML=this._persistStyles.join('\n');
+    }
+    this._styleElement.innerHTML=state.styleStack.join('\n');
   },
   update: function (state) {
     state.global.emit(RenderGlobal.EVENT_NAMES.UPDATE, [state, this]);

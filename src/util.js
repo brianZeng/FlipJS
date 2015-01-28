@@ -151,14 +151,14 @@ function mapProName(proNameOrFun) {
       return item;
     }
 }
-function arrFind(array, proNameOrFun, value, unstrict) {
+function arrFind(array, proNameOrFun, value, unstrict,index) {
   var fun = mapProName(proNameOrFun), i, item;
   if(value===undefined)value=true;
   if (unstrict) {
-    for (i = 0, item = array[0]; item; item = array[++i]) if (fun(item) == value)return item;
+    for (i = 0, item = array[0]; item; item = array[++i]) if (fun(item) == value)return index? i:item;
   }
   else {
-    for (i = 0, item = array[0]; item; item = array[++i]) if (fun(item) === value)return item;
+    for (i = 0, item = array[0]; item; item = array[++i]) if (fun(item) === value)return index? i:item;
   }
   return undefined;
 }
