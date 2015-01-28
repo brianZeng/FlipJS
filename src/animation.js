@@ -110,7 +110,7 @@ Animation.EVENT_NAMES = {
       matRule=mat.toString();
       selector.split(',').forEach(function(se){
         var key=se.replace(/&/g,ts),cssObj=cssMap[key]||(cssMap[key]={});
-        cssObj.transform=matRule;
+        cssObj.transform=cssObj['webkit-transform']=matRule;
       });
     });
   }
@@ -206,7 +206,9 @@ Animation.EVENT_NAMES = {
       var styles=[];
       objForEach(this._cssMap,function(ruleObj,selector){
         var rules=[];
-        objForEach(ruleObj,function(sty,name){rules.push(name+":"+sty)});
+        objForEach(ruleObj,function(sty,name){
+          rules.push(name.replace(/[A-Z]/g,function(c){return '-'+ c.toLowerCase()})+":"+sty)
+        });
         if(rules.length){
           styles.push(selector+'\n{\n'+rules.join(';\n')+'}');
         }
@@ -231,7 +233,7 @@ Animation.EVENT_NAMES = {
     then:function(onFinished){
       return this.promise.then(onFinished);
     },
-    fellow:function(onFinished){
+    follow:function(onFinished){
       this.then(onFinished);
       return this;
     }
@@ -278,14 +280,12 @@ Flip.animation = (function () {
       })
     }
   }
-
 })();
 function animationPromise(animation){
   var pending=[],resolved;
   function resolve(animation){
     if(!resolved){
-      if(!animation.finished)
-        animation.once('finished',function(renderState){
+      animation.once('finished',function(renderState){
           pending.forEach(function(call){call(renderState);});
         });
     }

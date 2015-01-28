@@ -4,25 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>友谊卡</title>
-    <script src="../bin/flip.js"></script>
+    <script src="../bin/flip.min.js"></script>
     <style>
         main{
             min-width: 320px;
             max-width: 420px;
             height: 100%;
-            //margin: 0 auto;
         }
         .front-content p{
             color:#DDD;
-            font: 1.8em  bolder ;
-            top: 7%;
-            left: 10%;
+            top: 6.5%;
+            left: 11%;
             margin: 0;
-            position: relative;
+            position: absolute;
         }
         body{
             margin:  0;
             background: #000000;
+        }
+        .card-content,.card-pic{
+            position: absolute;
+        }
+        p,.hide{
+            display: none;
+        }
+        div{
+            overflow: hidden;
         }
     </style>
 </head>
@@ -30,11 +37,15 @@
 <main>
     <div class="flip">
         <div class="front">
-            <img src="../images/card_front.jpg" >
-            <div class="front-content"><p>友谊の见证！</p></div>
+            <img src="../images/card_front.jpg" class="cover">
+            <div class="front-content card-title"><p class="hide">友谊の见证！</p></div>
+            <div class="card-content hide"><b>柏子</b>和<b>柏子</b>成为了朋友,无论他们将来是富有还是贫穷、身体健康或不适,都要一起穿越大半个中国去吃云片糕！
+            </div>
+            <img class="card-pic hide">
+
         </div>
         <div class="back">
-            <img src="../images/card_back.jpg" >
+            <img src="../images/card_back.jpg" class="cover">
         </div>
 
     </div>
@@ -42,22 +53,61 @@
 
 <script>
     Flip(function(){
-        var animation=Flip.animate('flip',{selector:'.flip',angle:Math.PI*6,duration:0.1,keepWhenFinished:1})
-                .css( '& img,& .front-content', {
+        var w=document.documentElement.clientWidth,h=document.documentElement.clientHeight,wpx=w+'px',hpx=h+'px';
+        var animation=Flip.animate('flip',{selector:'.flip',angle:Math.PI*6,duration:4,keepWhenFinished:1})
+                .css( '& .cover,& .front-content', {
                     position:'absolute',
-                    width:document.documentElement.clientWidth+'px',
-                    height:document.documentElement.clientHeight+'px'
+                    width:wpx,
+                    height:hpx
+                }).css('& .front,& .back',{
+                    position:'relative',
+                    width:wpx,height:hpx
                 })
                 .css({position:'relative'})
                 .css('& >.front',function(css){
-                    css.display=this.front?'block':'none';
-                }).css('&>.back',function(css){
-                    css.display=(!this.front)?'block':'none';
-                }).on('update',function(){
+                    css.display=this.front?'block':'none';})
+                .css('&>.back',function(css){
+                    css.display=(!this.front)?'block':'none'; })
+                .on('update',function(){
                     var angle=(this.clock.value*this.angle),PI2=Math.PI*2;
                     while(angle>PI2)angle-=PI2;
                     this.front=angle<Math.PI/2||angle>Math.PI*1.5;
                 });
+        animation.then(function(){
+            return Flip.animate({selector:'.card-title',keepWhenFinished:1,duration:2}).css(function(css){
+                css['max-width']=this.clock.value*w+'px';
+                css.overflow='hidden';
+            }).css('&>p',{width:wpx,display:'block',fontSize:h*0.06+'px'});
+        }).then(function(){
+            return Flip.animate({selector:'.card-content',duration:2.5,keepWhenFinished:1,timingFunction:Flip.EASE.bounceInOut}).css(function(css){
+                css.position='absolute';
+                css.color='#000';
+                css.top=0.77*h+'px';
+                css.height=this.clock.value*h*.14+'px';
+                css.left=0.1*w+'px';
+                css.width=0.8*w+'px';
+            }).css('&.hide',{display:'block'})
+        }).then(function(state,opt){
+            var ani=Flip.animate({selector:'.card-pic',keepWhenFinished:1,timingFunction:Flip.EASE.circInOut}).css(function(css){
+                css.left=0.14*w+'px';
+                css.top=0.214*h+'px';
+                css.width=.71*w+'px';
+                css.height=0.5*h+'px';
+            }).css('&.hide',{display:'block'}).mat(function(mat){
+                var v=this.clock.value;
+                return mat.scale(v,v).rotate(Math.PI*6*v);
+            });
+            if(!img.complete){
+                opt.autoStart=false;
+                rotateAni=ani;
+            }
+            return ani;
+        });
+        var rotateAni,img=Flip.$('.card-pic')[0];
+        img.src='../images/gao.jpg';
+        img.onload=function(){
+            if(rotateAni) rotateAni.start();
+        };
         animation.start();
     })
 </script>
