@@ -152,8 +152,11 @@ Animation.EVENT_NAMES = {
       return this._clock;
     },
     get promise(){
-      var v=this._promise;
-      if(!v)v=this._promise=animationPromise(this);
+      var v=this._promise,self=this;
+      if(!v)
+        v=this._promise=FlipScope.Promise(function(resolve){
+          self.once('finished',function(){resolve(self);})
+        });
       return v;
     },
     get finished() {
@@ -237,12 +240,17 @@ Animation.EVENT_NAMES = {
       if(clock)clock.stop();
       return this;
     },
-    then:function(onFinished){
-      return this.promise.then(onFinished);
+    then:function(onFinished,onerror){
+      return this.promise.then(onFinished,onerror);
     },
-    follow:function(onFinished){
-      this.then(onFinished);
-      return this;
+    follow:function(thenables){
+      if(arguments.length>1)thenables=Array.prototype.slice.apply(arguments);
+      else if(!(thenables instanceof Array))thenables=[thenables];
+      var p=this.promise;
+      return p.then(FlipScope.Promise.all(thenables.map(function(thenable){
+        if(typeof thenable==="function")return p.then(thenable);
+        return FlipScope.Promise(thenable);
+      })));
     }
   });
 })();
@@ -269,7 +277,8 @@ Flip.animation = (function () {
       init:function(){
         addHandler(option,this,'mat');
         addHandler(option,this,'css');
-      }
+      },
+      type:option.name
     });
     return Constructor;
   }
@@ -288,39 +297,4 @@ Flip.animation = (function () {
     }
   }
 })();
-function animationPromise(animation){
-  var pending=[],resolved;
-  function resolve(animation){
-    if(!resolved){
-      animation.once('finished',function(renderState){
-          pending.forEach(function(call){call(renderState);});
-        });
-    }
-  }
-  function promise(animation){
-    if(!resolved&&animation instanceof Animation){
-      resolve(animation);
-      resolved=animation;
-    }
-    return resolved;
-  }
-  promise.then=function(callbackOrAnimation){
-    var promise=animationPromise(),callback;
-    if(callbackOrAnimation instanceof Animation)
-      callback=function(){return callbackOrAnimation};
-    else if(typeof callbackOrAnimation==="function")
-      callback=callbackOrAnimation;
-    else throw ('argument should be function or animation');
-    pending.push(function(renderState){
-      var opt={autoStart:true},ani=callback(renderState,opt);
-      if(ani instanceof Animation){
-        if(opt.autoStart) ani.start();
-        promise(ani);
-      }
-    });
-    return promise;
-  };
-  promise(animation);
-  return promise;
-}
 

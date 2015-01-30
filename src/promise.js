@@ -1,0 +1,149 @@
+/**
+ * Created by 柏子 on 2015/1/29.
+ */
+(function(Flip){
+  var strictRet=true;
+  function enqueue(callback){
+   // setTimeout(callback,0);
+    callback();
+  }
+  function Thenable(opt){
+    if(!(this instanceof Thenable))return new Thenable(opt);
+    this.then=opt.then;
+  }
+  function resolvePromise(future){
+    if(likePromise(future))return future;
+    return new Thenable( {
+      then:function resolved(callback){
+        try{
+          return resolvePromise(acceptAnimation(callback(future)));
+        }
+        catch (ex){
+          return rejectPromise(ex);
+        }
+      }})
+  }
+  function rejectPromise(reason){
+    if(likePromise(reason))return reason;
+    return new Thenable({
+      then: function rejected(callback,errorback){
+        try{
+          return resolvePromise(errorback(reason));
+        }
+        catch (ex){
+          return rejectPromise(ex);
+        }
+      }
+    })
+  }
+
+  function Promise(resolver){
+    if(!(this instanceof Promise))return new Promise(resolver);
+    var resolvedPromise,pending=[],ahead=[],resolved;
+    if(typeof resolver==="function")
+        resolver(resolve,reject);
+    else
+      return acceptAnimation(resolver);
+    function resolve(future){
+      try{
+        receive(future);
+      }
+      catch (ex){
+        reject(ex);
+      }
+    }
+    function reject(reason){
+      receive(undefined,reason||new Error(''));
+    }
+    function receive(future,reason){
+      if(!resolved){
+        resolvedPromise=reason==undefined?resolvePromise(future):rejectPromise(reason);
+        resolved=true;
+        for(var i= 0,len=pending.length;i<len;i++)
+        {
+          enqueue(function(args,con){
+            return function(){
+              var ret=resolvedPromise.then.apply(resolvedPromise,args);
+              if(con)ret.then.apply(ret,con);
+            }
+          }(pending[i],ahead[i]))
+        }
+        pending=ahead=undefined;
+      }
+    }
+    function next(resolve,reject){
+      ahead.push([resolve,reject]);
+    }
+    return new Thenable({
+      then:function(thenable,errorBack){
+        var _success=ensureThenable(thenable,function(v){return v}),
+          _fail=ensureThenable(errorBack,function(e){throw e});
+        if(resolvedPromise){
+          enqueue(function(){resolvedPromise.then(_success,_fail); });
+          return new Promise(function(resolver){resolvedPromise.then(resolver); })
+        }
+        else{
+          pending.push([_success,_fail]);
+          return new Promise(function(resolve,reject){next(resolve,reject);})
+        }
+      }
+    })
+  }
+  function ensureThenable(obj,def){
+    var t;
+    if((t=typeof obj)==="object")
+      return function(){return obj;};
+    else if(t==="function")return obj;
+    return def;
+  }
+  function acceptAnimation(obj){
+    var t,ani;
+    if(strictRet){
+      if(obj instanceof Animation)return obj;
+      if((t=typeof obj)=="object")
+       if(likePromise(obj))return obj;
+      else{
+         ani=Flip.animate(obj);
+         if(obj.autoStart!==false)ani.start();
+         return ani.promise;
+       }
+      else if(typeof t==="function")
+        return acceptAnimation(obj());
+      throw Error('cannot cast to animation');
+    }
+    return obj;
+  }
+  function likePromise(obj){return obj instanceof Thenable}
+  FlipScope.Promise=Flip.Promise=Promise;
+
+  function promiseAll(promises){
+    return new Promise(function(resolve,reject){
+      var fail,num,r=new Array(num=promises.length);
+      promises.forEach(function(promise,i){
+        promise.then(function(pre){
+          check(pre,i);
+        },function(err){
+          check(err,i,true);
+        })
+      });
+      function check(value,i,error){
+        r[i]=value;
+        if(error)fail=true;
+        if(num==1)fail? reject(r):resolve(r);
+        else num--;
+      }
+    })
+  }
+  Promise.all=promiseAll;
+  Promise.defer=function(){
+    var defer={};
+    defer.promise=Promise(function(resolver,rejector){
+       defer.resolve=resolver;
+       defer.reject=rejector;
+    });
+    return defer;
+  };
+  Promise.checkRetAnimation=function(v){
+    strictRet=!!v;
+  }
+})(Flip);
