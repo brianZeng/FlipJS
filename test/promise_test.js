@@ -117,15 +117,17 @@ describe('animation promise',function(){
       then({selector:'div',duration:0.2,animationType:'rotate'}).
       then(function(){
         expect(Date.now()-d).toBeGreaterThan(400);
-        done();});
+        done();
+      });
     ani.start();
   });
   it('animation follow many animations',function(done){
-    var ani=Flip.animate({selector:'div',duration:0.2});
-    ani.follow({selector:'div',duration:0.2,animationType:'flip'},{selector:'div',duration:0.2}).
+    var ani=Flip.animate({selector:'div',duration:1}),now=Date.now();
+    ani.follow({selector:'div',duration:0.2,animationType:'flip'},{selector:'div',duration:0.5}).
       then(function(ans){
         expect(ans.length).toBe(2);
         expect(ans.every(function(ani){return ani.finished})).toBe(true);
+        expect(Date.now()-now).toBeGreaterThan(1500);
         done();
       });
     ani.start();

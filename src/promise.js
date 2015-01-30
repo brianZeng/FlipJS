@@ -17,7 +17,12 @@
     return new Thenable({
       then:function resolved(callback){
         try{
-          return resolvePromise(acceptAnimation(callback(future)));
+          var ret=callback(future);
+          if(strictRet){
+            if(ret instanceof Animation)
+              ret=ret.promise;
+          }
+          return resolvePromise(acceptAnimation(ret));
         }
         catch (ex){
           return rejectPromise(ex);
@@ -136,16 +141,19 @@
         })
       });
       function check(value,i,error){
-        if(!error)
+        if(!error){
           try{
-            r[i]=acceptAnimation(value);
-          }catch (ex){
-            error=ex;
+            r[i]=value instanceof Animation? value:acceptAnimation(value);
           }
+          catch (ex){
+            error=ex;
+         }
+        }
         if(error){
           fail=true;
           r[i]=error;
         }
+        debugger;
         if(num==1)fail? reject(r):resolve(r);
         else num--;
       }

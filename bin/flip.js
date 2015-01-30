@@ -999,9 +999,9 @@ Animation.EVENT_NAMES = {
       return this.promise.then(onFinished,onerror);
     },
     follow:function(thenables){
-      if(arguments.length>1)thenables=arguments;
+      if(arguments.length>1)thenables=Array.prototype.slice.apply(arguments);
       else if(!(thenables instanceof Array))thenables=[thenables];
-      return this.promise.then(FlipScope.Promise.all(Array.prototype.map.apply(thenables,[FlipScope.Promise])));
+      return this.promise.then(function(){ return Flip.Promise.all(thenables.map(Flip.Promise))});
     }
   });
 })();
@@ -1524,7 +1524,12 @@ Mat3.prototype = {
     return new Thenable({
       then:function resolved(callback){
         try{
-          return resolvePromise(acceptAnimation(callback(future)));
+          var ret=callback(future);
+          if(strictRet){
+            if(ret instanceof Animation)
+              ret=ret.promise;
+          }
+          return resolvePromise(acceptAnimation(ret));
         }
         catch (ex){
           return rejectPromise(ex);
@@ -1643,16 +1648,19 @@ Mat3.prototype = {
         })
       });
       function check(value,i,error){
-        if(!error)
+        if(!error){
           try{
-            r[i]=acceptAnimation(value);
-          }catch (ex){
-            error=ex;
+            r[i]=value instanceof Animation? value:acceptAnimation(value);
           }
+          catch (ex){
+            error=ex;
+         }
+        }
         if(error){
           fail=true;
           r[i]=error;
         }
+        debugger;
         if(num==1)fail? reject(r):resolve(r);
         else num--;
       }

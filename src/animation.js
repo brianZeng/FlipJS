@@ -250,9 +250,9 @@ Animation.EVENT_NAMES = {
       return this.promise.then(onFinished,onerror);
     },
     follow:function(thenables){
-      if(arguments.length>1)thenables=arguments;
+      if(arguments.length>1)thenables=Array.prototype.slice.apply(arguments);
       else if(!(thenables instanceof Array))thenables=[thenables];
-      return this.promise.then(FlipScope.Promise.all(Array.prototype.map.apply(thenables,[FlipScope.Promise])));
+      return this.promise.then(function(){ return Flip.Promise.all(thenables.map(Flip.Promise))});
     }
   });
 })();
