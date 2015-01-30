@@ -91,8 +91,8 @@ Animation.EVENT_NAMES = {
     var ani = state.animation;
     updateAnimationCss(ani,state);
     ani.render(state);
+    ani._finished=true;
     ani.emit(Animation.EVENT_NAMES.FINISHED, state);
-    this._promise=null;
     if(ani.keepWhenFinished){
       state.global.immediate(ani.lastStyleRule);
     }
@@ -155,13 +155,19 @@ Animation.EVENT_NAMES = {
       var v=this._promise,self=this;
       if(!v)
         v=this._promise=FlipScope.Promise(function(resolve){
-          self.once('finished',function(){resolve(self);})
+          self.once('finished',function(state){
+            if(state&&state.global)
+              state.global.once('frameEnd',go);
+            else go();
+            function go(){
+              resolve(self);
+            }
+          })
         });
       return v;
     },
     get finished() {
-      var clock;
-      return (clock = this.clock) ? clock.finished : true;
+      return this._finished;
     },
     get id() {
       if (!this._id)this._id = getAniId(this.type);
@@ -244,13 +250,9 @@ Animation.EVENT_NAMES = {
       return this.promise.then(onFinished,onerror);
     },
     follow:function(thenables){
-      if(arguments.length>1)thenables=Array.prototype.slice.apply(arguments);
+      if(arguments.length>1)thenables=arguments;
       else if(!(thenables instanceof Array))thenables=[thenables];
-      var p=this.promise;
-      return p.then(FlipScope.Promise.all(thenables.map(function(thenable){
-        if(typeof thenable==="function")return p.then(thenable);
-        return FlipScope.Promise(thenable);
-      })));
+      return this.promise.then(FlipScope.Promise.all(Array.prototype.map.apply(thenables,[FlipScope.Promise])));
     }
   });
 })();

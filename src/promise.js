@@ -4,16 +4,17 @@
 (function(Flip){
   var strictRet=true;
   function enqueue(callback){
-   // setTimeout(callback,0);
+    //setTimeout(callback,0);
     callback();
   }
   function Thenable(opt){
     if(!(this instanceof Thenable))return new Thenable(opt);
     this.then=opt.then;
+    this.get=opt.get;
   }
   function resolvePromise(future){
     if(likePromise(future))return future;
-    return new Thenable( {
+    return new Thenable({
       then:function resolved(callback){
         try{
           return resolvePromise(acceptAnimation(callback(future)));
@@ -21,7 +22,11 @@
         catch (ex){
           return rejectPromise(ex);
         }
-      }})
+      },
+      get:function (proName){
+        return proName? future[proName]:future;
+      }
+    })
   }
   function rejectPromise(reason){
     if(likePromise(reason))return reason;
@@ -46,10 +51,10 @@
       return acceptAnimation(resolver);
     function resolve(future){
       try{
-        receive(future);
+        receive(acceptAnimation(future));
       }
       catch (ex){
-        reject(ex);
+        receive(undefined,ex);
       }
     }
     function reject(reason){
@@ -86,6 +91,9 @@
           pending.push([_success,_fail]);
           return new Promise(function(resolve,reject){next(resolve,reject);})
         }
+      },
+      get:function(proname){
+        return resolvedPromise? resolvedPromise.get(proname):undefined;
       }
     })
   }
@@ -100,15 +108,19 @@
     var t,ani;
     if(strictRet){
       if(obj instanceof Animation)return obj;
-      if((t=typeof obj)=="object")
-       if(likePromise(obj))return obj;
-      else{
-         ani=Flip.animate(obj);
-         if(obj.autoStart!==false)ani.start();
-         return ani.promise;
-       }
+      if((t=typeof obj)=="object"){
+        if(likePromise(obj))return obj;
+        else if(obj instanceof Array)
+          return obj.map(acceptAnimation);
+        else{
+          ani=Flip.animate(obj);
+          if(obj.autoStart!==false)ani.start();
+          return ani.promise;
+        }
+      }
       else if(typeof t==="function")
         return acceptAnimation(obj());
+
       throw Error('cannot cast to animation');
     }
     return obj;
@@ -127,8 +139,16 @@
         })
       });
       function check(value,i,error){
-        r[i]=value;
-        if(error)fail=true;
+        if(!error)
+          try{
+            r[i]=acceptAnimation(value);
+          }catch (ex){
+            error=ex;
+          }
+        if(error){
+          fail=true;
+          r[i]=error;
+        }
         if(num==1)fail? reject(r):resolve(r);
         else num--;
       }

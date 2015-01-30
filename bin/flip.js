@@ -840,8 +840,8 @@ Animation.EVENT_NAMES = {
     var ani = state.animation;
     updateAnimationCss(ani,state);
     ani.render(state);
+    ani._finished=true;
     ani.emit(Animation.EVENT_NAMES.FINISHED, state);
-    this._promise=null;
     if(ani.keepWhenFinished){
       state.global.immediate(ani.lastStyleRule);
     }
@@ -904,13 +904,19 @@ Animation.EVENT_NAMES = {
       var v=this._promise,self=this;
       if(!v)
         v=this._promise=FlipScope.Promise(function(resolve){
-          self.once('finished',function(){resolve(self);})
+          self.once('finished',function(state){
+            if(state&&state.global)
+              state.global.once('frameEnd',go);
+            else go();
+            function go(){
+              resolve(self);
+            }
+          })
         });
       return v;
     },
     get finished() {
-      var clock;
-      return (clock = this.clock) ? clock.finished : true;
+      return this._finished;
     },
     get id() {
       if (!this._id)this._id = getAniId(this.type);
@@ -993,13 +999,9 @@ Animation.EVENT_NAMES = {
       return this.promise.then(onFinished,onerror);
     },
     follow:function(thenables){
-      if(arguments.length>1)thenables=Array.prototype.slice.apply(arguments);
+      if(arguments.length>1)thenables=arguments;
       else if(!(thenables instanceof Array))thenables=[thenables];
-      var p=this.promise;
-      return p.then(FlipScope.Promise.all(thenables.map(function(thenable){
-        if(typeof thenable==="function")return p.then(thenable);
-        return FlipScope.Promise(thenable);
-      })));
+      return this.promise.then(FlipScope.Promise.all(Array.prototype.map.apply(thenables,[FlipScope.Promise])));
     }
   });
 })();
@@ -1509,16 +1511,17 @@ Mat3.prototype = {
 (function(Flip){
   var strictRet=true;
   function enqueue(callback){
-   // setTimeout(callback,0);
+    //setTimeout(callback,0);
     callback();
   }
   function Thenable(opt){
     if(!(this instanceof Thenable))return new Thenable(opt);
     this.then=opt.then;
+    this.get=opt.get;
   }
   function resolvePromise(future){
     if(likePromise(future))return future;
-    return new Thenable( {
+    return new Thenable({
       then:function resolved(callback){
         try{
           return resolvePromise(acceptAnimation(callback(future)));
@@ -1526,7 +1529,11 @@ Mat3.prototype = {
         catch (ex){
           return rejectPromise(ex);
         }
-      }})
+      },
+      get:function (proName){
+        return proName? future[proName]:future;
+      }
+    })
   }
   function rejectPromise(reason){
     if(likePromise(reason))return reason;
@@ -1551,10 +1558,10 @@ Mat3.prototype = {
       return acceptAnimation(resolver);
     function resolve(future){
       try{
-        receive(future);
+        receive(acceptAnimation(future));
       }
       catch (ex){
-        reject(ex);
+        receive(undefined,ex);
       }
     }
     function reject(reason){
@@ -1591,6 +1598,9 @@ Mat3.prototype = {
           pending.push([_success,_fail]);
           return new Promise(function(resolve,reject){next(resolve,reject);})
         }
+      },
+      get:function(proname){
+        return resolvedPromise? resolvedPromise.get(proname):undefined;
       }
     })
   }
@@ -1605,15 +1615,19 @@ Mat3.prototype = {
     var t,ani;
     if(strictRet){
       if(obj instanceof Animation)return obj;
-      if((t=typeof obj)=="object")
-       if(likePromise(obj))return obj;
-      else{
-         ani=Flip.animate(obj);
-         if(obj.autoStart!==false)ani.start();
-         return ani.promise;
-       }
+      if((t=typeof obj)=="object"){
+        if(likePromise(obj))return obj;
+        else if(obj instanceof Array)
+          return obj.map(acceptAnimation);
+        else{
+          ani=Flip.animate(obj);
+          if(obj.autoStart!==false)ani.start();
+          return ani.promise;
+        }
+      }
       else if(typeof t==="function")
         return acceptAnimation(obj());
+
       throw Error('cannot cast to animation');
     }
     return obj;
@@ -1632,8 +1646,16 @@ Mat3.prototype = {
         })
       });
       function check(value,i,error){
-        r[i]=value;
-        if(error)fail=true;
+        if(!error)
+          try{
+            r[i]=acceptAnimation(value);
+          }catch (ex){
+            error=ex;
+          }
+        if(error){
+          fail=true;
+          r[i]=error;
+        }
         if(num==1)fail? reject(r):resolve(r);
         else num--;
       }

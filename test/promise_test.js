@@ -121,17 +121,29 @@ describe('animation promise',function(){
     ani.start();
   });
   it('animation follow many animations',function(done){
-    var ani=Flip.animate({selector:'div',duration:0.2}),nextAni;
-    ani.follow(function(){
-        nextAni=Flip.animate({selector:'div',duration:0.2,animationType:'flip'});
-        nextAni.then(function(pre){
-          expect(pre.type).toBe('flip');
-        });
-        return nextAni.start();
-      },{selector:'div',duration:0.2}).then(function(ans){
+    var ani=Flip.animate({selector:'div',duration:0.2});
+    ani.follow({selector:'div',duration:0.2,animationType:'flip'},{selector:'div',duration:0.2}).
+      then(function(ans){
         expect(ans.length).toBe(2);
+        expect(ans.every(function(ani){return ani.finished})).toBe(true);
         done();
       });
     ani.start();
+  });
+  it('support continue with a promise',function(done){
+     var ani=Flip.animate({selector:'div',animationType:'rotate',duration:0.2});
+    ani.then(function(){
+      return Flip.Promise(function(resolve){
+        setTimeout(function(){
+          resolve({selector:'div',animationType:'scale',duration:0.3})
+        },500);
+      });
+    }).then(function(pre){
+      expect(pre.finished).toBe(true);
+      expect(pre.type).toBe('scale');
+      done();
+    });
+    ani.start();
+
   })
 });
