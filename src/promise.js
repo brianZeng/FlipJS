@@ -41,7 +41,6 @@
       }
     })
   }
-
   function Promise(resolver){
     if(!(this instanceof Promise))return new Promise(resolver);
     var resolvedPromise,pending=[],ahead=[],resolved;
@@ -126,8 +125,6 @@
     return obj;
   }
   function likePromise(obj){return obj instanceof Thenable}
-  FlipScope.Promise=Flip.Promise=Promise;
-
   function promiseAll(promises){
     return new Promise(function(resolve,reject){
       var fail,num,r=new Array(num=promises.length);
@@ -165,5 +162,6 @@
   };
   Promise.checkRetAnimation=function(v){
     strictRet=!!v;
-  }
+  };
+  FlipScope.Promise=Flip.Promise=Promise;
 })(Flip);
