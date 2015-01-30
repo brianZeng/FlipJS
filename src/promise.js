@@ -12,17 +12,18 @@
     this.then=opt.then;
     this.get=opt.get;
   }
+  function castToPromise(value){
+    if(value instanceof Animation)return value.promise;
+    else if(value instanceof Array)return Promise.all(value.map(castToPromise));
+    else if(likePromise(value))return value;
+    throw Error('cannot cast to promise');
+  }
   function resolvePromise(future){
     if(likePromise(future))return future;
     return new Thenable({
       then:function resolved(callback){
         try{
-          var ret=callback(future);
-          if(strictRet){
-            if(ret instanceof Animation)
-              ret=ret.promise;
-          }
-          return resolvePromise(acceptAnimation(ret));
+          return resolvePromise(castToPromise(acceptAnimation(callback(future))));
         }
         catch (ex){
           return rejectPromise(ex);
@@ -124,7 +125,6 @@
       }
       else if(typeof t==="function")
         return acceptAnimation(obj());
-
       throw Error('cannot cast to animation');
     }
     return obj;
@@ -153,7 +153,6 @@
           fail=true;
           r[i]=error;
         }
-        debugger;
         if(num==1)fail? reject(r):resolve(r);
         else num--;
       }
