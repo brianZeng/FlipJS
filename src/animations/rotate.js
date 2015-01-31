@@ -9,7 +9,7 @@ Flip.animation({
   beforeCallBase: function (proxy) {
     proxy.source('timingFunction', Flip.EASE.circInOut);
   },
-  mat: function () {
+  transform: function () {
     return Flip.Mat3.setRotate(this.angle * this.clock.value);
   }
 });

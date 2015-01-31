@@ -4,10 +4,10 @@
 xdescribe('promise test',function(){
   var Promise=Flip.Promise;
   beforeEach(function(){
-    Promise.checkRetAnimation(false);
+    Promise.option({acceptAnimationOnly:false});
   });
   afterEach(function(){
-    Promise.checkRetAnimation(true);
+    Promise.option({acceptAnimationOnly:true});
   });
   it('resolve later',function(done){
    var promise= Promise(function(resolve){

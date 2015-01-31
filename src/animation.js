@@ -124,6 +124,19 @@ Animation.EVENT_NAMES = {
       });
     });
   }
+  function setUpdateOpt(animation,obj,type){
+     var t=typeof obj;
+    if(t==="function")animation[type](obj);
+    else if(t==="object"){
+      hasNestedObj(obj)? objForEach(obj,function(rule,slt){animation[type](slt,rule)}):animation[type](obj);
+    }
+  }
+  function hasNestedObj(obj){
+    return obj&&Object.getOwnPropertyNames(obj).some(function(key){
+        var t=typeof obj[key];
+        return t=="object"||t=="function"
+        });
+  }
   function addMap(key,Map,cb){
     var cbs=Map[key];
     if(!cbs)Map[key]=[cb];
@@ -176,8 +189,17 @@ Animation.EVENT_NAMES = {
     get elements() {
       return Flip.$(this.selector);
     },
-    init:function(){},
-    mat:function(selector,matCallback){
+    init:function(opt){
+      this.use(opt);
+    },
+    use:function(opt){
+      setUpdateOpt(this,opt.transform,'transform');
+      setUpdateOpt(this,opt.css,'css');
+      setUpdateOpt(this,opt.on,'on');
+      setUpdateOpt(this,opt.once,'once');
+      return this;
+    },
+    transform:function(selector,matCallback){
       if(typeof selector==="function") {
         matCallback= selector;
         selector ='&';
@@ -250,6 +272,7 @@ Animation.EVENT_NAMES = {
       return this.promise.then(onFinished,onerror);
     },
     follow:function(thenables){
+      //TODO:directly past Array
       if(arguments.length>1)thenables=Array.prototype.slice.apply(arguments);
       else if(!(thenables instanceof Array))thenables=[thenables];
       return this.promise.then(function(){ return Flip.Promise.all(thenables.map(Flip.Promise))});
@@ -257,10 +280,10 @@ Animation.EVENT_NAMES = {
   });
 })();
 Flip.animation = (function () {
-  function register(option) {
-    var beforeCallBase, defParam, name = option.name, Constructor;
-    beforeCallBase = option.beforeCallBase || _beforeCallBase;
-    defParam = option.defParam || {};
+  function register(definition) {
+    var beforeCallBase, defParam, name = definition.name, Constructor;
+    beforeCallBase = definition.beforeCallBase || _beforeCallBase;
+    defParam = definition.defParam || {};
     Constructor = function (opt) {
       if (!(this instanceof Constructor))return new Constructor(opt);
       var proxy = createProxy(opt);
@@ -276,11 +299,10 @@ Flip.animation = (function () {
       Constructor.name = name;
     }
     inherit(Constructor, Animation.prototype,{
-      init:function(){
-        addHandler(option,this,'mat');
-        addHandler(option,this,'css');
+      init:function(opt){
+        this.use(definition).use(opt);
       },
-      type:option.name
+      type:definition.name
     });
     return Constructor;
   }

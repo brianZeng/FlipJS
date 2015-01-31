@@ -2,10 +2,9 @@
  * Created by 柏子 on 2015/1/29.
  */
 (function(Flip){
-  var strictRet=true;
+  var strictRet=true,syncEnqueue;
   function enqueue(callback){
-    //setTimeout(callback,0);
-    callback();
+   syncEnqueue? callback():setTimeout(callback,0);
   }
   function Thenable(opt){
     if(!(this instanceof Thenable))return new Thenable(opt);
@@ -167,8 +166,10 @@
     });
     return defer;
   };
-  Promise.checkRetAnimation=function(v){
-    strictRet=!!v;
+  Promise.option=function(opt){
+    if(!opt)return;
+    strictRet=!!opt.acceptAnimationOnly;
+    syncEnqueue=!!opt.sync;
   };
   FlipScope.Promise=Flip.Promise=Promise;
 })(Flip);
