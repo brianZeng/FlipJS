@@ -23,6 +23,10 @@ Flip.interpolation({
       var seg = this._findSegByT(t);
       return this.interpolate(seg.x0 + seg.t * (seg.x1 - seg.x0));
     },
+    deriveWhen:function(t){
+      var dt=0.001,p0=this.when(t),p1=this.when(t+dt);
+      return (p1.y-p0.y)/(p1.y-p0.y);
+    },
     interpolate: function (x) {
       var ws = this.coefficeint, xs = this.axis.x, ys = this.axis.y, n = xs.length, y = 0;
       for (var i = 0, sum = 1, wi = 1, j; i < n; i++, sum = 1, wi = 1) {

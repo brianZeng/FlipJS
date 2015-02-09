@@ -6,8 +6,9 @@ function Interpolation(opt) {
   if (opt.data instanceof Array) {
     var pts = opt.data, len = pts.length, xs = new Float32Array(len), ys = new Float32Array(len);
     for (var i = 0, p = pts[0]; i < len; p = pts[++i]) {
-      xs[i] = p.x;
-      ys[i] = p.y;
+      //both p={x:0,y:0} or p=[0,0] are ok
+      xs[i] = Vec.get(p,'x');
+      ys[i] = Vec.get(p,'y');
     }
     this.axis = {x: xs, y: ys}
   }
@@ -22,14 +23,23 @@ function Interpolation(opt) {
 inherit(Interpolation, {
   init: function (points) {
   },
-  useSeg: function (seg) {
-    this.interpolateSeg(seg.t, [seg.x0, seg.x1], [seg.y0, seg.y1]);
+  interpolateBySeg: function (seg) {
+    var param=this.getCalcParam(seg);
+    return this.calcPoint(this.calcVt(param.t), param.vx,param.vy);
   },
   interpolate: function (x, skip) {
-    return this.useSeg(this._findSegByX0(x, skip));
+    return this.interpolateBySeg(this._findSegByX0(x, skip));
+  },
+  deriveBySeg:function(seg){
+    var param=this.getCalcParam(seg);
+    return this.calcPoint(this.calcVdt(param.t),param.vx,param.vy);
+  },
+  deriveWhen:function(t){
+    var r=this.deriveBySeg(this._findSegByT(t));
+    return r.y/ r.x;
   },
   when: function (t) {
-    return this.useSeg(this._findSegByT(t));
+    return this.interpolateBySeg(this._findSegByT(t));
   },
   itor: function (opt) {
     var interval, count, self = this;
@@ -40,8 +50,8 @@ inherit(Interpolation, {
     });
     return new InterItor(opt.result);
   },
-  interpolateSeg: function (t, vx, vy) {
-    return this.calcPoint(this.calcVt(t), vx, vy)
+  calcPoint:function(){
+    throw Error('must be implement by specific interpolation');
   },
   _indexOfSegment: function (x, skip, xs) {
     xs = xs || this.axis.x;
@@ -126,38 +136,30 @@ InterItor.prototype = {
 (function (Flip) {
   var handler = {
     degree: (function () {
-      var cache = [
-          function () {
-            return [1]
-          },
-          function (t) {
-            return [t, 1]
-          },
-          function (t) {
-            return [t * t, t, 1]
-          },
-          function (t) {
-            var t2 = t * t;
-            return [t2 * t, t2, t, 1]
-          },
-          function (t) {
-            var t2 = t * t, t3 = t2 * t;
-            return [t3 * t, t3, t2, t, 1]
-          }
-        ], pow = Math.pow,
-        genVtFunc = function (degree) {
-          return function (t) {
-            for (var i = 1, r = [1]; i < degree; i++)
-              r.unshift(pow(t, 1));
+      var  pow = Math.pow;
+      var degreeCache={
+        "0":[function(){return [1]},function(){return [0]}],
+        "1":[function (t) {return [t, 1]},function(){return [1,0]}],
+        "2":[function(t){return [t * t, t, 1]},function(t){return [2*t,1,0]}],
+        "3":[function(t){var t2 = t * t;return [t2 * t, t2, t, 1]},function(t){return [3*t*t,2*t,1,0]}]
+      };
+      function genVtFunc(degree) {
+         return degreeCache[degree]||[ function (t) {
+            for (var i = 1, r = [1]; i <= degree; i++)
+              r.unshift(pow(t, i));
             return r;
-          }
-        };
+          },function(t){
+             for (var i = 1, r = [0]; i <= degree; i++)
+               r.unshift(pow(t, i-1)*i);
+             return r;
+           }]
+      }
       return function (degree, proto) {
-        var fun;
-        if (typeof degree == "function") fun = degree;
-        else if (!isNaN(degree = parseInt(degree)))
-          fun = cache[degree] || genVtFunc(degree);
-        proto.calcVt = fun;
+        var funs=genVtFunc(degree);
+        // t -> vt
+        proto.calcVt = funs[0];
+        // t-> Vdt
+        proto.calcVdt=funs[1];
       }
     })(),
     weightMat: function (matLike, proto) {

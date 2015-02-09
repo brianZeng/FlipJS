@@ -76,9 +76,13 @@ Flip.interpolation({
           coy[index + 1] = cps[3];
       }
     },
-    useSeg: function (seg) {
+    getCalcParam:function(seg){
       var i0 = seg.i0, co = this.coefficeint, cx = co.x, cy = co.y, ci = i0 * 2;
-      return this.interpolateSeg(seg.t, [seg.x0, cx[ci], cx[ci + 1], seg.x1], [seg.y0, cy[ci], cy[ci + 1], seg.y1]);
+      return {
+        t:seg.t,
+        vx: [seg.x0, cx[ci], cx[ci + 1], seg.x1],
+        vy:[seg.y0, cy[ci], cy[ci + 1], seg.y1]
+      }
     },
     calCP: function (P0x, P0y, P1x, P1y, P_1x, P_1y) {
       //CP0=P0+(P1-P_1)/2;CP1=P0-(P1-P_1)/2;

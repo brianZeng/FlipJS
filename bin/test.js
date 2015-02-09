@@ -1,3 +1,6 @@
+/**
+ * Created by 柏然 on 2014/12/13.
+ */
 xdescribe('Construct translate animation:', function () {
   it('1. .dx .dy stands for the translation distance:', function () {
     var ani = Flip.animation.translate({dx: 100, dy: 200});
@@ -13,6 +16,9 @@ xdescribe('Construct translate animation:', function () {
 
 
 });
+/**
+ * Created by 柏然 on 2014/12/13.
+ */
 xdescribe('Construct Animation:', function () {
   xdescribe('1.Animation.createOptProxy:', function () {
     xit('proxy result contains .clock .elements', function () {
@@ -55,6 +61,30 @@ xdescribe('Construct Animation:', function () {
   });
 });
 
+/**
+ * Created by 柏子 on 2015/2/9.
+ */
+describe('interpolation basic test',function(){
+  var data=[[0,0],[10,10],[20,20]],itpl;
+  function pointEquals(p1,p2){
+    expect(Flip.Vec.get(p1,'x')).toBeCloseTo(Flip.Vec.get(p2,'x'));
+    expect(Flip.Vec.get(p1,'y')).toBeCloseTo(Flip.Vec.get(p2,'y'));
+  }
+  itpl=Flip.interpolate('linear',data);
+    it('1.interpolate point',function(){
+      pointEquals(itpl.when(0),data[0]);
+      pointEquals(itpl.when(0.5),data[1]);
+      pointEquals(itpl.when(1),data[2]);
+    });
+  it('2.interpolate derivative point',function(){
+    expect(itpl.deriveWhen(0)).toBe(1);
+    expect(itpl.deriveWhen(0.5)).toBe(1);
+    expect(itpl.deriveWhen(1)).toBe(1);
+  })
+});
+/**
+ * Created by 柏子 on 2015/1/29.
+ */
 xdescribe('promise test',function(){
   var Promise=Flip.Promise;
   beforeEach(function(){
@@ -159,7 +189,7 @@ xdescribe('promise test',function(){
     })
   })
 });
-describe('animation promise',function(){
+xdescribe('animation promise',function(){
   var Promise=Flip.Promise;
   it('accept animation',function(done){
     var opt={

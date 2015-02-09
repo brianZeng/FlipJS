@@ -8,10 +8,32 @@
 }
 var config = {
   concat: {
+   /* flipCore:{
+      src:['src/util.js','src/*.js'],
+      dest:'temp/flip_core.js'
+    },
     flipBasic: {
-      files: {
-        'bin/flip.js': ['src/util.js', 'src/*.js', 'src/animations/*.js', 'src/interpolation/*.js'],
-        'bin/Flip.js': ['bin/flip.js']
+      src:['bin/flip_core.js','src/animations/*.js'],
+      dest:'temp/flip_basic.js'
+    },
+    flipExtra:{
+      src:['bin/flip_core.js','src/animations/*.js','src/extra/interpolation.js','src/interpolation/*.js'],
+      dest:'temp/flip_extra.js'
+    },*/
+    flip:{
+      files:{
+        'temp/flip_core.js':['src/util.js','src/*.js'],
+        'temp/flip_basic.js':['bin/flip_core.js','src/animations/*.js'],
+        'temp/flip_extra.js':['bin/flip_core.js','src/animations/*.js','src/extra/*.js','src/interpolation/*.js'],
+        'bin/flip.js':'temp/flip_basic.js',
+        'bin/flip_extra.js':'temp/flip_extra.js'
+      },
+      options:{
+        process:function(src,path){
+          if(path.indexOf('temp')==0)
+            return '(function(){*})();'.replace('*', src);
+          return src;
+        }
       }
     },
     ng_test_suit:{
@@ -35,22 +57,13 @@ var config = {
     jasmine:{
       src:['jasmine','jasmine-html','boot'].map(concat('bower_components/jasmine/lib/jasmine-core/')),
       dest:'bin/jasmine.js'
-    },
-    options: {
-      process: function (src, path) {
-        if (path.indexOf('bin/flip') == 0) {
-          return '(function(){*})();'.replace('*', src);
-        }
-        return src;
-      },
-      stripBanners: true
     }
   }
 };
 config.watch = {
   flipBasic: {
     files: 'src/**/*.js',
-    tasks: ['concat:flipBasic'],
+    tasks: ['concat:flip'],
     options: {
       interrupt: true
     }
@@ -114,4 +127,5 @@ module.exports = function (grunt) {
   grunt.initConfig(config);
   grunt.registerTask('begin_editor',['concat:editor_test','concat:editor_ng','watch:editor_ng','watch:editor_test']);
   grunt.registerTask('con-ugly', ['concat', 'uglify:flip']);
+  //grunt.registerTask('con-flip',['concat:flipCore','concat:flipBasic','concat:flipExtra','concat:flip'])
 };

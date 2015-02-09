@@ -23,6 +23,10 @@ Mat3.setTranslate = function (dx, dy) {
 Mat3.setScale = function (x, y) {
   return new Mat3([x || 1, 0, 0, 0, y || 1, 0]);
 };
+Mat3.setFlip=function(angle,vertical){
+  var sin = Math.sin(angle), cos = Math.cos(angle);
+  return new Mat3(vertical ? [cos, 0, 0, sin, 1, 0] : [1, -sin, 0, 0, cos, 0])
+};
 Mat3.setRotate = function (angle) {
   if (typeof angle == "string") {
     var match = angle.match(/^((\d+(\.\d+)?)|(\.\d+))d|deg/i);
@@ -59,6 +63,9 @@ Mat3.prototype = {
   },
   rotate: function (angle, overwrite) {
     return this.concat(Mat3.setRotate(angle), overwrite);
+  },
+  flip:function(angle,vertical,overwrite){
+    return this.concat(Mat3.setFlip(angle,vertical),overwrite);
   },
   concat: function (mat3, overwrite) {
     var n = this.elements, e = mat3.elements, r;

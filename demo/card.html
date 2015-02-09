@@ -48,7 +48,6 @@
             <div class="card-content hide"><b>柏子</b>和<b>柏子</b>成为了朋友,无论他们将来是富有还是贫穷、身体健康或不适,都要一起穿越大半个中国去吃云片糕！
             </div>
             <img class="card-pic hide">
-
         </div>
         <div class="back">
             <img src="../images/card_back.jpg" class="cover">
@@ -70,7 +69,7 @@
             width: wpx,
             height: hpx
         });
-        var animation = Flip.animate('flip', {selector: '.flip', angle: Math.PI * 6, duration: 2, keepWhenFinished: 1})
+        var animation = Flip.animate('flip', {selector: '.flip', angle: Math.PI * 6, duration: 4, keepWhenFinished: 1})
                 .css({position: 'relative'})
                 .css('& >.front', function (css) {
                     css.display = this.front ? 'block' : 'none';
@@ -82,24 +81,25 @@
                     var angle = (this.clock.value * this.angle), PI2 = Math.PI * 2;
                     while (angle > PI2)angle -= PI2;
                     this.front = angle < Math.PI / 2 || angle > Math.PI * 1.5;
-                });
+                }).start();
         animation.then({
-                    selector: '.card-title', keepWhenFinished: 1, duration: 1,
-                    css: {
-                        '&>p': {
-                            width: wpx,
-                            display: 'block',
-                            fontSize: h * 0.06 + 'px'
-                        },
-                        '&': function (css) {
-                            css['max-width'] = this.clock.value * w + 'px';
-                            css.overflow = 'hidden';
-                        }
-                    }
-                }).
-                then({
+            selector: '.card-title',
+            keepWhenFinished: 1,
+            duration: 1,
+            css: {
+                '&>p': {
+                    width: wpx,
+                    display: 'block',
+                    fontSize: h * 0.06 + 'px'
+                },
+                '&': function (css) {
+                    css['max-width'] = this.clock.value * w + 'px';
+                    css.overflow = 'hidden';
+                }
+            }
+        }).then({
                     selector: '.card-content',
-                    duration: .5,
+                    duration: 1.5,
                     keepWhenFinished: 1,
                     timingFunction: Flip.EASE.bounceInOut,
                     css: {
@@ -139,8 +139,6 @@
                 return mat.scale(v, v).rotate(Math.PI * 6 * v);
             }).start();
         }
-
-        animation.start();
     })
 </script>
 </body>

@@ -38,9 +38,13 @@ Flip.interpolation({
       py.unshift(sVec.y);
       this.coefficeint = {x: px, y: py}
     },
-    useSeg: function (seg) {
+    getCalcParam: function (seg) {
       var co = this.coefficeint, i0 = seg.i0;
-      return this.interpolateSeg(seg.t, [seg.x0, seg.x1, co.x[i0]], [seg.y0, seg.y1, co.y[i0]]);
+      return {
+        t:seg.t,
+        vx:[seg.x0, seg.x1, co.x[i0]],
+        vy:[seg.y0, seg.y1, co.y[i0]]
+      };
     }
   }
 });

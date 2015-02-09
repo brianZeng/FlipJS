@@ -105,7 +105,7 @@ xdescribe('promise test',function(){
     })
   })
 });
-describe('animation promise',function(){
+xdescribe('animation promise',function(){
   var Promise=Flip.Promise;
   it('accept animation',function(done){
     var opt={

@@ -47,9 +47,13 @@ Flip.interpolation({
         });
       this._ensureControlPoints(opt);
     },
-    useSeg: function (seg) {
+    getCalcParam: function (seg) {
       var i0 = seg.i0, co = this.coefficeint;
-      return this.interpolateSeg(seg.t, [seg.x0, co.x[i0], seg.x1], [seg.y0, co.y[i0], seg.y1]);
+      return {
+        t:seg.t,
+        vx: [seg.x0, co.x[i0], seg.x1],
+        vy: [seg.y0, co.y[i0], seg.y1]
+      }
     },
     setCP: function (i, cpOrx1, y) {
       var co = this.coefficeint, x;

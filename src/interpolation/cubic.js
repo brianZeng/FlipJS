@@ -73,11 +73,13 @@ Flip.interpolation({
       }
       this.coefficeint = {x: rx, y: ry}
     },
-    useSeg: function (seg) {
+    getCalcParam: function (seg) {
       var co = this.coefficeint, i0 = seg.i0, i1 = seg.i1;
-      return this.interpolateSeg(seg.t,
-        [seg.x0, seg.x1, co.x[i0], co.x[i1]],
-        [seg.y0, seg.y1, co.y[i0], co.y[i1]])
+      return {
+        t:seg.t,
+        vx:[seg.x0, seg.x1, co.x[i0], co.x[i1]],
+        vy:[seg.y0, seg.y1, co.y[i0], co.y[i1]]
+      }
     }
   }
 });
