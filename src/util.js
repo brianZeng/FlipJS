@@ -1,10 +1,11 @@
 /**
  * Created by 柏然 on 2014/12/12.
  */
-var Flip = function () {
+var FlipScope = {readyFuncs: []};
+function Flip () {
   var first = arguments[0], readyFuncs = FlipScope.readyFuncs;
   if (typeof first === "function") readyFuncs ? arrAdd(FlipScope.readyFuncs, first) : first(Flip);
-}, FlipScope = {readyFuncs: []};
+}
 Object.defineProperty(Flip, 'instance', {get: function () {
   return FlipScope.global;
 }});

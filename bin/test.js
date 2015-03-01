@@ -55,12 +55,68 @@ xdescribe('Construct Animation:', function () {
         done();
       });
     });
-
-
-
   });
 });
+describe('css function',function(){
+  it('Flip.css setImmediate css style',function(){
+    var cancel= Flip.css('a',{color:'red'});
+    expect(Flip.instance._persistStyles[cancel.id]).toBeTruthy();
+    cancel();
+    expect(Flip.instance._persistStyles[cancel.id]).toBeFalsy();
+  })
+});
 
+/**
+ * Created by 柏子 on 2015/3/1.
+ */
+describe('clock test',function(){
+  it('support delay',function(done){
+    var ani=Flip.animate({duration:0.2,delay:1,once:{
+      update:function(){
+        expect(Date.now()-t1).toBeGreaterThan(1000)
+      },
+      finished:function(){
+        expect(Date.now()-t1).toBeGreaterThan(1200);
+        done();
+      }
+    }}),t1=Date.now();
+    ani.start();
+  });
+  it('not delay when revert',function(done){
+    var t1=Date.now(),ani=Flip.animate({duration:0.5,delay:0.5,autoReverse:1,once:{
+      update:function(){
+        expect(Date.now()-t1).toBeGreaterThan(500);
+      },
+      finished:function(){
+        expect(Date.now()-t1).toBeLessThan(1700);
+        done();
+      }
+    }});
+    ani.clock.once('reverse',function(){
+      expect(Date.now()-t1).toBeGreaterThan(1000);
+      expect(Date.now()-t1).toBeLessThan(1100);
+    });
+    ani.start();
+  });
+  it('not delay when iterate',function(done){
+    var t1=Date.now(),ani=Flip.animate({duration:0.5,delay:0.5,iteration:1,once:{
+      update:function(){
+        expect(Date.now()-t1).toBeGreaterThan(500);
+      },
+      finished:function(){
+        expect(Date.now()-t1).toBeLessThan(600);
+        expect(Date.now()-t1).toBeGreaterThan(500);
+        done();
+      }
+    }});
+    ani.clock.once('iterate',function(){
+      expect(Date.now()-t1).toBeGreaterThan(1000);
+      expect(Date.now()-t1).toBeLessThan(1100);
+      t1=Date.now();
+    });
+    ani.start();
+  })
+});
 /**
  * Created by 柏子 on 2015/2/9.
  */
@@ -230,6 +286,5 @@ xdescribe('animation promise',function(){
       done();
     });
     ani.start();
-
   })
 });

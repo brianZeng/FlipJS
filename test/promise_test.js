@@ -146,6 +146,5 @@ xdescribe('animation promise',function(){
       done();
     });
     ani.start();
-
   })
 });

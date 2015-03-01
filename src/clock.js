@@ -4,15 +4,15 @@
 
 function Clock(opt) {
   if (!(this instanceof Clock))return new Clock(opt);
-  objForEach(Clock.createOptProxy(opt, 1, Clock.EASE.linear, 0, 0, 0).result, cloneFunc, this);
+  objForEach(Clock.createOptProxy(opt, 1, Clock.EASE.linear, 0, 0, 0,0).result, cloneFunc, this);
   this.reset(1);
   this._paused = false;
 }
 Flip.Clock = Clock;
 
-Clock.createOptProxy = function (opt, duration, timingFunction, infinite, iteration, autoReverse) {
+Clock.createOptProxy = function (opt, duration, timingFunction, infinite, iteration, autoReverse,delay) {
   var setter = createProxy(opt);
-  setter('duration', duration, 'timingFunction', timingFunction, 'infinite', infinite, 'iteration', iteration, 'autoReverse', autoReverse);
+  setter('duration', duration, 'timingFunction', timingFunction, 'infinite', infinite, 'iteration', iteration, 'autoReverse', autoReverse,'delay',delay);
   return setter;
 };
 (function (EVTS) {
@@ -50,7 +50,7 @@ Clock.createOptProxy = function (opt, duration, timingFunction, infinite, iterat
     },
     reverse: function () {
       if (this.t == 1) {
-        this.reset(0, 1, 1, 1).emit(EVTS.REVERSE, this);
+        this.reset(0, 1, 1, 1,1).emit(EVTS.REVERSE, this);
         return true;
       }
       return false;
@@ -59,9 +59,11 @@ Clock.createOptProxy = function (opt, duration, timingFunction, infinite, iterat
       this.t = 0;
       return this.start();
     },
-    reset: function (stop, keepIteration, atEnd, reverseDir, pause) {
+    reset: function (stop, keepIteration,delayed, atEnd, reverseDir, pause) {
       this._startTime = -1;
-      if (!keepIteration)this.i = this.iteration;
+      if (!keepIteration)
+        this.i = this.iteration;
+      this._delayed=!!delayed;
       this.d = !reverseDir;
       this.t = this.value = atEnd ? 1 : 0;
       this._stopped = !!stop;
@@ -73,13 +75,13 @@ Clock.createOptProxy = function (opt, duration, timingFunction, infinite, iterat
       this.reset(1);
     },
     end: function (evtArg) {
-      this.autoReverse ? this.reverse(evtArg) : this.iterate(evtArg, 0);
+      this.autoReverse ? this.reverse(evtArg) : this.iterate(evtArg);
     },
     iterate: function (evtArg) {
       if (this.infinite)this.toggle();
       else if (0 < this.i--) {
         this.emit(EVTS.ITERATE, evtArg);
-        this.reset(0, 1);
+        this.reset(0, 1,1);
       }
       else this.finish(evtArg);
     },
@@ -123,9 +125,15 @@ Clock.createOptProxy = function (opt, duration, timingFunction, infinite, iterat
         pt == -1 ? this._pausedTime = timeline.now : this._pausedDur = timeline.now - pt;
         return true;
       }
-      var dur = (timeline.now - this._startTime) / timeline.ticksPerSecond, curValue, evtArg;
+      var dur = (timeline.now - this._startTime) / timeline.ticksPerSecond - (this._delayed? 0:this.delay),
+        curValue, evtArg;
       if (dur > 0) {
         var ov = this.value, t;
+        //only delay once
+        if(!this._delayed){
+          this._delayed=1;
+          this._startTime+=this.delay*timeline.ticksPerSecond;
+        }
         t = this.t = this.d ? dur / this.duration : 1 - dur / this.duration;
         if (t > 1)t = this.t = 1;
         else if (t < 0)t = this.t = 0;

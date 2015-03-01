@@ -37,8 +37,13 @@ xdescribe('Construct Animation:', function () {
         done();
       });
     });
-
-
-
   });
+});
+describe('css function',function(){
+  it('Flip.css setImmediate css style',function(){
+    var cancel= Flip.css('a',{color:'red'});
+    expect(Flip.instance._persistStyles[cancel.id]).toBeTruthy();
+    cancel();
+    expect(Flip.instance._persistStyles[cancel.id]).toBeFalsy();
+  })
 });

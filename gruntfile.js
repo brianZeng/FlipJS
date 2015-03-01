@@ -23,17 +23,18 @@ var config = {
     flip:{
       files:{
         'temp/flip_core.js':['src/util.js','src/*.js'],
-        'temp/flip_basic.js':['bin/flip_core.js','src/animations/*.js'],
-        'temp/flip_extra.js':['bin/flip_core.js','src/animations/*.js','src/extra/*.js','src/interpolation/*.js'],
+        'temp/flip_basic.js':['temp/flip_core.js','src/animations/*.js'],
+        'temp/flip_extra.js':['temp/flip_core.js','src/animations/*.js','src/extra/*.js','src/interpolation/*.js'],
         'bin/flip.js':'temp/flip_basic.js',
         'bin/flip_extra.js':'temp/flip_extra.js'
       },
       options:{
         process:function(src,path){
-          if(path.indexOf('temp')==0)
+          if(path.indexOf('temp')==0&&path!=='temp/flip_core.js')
             return '(function(){*})();'.replace('*', src);
           return src;
-        }
+        },
+        stripBanners:true
       }
     },
     ng_test_suit:{

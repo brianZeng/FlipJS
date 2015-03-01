@@ -17,8 +17,18 @@
 </head>
 <body>
 <div class="snow-board">
-    <img src="../images/chr.jpg">
+    <img id="flower" src="../images/flower.png">
 </div>
 <script src="../bin/atrk.min.js"></script>
+<script>
+    function imgUrl(){
+       var cvs=document.createElement('canvas'),ctx=cvs.getContext('2d'),img=document.querySelector('#flower');
+        img.onload=function(){
+            cvs.width=cvs.height=40;
+            ctx.drawImage(img,0,0,img.naturalWidth,img.naturalHeight,0,0,40,40);
+            console.log(cvs.toDataURL());
+        }
+    }
+</script>
 </body>
 </html>

@@ -54,14 +54,19 @@ animate.createOptProxy = function (setter, autoStart, taskName, defaultGlobal) {
   };
 Flip.animate = animate;
 Flip.css=function(selector,rule){
-    var result={},body;
+  var literal=[],t1=typeof selector;
+  if(t1==="string")resolveRule(rule,selector);
+  else if(t1==="object")
+    objForEach(selector,resolveRule);
+  return FlipScope.global.immediate(literal.join('\n'));
+  function resolveRule(rule,selector){
+    var result=new CssContainer();
     if(typeof rule==="function")result=rule(result)||result;
     else if(typeof rule==="object") objForEach(rule,cloneFunc,result);
-    else throw 'css rule should be object or function';
-    if(body=getRuleBody(result)){
-      return FlipScope.global.immediate(selector+'{'+body+'}');
-    }
-  };
+    else throw Error('css rule should be object or function');
+    literal.push(selector+'{'+getRuleBody(result)+'}');
+  }
+};
 function getRuleBody(ruleObj,separator){
     var rules=[];
     objForEach(ruleObj,function(value,key){
@@ -94,9 +99,9 @@ function CssContainer(){
   if(!(this instanceof CssContainer))return new CssContainer();
 }
 CssContainer.prototype={
-  withPrefix:function(key,value){
+  withPrefix:function(key,value,prefixes){
     var self=this;
-    ['-moz-','-ms-','-webkit','-o-'].forEach(function(prefix){
+    (prefixes||['-moz-','-ms-','-webkit-','-o-','']).forEach(function(prefix){
       self[prefix+key]=value;
     });
     return self;
@@ -116,8 +121,9 @@ function updateAnimationCss(animation,renderState){
       cbs.forEach(function(cb){mat=cb.apply(animation,[mat,renderState])||mat});
       matRule=mat.toString();
       selector.split(',').forEach(function(se){
-        var key=se.replace(/&/g,ts),cssObj=cssMap[key]||(cssMap[key]={});
-        cssObj.transform=cssObj['-webkit-transform']=matRule;
+        var key=se.replace(/&/g,ts),cssRule=cssMap[key]||(cssMap[key]=new CssContainer());
+        cssRule.withPrefix('transform',matRule);
+       // cssObj.transform=cssObj['-webkit-transform']=matRule;
       });
     });
   }

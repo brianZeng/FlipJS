@@ -4,7 +4,7 @@
 Flip.RenderGlobal = RenderGlobal;
 function RenderGlobal() {
   this._tasks = new Flip.util.Array();
-  this._persistStyles=new Flip.util.Array();
+  this._persistStyles={};
   this._persistElement=document.createElement('style');
   this._styleElement=document.createElement('style');
 }
@@ -44,17 +44,17 @@ inherit(RenderGlobal, Flip.util.Object, {
     return false;
   },
   immediate:function(style){
-    var styles=this._persistStyles;
-    if(styles.add(style))
-    {
-      this._persistStyle=false;
-      return (function(uid,styles){
-        return function cancelImmediate(){
-          var index=arrFind(styles,'uid',uid,1,1);
-          return styles.splice(index,1)[0];
-        }
-      })(style.uid=nextUid('immediateStyle'),styles);
-    }
+    var styles=this._persistStyles,uid=nextUid('immediateStyle'),self=this,cancel;
+    styles[uid]=style;
+    this._persistStyle=false;
+    cancel=function cancelImmediate(){
+      var style=styles[uid];
+      delete styles[uid];
+      self._persistStyle=false;
+      return style;
+    };
+    cancel.id=uid;
+    return cancel;
   },
   init: function (taskName) {
     var head=document.head;
@@ -79,10 +79,13 @@ inherit(RenderGlobal, Flip.util.Object, {
     window.requestAnimationFrame(this.loop.bind(this), window.document.body);
   },
   render: function (state) {
+    var styles;
     state.task.render(state);
     if(!this._persistStyle){
+      styles=[];
       this._persistStyle=1;
-      this._persistElement.innerHTML=this._persistStyles.join('\n');
+      objForEach(this._persistStyles,function(style){styles.push(style);});
+      this._persistElement.innerHTML=styles.join('\n');
     }
     this._styleElement.innerHTML=state.styleStack.join('\n');
   },
