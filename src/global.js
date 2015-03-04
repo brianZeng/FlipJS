@@ -2,8 +2,12 @@
  * Created by 柏然 on 2014/12/12.
  */
 Flip.RenderGlobal = RenderGlobal;
-function RenderGlobal() {
-  this._tasks = new Flip.util.Array();
+function RenderGlobal(opt) {
+  if(!(this instanceof RenderGlobal))return new RenderGlobal(opt);
+  opt=opt||{};
+  this._tasks = {};
+  this._defaultTaskName=opt.defaultTaskName||'default';
+  this._invalid=true;
   this._persistStyles={};
   this._persistElement=document.createElement('style');
   this._styleElement=document.createElement('style');
@@ -14,39 +18,31 @@ RenderGlobal.EVENT_NAMES = {
   UPDATE: 'update'
 };
 inherit(RenderGlobal, Flip.util.Object, {
-  set activeTask(t) {
-    var tasks = this._tasks, target = this._activeTask;
-    if (target) target.timeline.stop();
-    if (t instanceof RenderTask)
-      if (tasks.indexOf(t) > -1 || this.add(t)) target = t;
-      else if (typeof t == "string") target = tasks.findBy('name', t);
-      else target = null;
-    this._activeTask = target;
-    if (target) target.timeline.start();
-  },
-  get activeTask() {
-    var t = this._activeTask;
-    if (!t) {
-      this._tasks.length ? (t = this._tasks[0]) : this.add(t = new RenderTask('default'));
-      this._activeTask = t;
-    }
+  get defaultTask(){
+    var taskName=this._defaultTaskName,t=this._tasks[taskName];
+    if(!t)this.add(new RenderTask(taskName));
     return t;
   },
   add: function (obj) {
     var task, taskName, tasks;
     if (obj instanceof RenderTask) {
-      if (!(taskName = obj.name)) throw Error('task must has a name');
-      else if ((task = (tasks = this._tasks).findBy('name', taskName)) && task !== obj) throw Error('contains same name task');
-      else if (tasks.add(obj)) return !!(obj._global = this);
+      if (!(taskName = obj.name))
+        throw Error('task must has a name');
+      else if ((tasks=this._tasks).hasOwnProperty(taskName))
+        throw Error('contains same name task');
+      else if (tasks[taskName]=obj) {
+        obj._global=this;
+        obj.timeline.start();
+        return this.invalid();
+      }
     }
     else if (obj instanceof Animation || obj instanceof Clock)
-      return this.activeTask.add(obj);
+      return this.defaultTask.add(obj);
     return false;
   },
   immediate:function(style){
     var styles=this._persistStyles,uid=nextUid('immediateStyle'),self=this,cancel;
     styles[uid]=style;
-    this._persistStyle=false;
     cancel=function cancelImmediate(){
       var style=styles[uid];
       delete styles[uid];
@@ -54,48 +50,61 @@ inherit(RenderGlobal, Flip.util.Object, {
       return style;
     };
     cancel.id=uid;
+    this._persistStyle=false;
     return cancel;
   },
-  init: function (taskName) {
-    var head=document.head;
-    this.activeTask = taskName;
-    this.loop();
-    this.activeTask.timeline.start();
-    if(!this._styleElement.parentNode){
-      head.appendChild(this._styleElement);
-      head.appendChild(this._persistElement);
+  init: function () {
+    if(typeof window==="object"){
+      var head=document.head;
+      if(!this._styleElement.parentNode){
+        head.appendChild(this._styleElement);
+        head.appendChild(this._persistElement);
+      }
+      Flip.fallback(window);
+      this.loop();
     }
-    typeof window === "object" && Flip.fallback(window);
     this.init = function () {
       console.warn('The settings have been initiated,do not init twice');
     };
   },
+  invalid:function(){
+    return this._invalid=true;
+  },
   loop: function () {
-    var state = this.createRenderState();
-    this.emit(RenderGlobal.EVENT_NAMES.FRAME_START, [state]);
-    this.update(state);
-    this.render(state);
-    this.emit(RenderGlobal.EVENT_NAMES.FRAME_END, [state]);
+    loopGlobal(this);
     window.requestAnimationFrame(this.loop.bind(this), window.document.body);
   },
-  render: function (state) {
-    var styles;
-    state.task.render(state);
+  apply:function(){
     if(!this._persistStyle){
-      styles=[];
-      this._persistStyle=1;
+      var styles=[];
       objForEach(this._persistStyles,function(style){styles.push(style);});
       this._persistElement.innerHTML=styles.join('\n');
+      this._persistStyle=true;
     }
-    this._styleElement.innerHTML=state.styleStack.join('\n');
-  },
-  update: function (state) {
-    state.global.emit(RenderGlobal.EVENT_NAMES.UPDATE, [state, this]);
-    state.task.update(state);
   },
   createRenderState: function () {
     return {global: this, task: this.activeTask,styleStack:[]}
   }
 });
+function loopGlobal(global){
+  var state = global.createRenderState();
+  global.emit(RenderGlobal.EVENT_NAMES.FRAME_START, [state]);
+  updateGlobal(global,state);
+  renderGlobal(global,state);
+  global.emit(RenderGlobal.EVENT_NAMES.FRAME_END, [state]);
+}
+function updateGlobal(global,state){
+  state.global.emit(RenderGlobal.EVENT_NAMES.UPDATE, [state,global]);
+  objForEach(global._tasks,function(task){updateTask(task,state)});
+  global.apply();
+}
+function renderGlobal(global,state){
+  if(global._invalid){
+    objForEach(this._tasks,function(task){renderTask(task,state);});
+    global._styleElement.innerHTML=state.styleStack.join('\n');
+    global._invalid=false;
+  }
+  objForEach(global._tasks,function(task){disposeTask(task,state)});
+}
 FlipScope.global = new RenderGlobal();
 
