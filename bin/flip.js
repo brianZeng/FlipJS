@@ -672,7 +672,7 @@ Flip.Animation=Animation;
 
 function Clock(opt) {
   if (!(this instanceof Clock))return new Clock(opt);
-  objForEach(Clock.createOptProxy(opt, 1, Clock.EASE.linear, 0, 0, 0,0).result, cloneFunc, this);
+  objForEach(Clock.createOptProxy(opt, 1, Clock.EASE.linear, 0, 1, 0,0).result, cloneFunc, this);
   this.reset(1,0,0,0);
 }
 Flip.Clock = Clock;
@@ -721,7 +721,7 @@ Clock.createOptProxy = function (opt, duration, timingFunction, infinite, iterat
     },
     reverse: function () {
       if (this.t == 1) {
-        this.reset(0, 1, 1, 1,1).emit(EVTS.REVERSE, this);
+        this.reset(0, 1, 1, 1,1);
         return true;
       }
       return false;
@@ -733,7 +733,7 @@ Clock.createOptProxy = function (opt, duration, timingFunction, infinite, iterat
     reset: function (finished, keepIteration,delayed, atEnd, reverseDir, pause) {
       this._startTime = -1;
       if (!keepIteration)
-        this.i = this.iteration;
+        this.i = this.iteration||1;
       this._delayed=!!delayed;
       this.d = !reverseDir;
       if(atEnd!==undefined)
@@ -751,12 +751,12 @@ Clock.createOptProxy = function (opt, duration, timingFunction, infinite, iterat
       this.autoReverse ? this.reverse(evtArg) : this.iterate(evtArg);
     },
     iterate: function (evtArg) {
-      if (this.infinite)this.toggle();
-      else if (0 < this.i--) {
-        this.emit(EVTS.ITERATE, evtArg);
-        this.reset(0, 1,1);
-      }
-      else this.finish(evtArg);
+      if (this.infinite)
+        this.toggle();
+      else if (--this.i > 0 )
+        this.reset(0, 1,1,0);
+      else
+        this.finish(evtArg);
     },
     pause: function () {
       if (!this._paused) {
@@ -815,11 +815,17 @@ Clock.createOptProxy = function (opt, duration, timingFunction, infinite, iterat
 });
 function updateClock(c,state) {
   if (c&&!c.finished) {
-    var timeline = state.timeline;
+    var timeline = state.timeline,evtName;
     if (c._startTime == -1) {
       c._startTime = timeline.now;
-      c.emit(Clock.EVENT_NAMES.START, state);
-      if(c.controller)c.controller.emit(Clock.EVENT_NAMES.START,state);
+      if(c.d){
+        evtName= Clock.EVENT_NAMES[c.i== c.iteration? 'START':'ITERATE'];
+        c.emit(evtName,state);
+        c.controller&&c.controller.emit(evtName,state);
+      }
+      else
+        c.emit(Clock.EVENT_NAMES.REVERSE, state);
+      return true;
     }
     else if (c._paused) {
       var pt = c._pausedTime;
@@ -849,7 +855,6 @@ function updateClock(c,state) {
       state.task.invalid();
       return true;
     }
-    return true;
   }
 }
 
