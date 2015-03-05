@@ -15,7 +15,7 @@ function Animation(opt) {
 }
 inherit(Animation, Flip.util.Object, {
   get percent(){
-    return this.finished? 1:this.clock.value;
+    return this.clock.value;
   },
   set clock(c) {
     var oc = this._clock;

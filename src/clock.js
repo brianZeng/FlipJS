@@ -5,7 +5,7 @@
 function Clock(opt) {
   if (!(this instanceof Clock))return new Clock(opt);
   objForEach(Clock.createOptProxy(opt, 1, Clock.EASE.linear, 0, 0, 0,0).result, cloneFunc, this);
-  this.reset();
+  this.reset(1,0,0,0);
 }
 Flip.Clock = Clock;
 Clock.createOptProxy = function (opt, duration, timingFunction, infinite, iteration, autoReverse,delay) {
@@ -68,14 +68,15 @@ Clock.createOptProxy = function (opt, duration, timingFunction, infinite, iterat
         this.i = this.iteration;
       this._delayed=!!delayed;
       this.d = !reverseDir;
-      this.t = this.value = atEnd ? 1 : 0;
+      if(atEnd!==undefined)
+        this.t = this.value = atEnd ? 1 : 0;
       this._paused = !!pause;
       this._finished=!!finished;
       return this;
     },
     finish: function (evtArg) {
       this.emit(EVTS.FINISHED, evtArg);
-      this.reset(1,1,1,1);
+      this.reset(1,1,1);
       this._finished=true;
     },
     end: function (evtArg) {

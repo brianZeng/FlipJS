@@ -41,31 +41,20 @@
 </div>
 <script>
     Flip(function(){
-        var dur=0.5,ani=Flip.animate('translate', {selector: '#translate',duration:0.5}).start();
-        ani.then(
-                {animationType: 'rotate', selector: '#rotate',duration:0.5}).then(
-                {animationType: 'flip', selector: '#flip',duration:0.5}).then(
-                {animationType: 'scale', selector: '#scale',duration:0.5}).then({
-                    selector:'#flip',css:{
+        var dur=0.5,ani=Flip.animate('translate', {selector: '#translate',duration:0.5,autoReverse:1}).start();
+        ani.then({animationType: 'rotate', selector: '#rotate',duration:0.5}).
+                then( {animationType: 'flip', selector: '#flip',duration:0.5}).
+                then({animationType: 'scale', selector: '#scale',duration:0.5}).
+                then({
+                    selector:'#flip',
+                    autoReverse:true,
+                    css:{
                         '&':function(css){
                             css.borderRadius=50*this.percent+'%';
                         }
                     }
                 });
-
     });
-    /*Flip(function (Flip) {
-     var ani = Flip.animation('translate', {selector: '#translate', dx:100});
-     ani.start();
-    });
-     Flip(function (Flip) {
-     var ani = Flip.animation('rotate', {selector: '#rotate'});
-        ani.start();
-     });
-     Flip(function (Flip) {
-     var ani = Flip.animation('flip', {selector: '#flip'});
-     ani.start();
-     });*/
 </script>
 </body>
 </html>

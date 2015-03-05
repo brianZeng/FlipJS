@@ -109,11 +109,13 @@ describe('Construct Animation:', function () {
         done();
       })
     });
-    it('finalize do not rest an animation',function(){
+    it('finalize do not rest an animation',function(done){
       isNewAnimation(ani);
+      ani.clock.autoReverse=true;
       ani.start();
       ani.on('finalized',function(){
-
+        expect(this.percent).toBe(0);
+        done();
       })
     })
   })
@@ -291,7 +293,7 @@ xdescribe('promise test',function(){
 });
 describe('animation promise',function(){
   var Promise=Flip.Promise;
-  it('accept animation',function(done){
+  it('1accept animation',function(done){
     var opt={
       selector:'*',duration:0.1
     },ani;
@@ -305,7 +307,7 @@ describe('animation promise',function(){
       });
     ani.start();
   });
-  it('animation follow many animations',function(done){
+  it('2animation follow many animations',function(done){
     var ani=Flip.animate({selector:'div',duration:1}),now=Date.now();
     ani.follow({selector:'div',duration:0.2,animationType:'flip'},{selector:'div',duration:0.5}).
       then(function(ans){
@@ -316,7 +318,7 @@ describe('animation promise',function(){
       });
     ani.start();
   });
-  it('support continue with a promise',function(done){
+  it('3support continue with a promise',function(done){
      var ani=Flip.animate({selector:'div',animationType:'rotate',duration:0.2});
     ani.then(function(){
       return Flip.Promise(function(resolve){

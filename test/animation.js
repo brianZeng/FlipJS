@@ -89,11 +89,13 @@ describe('Construct Animation:', function () {
         done();
       })
     });
-    it('finalize do not rest an animation',function(){
+    it('finalize do not rest an animation',function(done){
       isNewAnimation(ani);
+      ani.clock.autoReverse=true;
       ani.start();
       ani.on('finalized',function(){
-
+        expect(this.percent).toBe(0);
+        done();
       })
     })
   })
