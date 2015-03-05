@@ -20,8 +20,17 @@ RenderGlobal.EVENT_NAMES = {
 inherit(RenderGlobal, Flip.util.Object, {
   get defaultTask(){
     var taskName=this._defaultTaskName,t=this._tasks[taskName];
-    if(!t)this.add(new RenderTask(taskName));
+    if(!t)this.add(t=new RenderTask(taskName));
     return t;
+  },
+  getTask:function(name,createIfNot){
+    if(!name)return this.defaultTask;
+    var r=this._tasks[name];
+    if(!r&&createIfNot) {
+      r=new RenderTask(name);
+      this.add(r)
+    }
+    return r;
   },
   add: function (obj) {
     var task, taskName, tasks;
@@ -100,11 +109,11 @@ function updateGlobal(global,state){
 }
 function renderGlobal(global,state){
   if(global._invalid){
-    objForEach(this._tasks,function(task){renderTask(task,state);});
+    objForEach(global._tasks,function(task){renderTask(task,state);});
     global._styleElement.innerHTML=state.styleStack.join('\n');
     global._invalid=false;
   }
-  objForEach(global._tasks,function(task){disposeTask(task,state)});
+  objForEach(global._tasks,function(task){finalizeTask(task,state)});
 }
 FlipScope.global = new RenderGlobal();
 

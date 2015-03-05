@@ -3,7 +3,7 @@
 <head lang="en">
     <meta charset="UTF-8">
     <title>basic</title>
-    <script src="../bin/flip.js"></script>
+    <script src="../bin/flip_extra.js"></script>
     <style>
         .red {
             background-color: red;
@@ -41,18 +41,18 @@
 </div>
 <script>
     Flip(function(){
-        var ani=Flip.animate({animationType: 'translate', selector: '#translate',duration:0.5}).start();
-        ani.then(function(){
-            return Flip.animate({animationType: 'rotate', selector: '#rotate',duration:0.5}).start();
-        }).then(Flip.animate({animationType: 'flip', selector: '#flip',duration:0.5}))
-                .then(Flip.animate({animationType: 'scale', selector: '#scale',duration:0.5}).promise);
+        var dur=0.5,ani=Flip.animate('translate', {selector: '#translate',duration:0.5}).start();
+        ani.then(
+                {animationType: 'rotate', selector: '#rotate',duration:0.5}).then(
+                {animationType: 'flip', selector: '#flip',duration:0.5}).then(
+                {animationType: 'scale', selector: '#scale',duration:0.5}).then({
+                    selector:'#flip',css:{
+                        '&':function(css){
+                            css.borderRadius=50*this.percent+'%';
+                        }
+                    }
+                });
 
-    });
-
-    Flip(function (Flip) {
-        Flip.$('.square').forEach(function (ele) {
-
-        });
     });
     /*Flip(function (Flip) {
      var ani = Flip.animation('translate', {selector: '#translate', dx:100});

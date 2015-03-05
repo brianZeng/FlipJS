@@ -6,7 +6,7 @@ function RenderTask(name) {
   this.name = name;
   this.timeline = new TimeLine(this);
   this._updateObjs = [];
-  this._disposeObjs=[];
+  this._finalizeObjs=[];
   this._global = null;
 }
 Flip.RenderTask = RenderTask;
@@ -23,10 +23,9 @@ inherit(RenderTask, Flip.util.Object, {
     this._invalid = true;
     if(g=this._global)
       g.invalid();
-
   },
-  toDispose:function(obj){
-   return arrAdd(this._disposeObjs,obj);
+  toFinalize:function(obj){
+   return this._updateObjs.indexOf(obj)>-1 && arrAdd(this._finalizeObjs,obj);
   },
   add: function (obj, type) {
     if (type == 'update') return arrAdd(this._updateObjs, obj);
@@ -42,7 +41,7 @@ inherit(RenderTask, Flip.util.Object, {
 });
 function renderTask(task,state){
   var evtParam = [state, state.task=task];
-  if (this._invalid) {
+  if (task._invalid) {
     task.emit(RenderTask.EVENT_NAMES.RENDER_START, evtParam);
     task._updateObjs.forEach(function (item) {
       if (item.render) item.render(state);
@@ -57,21 +56,25 @@ function updateTask(task,state){
   task.emit(RenderTask.EVENT_NAMES.UPDATE, updateParam);
   task._updateObjs = arrSafeFilter(task._updateObjs, filterIUpdate, state);
 }
-function disposeTask(task,state){
-  var taskItems=(state.task=task)._updateObjs,index;
-  task._disposeObjs.forEach(function(obj){
-    if(typeof obj==="object"&&obj.emit)
-      obj.emit('dispose',state);
-    index=taskItems.indexOf(obj);
-    if(index!=-1)taskItems[index]=null;
-  });
-  task._disposeObjs=[];
+function finalizeTask(task,state){
+  var taskItems=(state.task=task)._updateObjs,index,finItems=task._finalizeObjs;
+  if(finItems.length){
+    task.invalid();
+    finItems.forEach(function(item){
+      if((index=taskItems.indexOf(item))!=-1)
+        taskItems[index]=null;
+      if(item._task==task)
+        item._task=null;
+      isObj(item)&&isFunc(item.finalize)&&item.finalize(state);
+    });
+    task._finalizeObjs=[];
+  }
 }
 function filterIUpdate(item) {
-  if (item == null || !(typeof item == "object"))return false;
-  else if (typeof item.update == "function")
-    return item.update(this);
-  else if (typeof item.emit == "function")
+  if (!isObj(item))return false;
+  else if (isFunc(item.update))
+    item.update(this);
+  else if (isFunc(item.emit))
     item.emit(RenderTask.EVENT_NAMES.UPDATE, this);
   return true;
 }

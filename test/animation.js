@@ -1,31 +1,24 @@
 /**
  * Created by 柏然 on 2014/12/13.
  */
-xdescribe('Construct Animation:', function () {
-  xdescribe('1.Animation.createOptProxy:', function () {
-    xit('proxy result contains .clock .elements', function () {
-      var proxy = Flip.Animation.createOptProxy({elements: [], duration: 0.5, abc: 3});
-      expect(proxy.result.elements).toEqual([]);
-      expect(proxy.result.clock.duration).toBe(0.5);
-      expect(Object.getOwnPropertyNames(proxy.result).length).toBe(2)
-    });
-    xit('.elements can be chosen by .selector', function () {
-      var proxy = Flip.Animation.createOptProxy({selector: 'body'});
-      expect(proxy.result.elements.length).toBe(1);
-      var eles = [1, 2, 3];
-      proxy = Flip.Animation.createOptProxy({selector: 'body', elements: eles});
-      expect(proxy.result.elements).toBe(eles);
+describe('Construct Animation:', function () {
+  var global=Flip.instance,task=global.defaultTask;
+  describe('1.Animation.createOptProxy:', function () {
+    it('proxy result contains .clock .elements', function () {
+      var proxy = Flip.Animation.createOptProxy({selector:'.NO_ELE', duration: 0.5, abc: 3,persistAfterFinished:3});
+      expect(proxy.result.duration).toBe(undefined);
+      expect(proxy.result.persistAfterFinished).toBe(3);
+      expect(Object.getOwnPropertyNames(proxy.result).length).toBe(3)
     });
   });
   describe('2.use Flip.animation() to construct an animation:', function () {
-
     it('first param can be animation type', function () {
-      var ani = Flip.animation('translate');
+      var ani = Flip.animate('translate');
       expect(ani instanceof Flip.Animation).toBeTruthy();
     });
     it('animation clock ticks when change:', function (done) {
       var tickSpy = jasmine.createSpy('tick'), finishSpy = jasmine.createSpy('finish');
-      var ani = Flip.animation({duration: 0.2, range: 1, autoStart: true});
+      var ani = Flip.animate({duration: 0.2, range: 1, autoStart: true});
       ani.clock.once(Flip.Clock.EVENT_NAMES.TICK, function () {
         tickSpy();
         console.log(arguments);
@@ -38,6 +31,72 @@ xdescribe('Construct Animation:', function () {
       });
     });
   });
+  describe('3.animation render flow',function(){
+    var ani;
+    function animationCount(){
+      return Flip.instance.defaultTask._updateObjs.length
+    }
+    function construct(){
+      if(!ani)
+        ani=Flip.animate({
+        duration:0.5,
+        selector:'div',
+        css:function(css){
+          css.width=this.percent*100;
+        }
+      });
+    }
+    beforeEach(construct);
+    function isNewAnimation(animation){
+      expect(animation.lastStyleRule).toBeFalsy();
+      expect(animation._promise).toBeFalsy();
+      expect(animation.finished).toBeFalsy();
+      expect(animation.percent).toBe(0);
+    }
+
+    it('auto add animation to default task',function(){
+      var len=animationCount();
+      Flip.animate({
+        duration:0.5,
+        selector:'.t-ani'
+      });
+      expect(len+1).toBe(animationCount());
+    });
+    it('when constructs an animation,it is new ',function(){
+       isNewAnimation(ani);
+    });
+    it('after started emit update event',function(done){
+      var notCall;
+      ani.start();
+      ani.once('update',function(){
+        expect(ani.percent).toBe(0);
+        expect(ani._invalid).toBeTruthy();
+      });
+      ani.once('render',function(){
+        expect(ani.percent).toBe(0);
+        expect(ani._invalid).toBeFalsy();
+      });
+      ani.once('finished',function(){
+        expect(ani.percent).toBe(1);
+        expect(ani.lastStyleRule.indexOf('width:100')).toBeGreaterThan(-1);
+        notCall=jasmine.createSpy();
+        ani.once('finished',notCall);
+      });
+      ani.once('finalized',function(){
+        expect(notCall).not.toHaveBeenCalled();
+        expect(ani.finished).toBe(true);
+        ani=null;
+        done();
+      })
+    });
+    it('finalize do not rest an animation',function(){
+      isNewAnimation(ani);
+      ani.start();
+      ani.on('finalized',function(){
+
+      })
+    })
+  })
 });
 describe('css function',function(){
   it('Flip.css setImmediate css style',function(){
@@ -45,5 +104,5 @@ describe('css function',function(){
     expect(Flip.instance._persistStyles[cancel.id]).toBeTruthy();
     cancel();
     expect(Flip.instance._persistStyles[cancel.id]).toBeFalsy();
-  })
+  });
 });
