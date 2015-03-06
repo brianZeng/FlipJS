@@ -8,11 +8,9 @@
         .red {
             background-color: red;
         }
-
         #scale {
             background-color: fuchsia;
         }
-
         #flip {
             background-color: darkslateblue;
         }
@@ -20,7 +18,6 @@
             width: 100px;
             height: 100px;
         }
-
         .blue {
             background-color: cornflowerblue;
         }
@@ -49,10 +46,11 @@
                     selector:'#flip',
                     autoReverse:true,
                     ease:Flip.EASE.elasticInOut,
-                    css:{
-                        '&':function(css){
-                            css.borderRadius=50*this.percent+'%';
-                        }
+                    css:function(css){
+                        css.borderRadius=50*this.percent+'%';
+                    } ,
+                    transform:function(mat){
+                        mat.rotate(Math.PI*2*this.percent);
                     }
                 });
     });

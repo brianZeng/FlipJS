@@ -1,10 +1,18 @@
 /**
  * Created by Administrator on 2015/3/6.
  */
-function CssContainer(){
-  if(!(this instanceof CssContainer))return new CssContainer();
+function CssContainer(obj){
+  if(!(this instanceof CssContainer))return new CssContainer(obj);
+  this.merge(obj);
 }
 CssContainer.prototype={
+  toString:function(){
+    var rules=[];
+    objForEach(this,function(value,key){
+      rules.push(key.replace(/[A-Z]/g,function(c){return '-'+ c.toLowerCase()})+':'+value);
+    });
+    return rules.join(';')
+  },
   withPrefix:function(key,value,prefixes){
     var self=this;
     (prefixes||['-moz-','-ms-','-webkit-','-o-','']).forEach(function(prefix){
