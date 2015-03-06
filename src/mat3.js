@@ -55,34 +55,36 @@ Mat3.prototype = {
       return 'matrix(' + r.join(',') + ')';
     }
   })([0, 3, 1, 4, 2, 5]),
-  translate: function (dx, dy, overwrite) {
-    return this.concat(Mat3.setTranslate(dx, dy), overwrite);
+  translate: function (dx, dy, immutable) {
+    return this.concat(Mat3.setTranslate(dx, dy), immutable);
   },
-  scale: function (x, y, overwrite) {
-    return this.concat(Mat3.setScale(x, y), overwrite);
+  scale: function (x, y, immutable) {
+    return this.concat(Mat3.setScale(x, y), immutable);
   },
-  rotate: function (angle, overwrite) {
-    return this.concat(Mat3.setRotate(angle), overwrite);
+  rotate: function (angle, immutable) {
+    return this.concat(Mat3.setRotate(angle), immutable);
   },
-  flip:function(angle,vertical,overwrite){
-    return this.concat(Mat3.setFlip(angle,vertical),overwrite);
+  flip:function(angle,vertical,immutable){
+    return this.concat(Mat3.setFlip(angle,vertical),immutable);
   },
-  concat: function (mat3, overwrite) {
+  concat: function (mat3, immutable) {
     var n = this.elements, e = mat3.elements, r;
     var m11 = e[0], m21 = e[1], mx = e[2], m12 = e[3], m22 = e[4], my = e[5],
       n11 = n[0], n21 = n[1], nx = n[2], n12 = n[3], n22 = n[4], ny = n[5];
     r = new Mat3([m11 * n11 + m12 * n21, m21 * n11 + m22 * n21, mx * n11 + my * n21 + nx, m11 * n12 + m12 * n22, m21 * n12 + m22 * n22, mx * n12 + my * n22 + ny]);
-    if (overwrite) this.elements = new Float32Array(r.elements);
+    if (!immutable)
+      this.elements = new Float32Array(r.elements);
     return r;
   },
-  set:function(x1, y1, dx, x2, y2, dy,overwrite){
+  set:function(x1, y1, dx, x2, y2, dy,immutable){
     if(arguments.length<=2){
       var eles=x1;
-      overwrite=arguments[1];
+      immutable=arguments[1];
     }else{
       eles=[x1, y1, dx, x2, y2, dy];
     }
-    if(overwrite) this.elements=new Float32Array(eles);
+    if(!immutable)
+      this.elements=new Float32Array(eles);
     return new Mat3(eles);
   }
 };

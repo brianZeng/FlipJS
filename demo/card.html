@@ -23,6 +23,7 @@
         body {
             margin: 0;
             background: #000000;
+            overflow: hidden;
         }
 
         .card-content, .card-pic {
@@ -42,15 +43,14 @@
 <main>
     <div class="flip">
         <div class="front">
-            <img src="../images/card_front.jpg" class="cover">
-
+            <img src="../images/card-front.jpg" class="cover">
             <div class="front-content card-title"><p class="hide">友谊の见证！</p></div>
-            <div class="card-content hide"><b>柏子</b>和<b>柏子</b>成为了朋友,无论他们将来是富有还是贫穷、身体健康或不适,都要一起穿越大半个中国去吃云片糕！
+            <div class="card-content hide"><b>柏子</b>和<b>亲</b>成为了朋友,无论他们将来是富有还是贫穷、身体健康或不适,都要一起穿越大半个中国去吃云片糕！
             </div>
             <img class="card-pic hide">
         </div>
         <div class="back">
-            <img src="../images/card_back.jpg" class="cover">
+            <img src="../images/card-back.jpg" class="cover">
         </div>
 
     </div>
@@ -101,7 +101,7 @@
                     selector: '.card-content',
                     duration: 1.5,
                     persistAfterFinished: 1,
-                    timingFunction: Flip.EASE.bounceInOut,
+                    ease: Flip.EASE.bounceInOut,
                     css: {
                         '&': function (css) {
                             css.position = 'absolute';
@@ -127,8 +127,8 @@
         function rotateImg() {
             return Flip.animate({
                 selector: '.card-pic',
-                keepWhenFinished: 1,
-                timingFunction: Flip.EASE.circInOut
+                persistAfterFinished: 1,
+                ease: Flip.EASE.circInOut
             }).css(function (css) {
                 css.left = 0.14 * w + 'px';
                 css.top = 0.214 * h + 'px';
