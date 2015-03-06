@@ -7,7 +7,7 @@ Flip.animation({
     angle: Math.PI * 2
   },
   beforeCallBase: function (proxy) {
-    proxy.source('timingFunction', Flip.EASE.circInOut);
+    proxy.source('ease', Flip.EASE.circInOut);
   },
   transform: function () {
     return Flip.Mat3.setRotate(this.angle * this.clock.value);

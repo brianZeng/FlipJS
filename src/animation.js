@@ -13,6 +13,16 @@ function Animation(opt) {
   this.use(opt);
   this.init();
 }
+function getPromiseByAni(ani){
+  return FlipScope.Promise(function(resolve){
+    ani.once('finished',function(state){
+      if(state&&state.global)
+        state.global.once('frameEnd',go);
+      else go();
+    });
+    function go(){resolve(ani);}
+  });
+}
 inherit(Animation, Flip.util.Object, {
   get percent(){
     return this.clock.value;
@@ -35,17 +45,7 @@ inherit(Animation, Flip.util.Object, {
     return this._clock;
   },
   get promise(){
-    var v=this._promise,self=this;
-    if(!v)
-      v=this._promise=FlipScope.Promise(function(resolve){
-        self.once('finished',function(state){
-          if(state&&state.global)
-            state.global.once('frameEnd',go);
-          else go();
-          function go(){resolve(self);}
-        })
-      });
-    return v;
+    return this._promise||(this._promise=getPromiseByAni(this));
   },
   get finished() {
     return this._finished;
@@ -69,52 +69,45 @@ inherit(Animation, Flip.util.Object, {
     if(!skipInit)
       this.init();
   },
-  use:function(opt){
-    setUpdateOpt(this,opt.transform,'transform');
-    setUpdateOpt(this,opt.css,'css');
-    setUpdateOpt(this,opt.on,'on');
-    setUpdateOpt(this,opt.once,'once');
-    return this;
-  },
-  transform:function(selector,matCallback){
-    if(typeof selector==="function") {
-      matCallback= selector;
-      selector ='&';
-    }
-    addMap(selector,this._matCallback,matCallback);
-    return this;
-  },
-  css:function(selector,cssCallBack){
-    if(typeof selector!=="string") {
-      cssCallBack = selector;
-      selector ='&';
-    }
-    if(isObj(cssCallBack)){
-      var cssTo=cssCallBack;
-      cssCallBack=function(cssObj){
-        objForEach(cssTo,cloneFunc,cssObj);
+  use:(function(){
+    var pros=['transform','css','on','once'];
+    return function use(opt){
+      var self=this;
+      pros.forEach(function(proName){
+        setUpdateOpt(self,opt[proName],proName)
+      });
+      return this;
+    };
+    function setUpdateOpt(animation,obj,type){
+      if(isFunc(obj))
+        animation[type](obj);
+      else if(isObj(obj)){
+        hasNestedObj(obj)? objForEach(obj,function(rule,slt){animation[type](slt,rule)}):animation[type](obj);
       }
     }
-    addMap(selector,this._cssCallback,cssCallBack);
+  })(),
+  transform:function(selector,matCallback){
+    var map=this._matCallback;
+    objForEach(normalizeMapArgs(arguments),function(callback,selector){
+      addMap(selector,map,callback)
+    });
+    return this;
+  },
+  css:function(mapOrFunc){
+    var map=this._cssCallback;
+    objForEach(normalizeMapArgs(arguments),function(callback,selector){
+      addMap(selector,map,callback)
+    });
     return this;
   },
   update: function (state) {
-    return updateAnimation(this,state);
+    updateAnimation(this,state);
   },
   render: function (state) {
-    state.animation = this;
-    this.apply(state);
-    this._invalid=false;
-    this.emit(ANI_EVT.RENDER, state);
-    if(this._finished)
-      this.emit(ANI_EVT.FINISHED,state);
-    state.animation = null;
+    renderAnimation(this,state);
   },
   invalid: function () {
-    if (this._task)
-      this._task.invalid();
-    this.lastStyleRule=null;
-    this._invalid=true;
+    if (this._task)this._task.invalid();
   },
   finalize:function(){
     var task;
@@ -126,17 +119,7 @@ inherit(Animation, Flip.util.Object, {
     }
   },
   getStyleRule:function(){
-    var styles=[];
-    objForEach(this._cssMap,function(ruleObj,selector){
-      var body=getRuleBody(ruleObj);
-      if(body){
-        styles.push(selector+'\n{\n'+body+'\n}');
-      }
-    });
-    return this.lastStyleRule=styles.join('\n');
-  },
-  apply: function (state) {
-    state.styleStack.push(this.lastStyleRule||this.getStyleRule());
+    return getAnimationStyle(this);
   },
   start:function(){
     var clock=this.clock;
@@ -199,98 +182,20 @@ animate.createOptProxy = function (setter, autoStart, taskName, defaultGlobal) {
 };
 Flip.animate = animate;
 Flip.css=function(selector,rule){
-  var literal=[],t1=typeof selector;
-  if(t1==="string")
-    resolveRule(rule,selector);
-  else if(t1==="object")
-    objForEach(selector,resolveRule);
+  var literal=[];
+  if(arguments.length==2){
+    resolve(rule,selector);
+  }
+  else if(isObj(selector)){
+    objForEach(selector,resolve)
+  }
+  else throw Error('argument error');
   return FlipScope.global.immediate(literal.join('\n'));
-  function resolveRule(rule,selector){
-    var result=new CssContainer();
-    if(typeof rule==="function")result=rule(result)||result;
-    else if(typeof rule==="object") objForEach(rule,cloneFunc,result);
-    else throw Error('css rule should be object or function');
-    literal.push(selector+'{'+getRuleBody(result)+'}');
+  function resolve(rule,selector){
+    var str=getStyleRuleStr(resolveCss(rule),selector,'\n',1);
+    if(str)literal.push(str);
   }
 };
-function getRuleBody(ruleObj,separator){
-    var rules=[];
-    objForEach(ruleObj,function(value,key){
-       rules.push(key.replace(/[A-Z]/g,function(c){return '-'+ c.toLowerCase()})+':'+value+';');
-    });
-    return rules.join(separator||'\n');
-}
-function finalizeAnimation(animation){
-  var task;
-  if(!animation.persistAfterFinished&&(task=animation._task)){
-    task.toFinalize(animation);
-  }
-}
-function updateAnimation(animation,renderState){
-  var clock=animation.clock;
-  renderState.animation=animation;
-  if(updateClock(clock,renderState)){
-    animation.invalid();
-    updateAnimationCss(animation,renderState);
-    animation.emit(ANI_EVT.UPDATE, renderState);
-  }
-  if(clock.finished){
-    //trigger finished event after render
-    animation._finished=true;
-    finalizeAnimation(animation);
-  }
-  renderState.animatetion=null;
-  return true;
-}
-function updateAnimationCss(animation,renderState){
-    var cssMap=animation._cssMap,ts=animation.selector;
-    objForEach(animation._cssCallback,function(cbs,selector){
-      var cssRule=new CssContainer();
-      cbs.forEach(function(cb){
-        cb.apply(animation,[cssRule,renderState])
-      });
-      selector.split(',').forEach(function(se){cssMap[se.replace(/&/g,ts)]=cssRule;});
-    });
-    objForEach(animation._matCallback,function(cbs,selector){
-      var mat=new Mat3(),matRule;
-      cbs.forEach(function(cb){mat=cb.apply(animation,[mat,renderState])||mat});
-      matRule=mat.toString();
-      selector.split(',').forEach(function(se){
-        var key=se.replace(/&/g,ts),cssRule=cssMap[key]||(cssMap[key]=new CssContainer());
-        cssRule.withPrefix('transform',matRule);
-      });
-    });
-  }
-function CssContainer(){
-  if(!(this instanceof CssContainer))return new CssContainer();
-}
-CssContainer.prototype={
-  withPrefix:function(key,value,prefixes){
-    var self=this;
-    (prefixes||['-moz-','-ms-','-webkit-','-o-','']).forEach(function(prefix){
-      self[prefix+key]=value;
-    });
-    return self;
-  }
-};
-function setUpdateOpt(animation,obj,type){
-     var t=typeof obj;
-    if(t==="function")animation[type](obj);
-    else if(t==="object"){
-      hasNestedObj(obj)? objForEach(obj,function(rule,slt){animation[type](slt,rule)}):animation[type](obj);
-    }
-  }
-function hasNestedObj(obj){
-    return obj&&Object.getOwnPropertyNames(obj).some(function(key){
-        var t=typeof obj[key];
-        return t=="object"||t=="function"
-        });
-}
-function addMap(key,Map,cb){
-    var cbs=Map[key];
-    if(!cbs)Map[key]=[cb];
-    else arrAdd(cbs,cb);
-}
 Flip.animation = (function () {
   function register(definition) {
     var beforeCallBase, defParam, name = definition.name, Constructor;
@@ -321,5 +226,26 @@ Flip.animation = (function () {
     return proxy;
   }
 })();
+function normalizeMapArgs(args){
+  var ret={},arg;
+  if(args.length==2){
+    ret[args[0]]=args[1];
+  }
+  else if(isFunc(arg=args[0])||!hasNestedObj(arg)){
+    ret['&']=arg;
+  }
+  else if(!isObj(arg)) throw Error('argument Error');
+  //isNestedObj
+  else{
+    ret=arg;
+  }
+  return ret;
+}
+function hasNestedObj(obj){
+  return isObj(obj)&&Object.getOwnPropertyNames(obj).some(function(key){
+      var t=typeof obj[key];
+      return t=="object"||t=="function"
+    });
+}
 Flip.Animation=Animation;
 

@@ -48,6 +48,7 @@
                 then({
                     selector:'#flip',
                     autoReverse:true,
+                    ease:Flip.EASE.elasticInOut,
                     css:{
                         '&':function(css){
                             css.borderRadius=50*this.percent+'%';

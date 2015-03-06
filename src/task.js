@@ -39,37 +39,7 @@ inherit(RenderTask, Flip.util.Object, {
     }
   }
 });
-function renderTask(task,state){
-  var evtParam = [state, state.task=task];
-  if (task._invalid) {
-    task.emit(RenderTask.EVENT_NAMES.RENDER_START, evtParam);
-    task._updateObjs.forEach(function (item) {
-      if (item.render) item.render(state);
-    });
-    task._invalid = false;
-  }
-  task.emit(RenderTask.EVENT_NAMES.RENDER_END, evtParam);
-}
-function updateTask(task,state){
-  var updateParam = [state, state.task=task];
-  (state.timeline = task.timeline).move();
-  task.emit(RenderTask.EVENT_NAMES.UPDATE, updateParam);
-  task._updateObjs = arrSafeFilter(task._updateObjs, filterIUpdate, state);
-}
-function finalizeTask(task,state){
-  var taskItems=(state.task=task)._updateObjs,index,finItems=task._finalizeObjs;
-  if(finItems.length){
-    task.invalid();
-    finItems.forEach(function(item){
-      if((index=taskItems.indexOf(item))!=-1)
-        taskItems[index]=null;
-      if(item._task==task)
-        item._task=null;
-      isObj(item)&&isFunc(item.finalize)&&item.finalize(state);
-    });
-    task._finalizeObjs=[];
-  }
-}
+
 function filterIUpdate(item) {
   if (!isObj(item))return false;
   else if (isFunc(item.update))

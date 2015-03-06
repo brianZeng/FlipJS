@@ -359,6 +359,16 @@ function Animation(opt) {
   this.use(opt);
   this.init();
 }
+function getPromiseByAni(ani){
+  return FlipScope.Promise(function(resolve){
+    ani.once('finished',function(state){
+      if(state&&state.global)
+        state.global.once('frameEnd',go);
+      else go();
+    });
+    function go(){resolve(ani);}
+  });
+}
 inherit(Animation, Flip.util.Object, {
   get percent(){
     return this.clock.value;
@@ -381,17 +391,7 @@ inherit(Animation, Flip.util.Object, {
     return this._clock;
   },
   get promise(){
-    var v=this._promise,self=this;
-    if(!v)
-      v=this._promise=FlipScope.Promise(function(resolve){
-        self.once('finished',function(state){
-          if(state&&state.global)
-            state.global.once('frameEnd',go);
-          else go();
-          function go(){resolve(self);}
-        })
-      });
-    return v;
+    return this._promise||(this._promise=getPromiseByAni(this));
   },
   get finished() {
     return this._finished;
@@ -415,52 +415,45 @@ inherit(Animation, Flip.util.Object, {
     if(!skipInit)
       this.init();
   },
-  use:function(opt){
-    setUpdateOpt(this,opt.transform,'transform');
-    setUpdateOpt(this,opt.css,'css');
-    setUpdateOpt(this,opt.on,'on');
-    setUpdateOpt(this,opt.once,'once');
-    return this;
-  },
-  transform:function(selector,matCallback){
-    if(typeof selector==="function") {
-      matCallback= selector;
-      selector ='&';
-    }
-    addMap(selector,this._matCallback,matCallback);
-    return this;
-  },
-  css:function(selector,cssCallBack){
-    if(typeof selector!=="string") {
-      cssCallBack = selector;
-      selector ='&';
-    }
-    if(isObj(cssCallBack)){
-      var cssTo=cssCallBack;
-      cssCallBack=function(cssObj){
-        objForEach(cssTo,cloneFunc,cssObj);
+  use:(function(){
+    var pros=['transform','css','on','once'];
+    return function use(opt){
+      var self=this;
+      pros.forEach(function(proName){
+        setUpdateOpt(self,opt[proName],proName)
+      });
+      return this;
+    };
+    function setUpdateOpt(animation,obj,type){
+      if(isFunc(obj))
+        animation[type](obj);
+      else if(isObj(obj)){
+        hasNestedObj(obj)? objForEach(obj,function(rule,slt){animation[type](slt,rule)}):animation[type](obj);
       }
     }
-    addMap(selector,this._cssCallback,cssCallBack);
+  })(),
+  transform:function(selector,matCallback){
+    var map=this._matCallback;
+    objForEach(normalizeMapArgs(arguments),function(callback,selector){
+      addMap(selector,map,callback)
+    });
+    return this;
+  },
+  css:function(mapOrFunc){
+    var map=this._cssCallback;
+    objForEach(normalizeMapArgs(arguments),function(callback,selector){
+      addMap(selector,map,callback)
+    });
     return this;
   },
   update: function (state) {
-    return updateAnimation(this,state);
+    updateAnimation(this,state);
   },
   render: function (state) {
-    state.animation = this;
-    this.apply(state);
-    this._invalid=false;
-    this.emit(ANI_EVT.RENDER, state);
-    if(this._finished)
-      this.emit(ANI_EVT.FINISHED,state);
-    state.animation = null;
+    renderAnimation(this,state);
   },
   invalid: function () {
-    if (this._task)
-      this._task.invalid();
-    this.lastStyleRule=null;
-    this._invalid=true;
+    if (this._task)this._task.invalid();
   },
   finalize:function(){
     var task;
@@ -472,17 +465,7 @@ inherit(Animation, Flip.util.Object, {
     }
   },
   getStyleRule:function(){
-    var styles=[];
-    objForEach(this._cssMap,function(ruleObj,selector){
-      var body=getRuleBody(ruleObj);
-      if(body){
-        styles.push(selector+'\n{\n'+body+'\n}');
-      }
-    });
-    return this.lastStyleRule=styles.join('\n');
-  },
-  apply: function (state) {
-    state.styleStack.push(this.lastStyleRule||this.getStyleRule());
+    return getAnimationStyle(this);
   },
   start:function(){
     var clock=this.clock;
@@ -545,98 +528,20 @@ animate.createOptProxy = function (setter, autoStart, taskName, defaultGlobal) {
 };
 Flip.animate = animate;
 Flip.css=function(selector,rule){
-  var literal=[],t1=typeof selector;
-  if(t1==="string")
-    resolveRule(rule,selector);
-  else if(t1==="object")
-    objForEach(selector,resolveRule);
+  var literal=[];
+  if(arguments.length==2){
+    resolve(rule,selector);
+  }
+  else if(isObj(selector)){
+    objForEach(selector,resolve)
+  }
+  else throw Error('argument error');
   return FlipScope.global.immediate(literal.join('\n'));
-  function resolveRule(rule,selector){
-    var result=new CssContainer();
-    if(typeof rule==="function")result=rule(result)||result;
-    else if(typeof rule==="object") objForEach(rule,cloneFunc,result);
-    else throw Error('css rule should be object or function');
-    literal.push(selector+'{'+getRuleBody(result)+'}');
+  function resolve(rule,selector){
+    var str=getStyleRuleStr(resolveCss(rule),selector,'\n',1);
+    if(str)literal.push(str);
   }
 };
-function getRuleBody(ruleObj,separator){
-    var rules=[];
-    objForEach(ruleObj,function(value,key){
-       rules.push(key.replace(/[A-Z]/g,function(c){return '-'+ c.toLowerCase()})+':'+value+';');
-    });
-    return rules.join(separator||'\n');
-}
-function finalizeAnimation(animation){
-  var task;
-  if(!animation.persistAfterFinished&&(task=animation._task)){
-    task.toFinalize(animation);
-  }
-}
-function updateAnimation(animation,renderState){
-  var clock=animation.clock;
-  renderState.animation=animation;
-  if(updateClock(clock,renderState)){
-    animation.invalid();
-    updateAnimationCss(animation,renderState);
-    animation.emit(ANI_EVT.UPDATE, renderState);
-  }
-  if(clock.finished){
-    //trigger finished event after render
-    animation._finished=true;
-    finalizeAnimation(animation);
-  }
-  renderState.animatetion=null;
-  return true;
-}
-function updateAnimationCss(animation,renderState){
-    var cssMap=animation._cssMap,ts=animation.selector;
-    objForEach(animation._cssCallback,function(cbs,selector){
-      var cssRule=new CssContainer();
-      cbs.forEach(function(cb){
-        cb.apply(animation,[cssRule,renderState])
-      });
-      selector.split(',').forEach(function(se){cssMap[se.replace(/&/g,ts)]=cssRule;});
-    });
-    objForEach(animation._matCallback,function(cbs,selector){
-      var mat=new Mat3(),matRule;
-      cbs.forEach(function(cb){mat=cb.apply(animation,[mat,renderState])||mat});
-      matRule=mat.toString();
-      selector.split(',').forEach(function(se){
-        var key=se.replace(/&/g,ts),cssRule=cssMap[key]||(cssMap[key]=new CssContainer());
-        cssRule.withPrefix('transform',matRule);
-      });
-    });
-  }
-function CssContainer(){
-  if(!(this instanceof CssContainer))return new CssContainer();
-}
-CssContainer.prototype={
-  withPrefix:function(key,value,prefixes){
-    var self=this;
-    (prefixes||['-moz-','-ms-','-webkit-','-o-','']).forEach(function(prefix){
-      self[prefix+key]=value;
-    });
-    return self;
-  }
-};
-function setUpdateOpt(animation,obj,type){
-     var t=typeof obj;
-    if(t==="function")animation[type](obj);
-    else if(t==="object"){
-      hasNestedObj(obj)? objForEach(obj,function(rule,slt){animation[type](slt,rule)}):animation[type](obj);
-    }
-  }
-function hasNestedObj(obj){
-    return obj&&Object.getOwnPropertyNames(obj).some(function(key){
-        var t=typeof obj[key];
-        return t=="object"||t=="function"
-        });
-}
-function addMap(key,Map,cb){
-    var cbs=Map[key];
-    if(!cbs)Map[key]=[cb];
-    else arrAdd(cbs,cb);
-}
 Flip.animation = (function () {
   function register(definition) {
     var beforeCallBase, defParam, name = definition.name, Constructor;
@@ -667,6 +572,27 @@ Flip.animation = (function () {
     return proxy;
   }
 })();
+function normalizeMapArgs(args){
+  var ret={},arg;
+  if(args.length==2){
+    ret[args[0]]=args[1];
+  }
+  else if(isFunc(arg=args[0])||!hasNestedObj(arg)){
+    ret['&']=arg;
+  }
+  else if(!isObj(arg)) throw Error('argument Error');
+  //isNestedObj
+  else{
+    ret=arg;
+  }
+  return ret;
+}
+function hasNestedObj(obj){
+  return isObj(obj)&&Object.getOwnPropertyNames(obj).some(function(key){
+      var t=typeof obj[key];
+      return t=="object"||t=="function"
+    });
+}
 Flip.Animation=Animation;
 
 
@@ -676,9 +602,9 @@ function Clock(opt) {
   this.reset(1,0,0,0);
 }
 Flip.Clock = Clock;
-Clock.createOptProxy = function (opt, duration, timingFunction, infinite, iteration, autoReverse,delay) {
+Clock.createOptProxy = function (opt, duration, ease, infinite, iteration, autoReverse,delay) {
   var setter = createProxy(opt);
-  setter('duration', duration, 'timingFunction', timingFunction, 'infinite', infinite, 'iteration', iteration, 'autoReverse', autoReverse,'delay',delay);
+  setter('duration', duration, 'ease', ease, 'infinite', infinite, 'iteration', iteration, 'autoReverse', autoReverse,'delay',delay);
   return setter;
 };
 
@@ -704,10 +630,10 @@ Clock.createOptProxy = function (opt, duration, timingFunction, infinite, iterat
     get paused() {
       return this._paused;
     },
-    get timingFunction() {
+    get ease() {
       return this._tf;
     },
-    set timingFunction(src) {
+    set ease(src) {
       var tf;
       if ((isFunc(tf=src))||(tf = Clock.EASE[src]))
         this._tf = tf;
@@ -844,7 +770,7 @@ function updateClock(c,state) {
       t = c.t = c.d ? dur / c.duration : 1 - dur / c.duration;
       if (t > 1)t = c.t = 1;
       else if (t < 0)t = c.t = 0;
-      curValue = c.value = c.timingFunction(t);
+      curValue = c.value = c.ease(t);
       evtArg = Object.create(state);
       evtArg.clock = c;
       evtArg.currentValue = curValue;
@@ -970,6 +896,23 @@ Flip.EASE = Clock.EASE = (function () {
 
   return Object.freeze(F);
 })();
+function CssContainer(){
+  if(!(this instanceof CssContainer))return new CssContainer();
+}
+CssContainer.prototype={
+  withPrefix:function(key,value,prefixes){
+    var self=this;
+    (prefixes||['-moz-','-ms-','-webkit-','-o-','']).forEach(function(prefix){
+      self[prefix+key]=value;
+    });
+    return self;
+  },
+  merge:function(obj){
+    if(isObj(obj)&&obj!==this)
+      objForEach(obj,cloneFunc,this);
+    return this;
+  }
+};
 (function (Flip) {
   function $(slt, ele) {
     var r = [], root = ele || document;
@@ -1081,29 +1024,9 @@ inherit(RenderGlobal, Flip.util.Object, {
     }
   },
   createRenderState: function () {
-    return {global: this, task: this.activeTask,styleStack:[]}
+    return {global: this, task:null,styleStack:[],forceRender:0}
   }
 });
-function loopGlobal(global){
-  var state = global.createRenderState();
-  global.emit(RenderGlobal.EVENT_NAMES.FRAME_START, [state]);
-  updateGlobal(global,state);
-  renderGlobal(global,state);
-  global.emit(RenderGlobal.EVENT_NAMES.FRAME_END, [state]);
-}
-function updateGlobal(global,state){
-  state.global.emit(RenderGlobal.EVENT_NAMES.UPDATE, [state,global]);
-  objForEach(global._tasks,function(task){updateTask(task,state)});
-  global.apply();
-}
-function renderGlobal(global,state){
-  if(global._invalid){
-    objForEach(global._tasks,function(task){renderTask(task,state);});
-    global._styleElement.innerHTML=state.styleStack.join('\n');
-    global._invalid=false;
-  }
-  objForEach(global._tasks,function(task){finalizeTask(task,state)});
-}
 FlipScope.global = new RenderGlobal();
 
 
@@ -1363,6 +1286,134 @@ Mat3.prototype = {
   };
   FlipScope.Promise=Flip.Promise=Promise;
 })(Flip);
+function loopGlobal(global){
+  var state = global.createRenderState();
+  global.emit(RenderGlobal.EVENT_NAMES.FRAME_START, [state]);
+  updateGlobal(global,state);
+  renderGlobal(global,state);
+  global.emit(RenderGlobal.EVENT_NAMES.FRAME_END, [state]);
+}
+function updateGlobal(global,state){
+  state.global.emit(RenderGlobal.EVENT_NAMES.UPDATE, [state,global]);
+  objForEach(global._tasks,function(task){updateTask(task,state)});
+  global.apply();
+}
+function updateTask(task,state){
+  var updateParam = [state, state.task=task];
+  (state.timeline = task.timeline).move();
+  task.emit(RenderTask.EVENT_NAMES.UPDATE, updateParam);
+  task._updateObjs = arrSafeFilter(task._updateObjs, filterIUpdate, state);
+}
+function renderGlobal(global,state){
+  if(global._invalid||state.forceRender){
+    objForEach(global._tasks,function(task){renderTask(task,state);});
+    global._styleElement.innerHTML=state.styleStack.join('\n');
+    global._invalid=false;
+  }
+  objForEach(global._tasks,function(task){finalizeTask(task,state)});
+}
+function renderTask(task,state){
+  var evtParam = [state, state.task=task];
+  if (task._invalid||state.forceRender) {
+    task.emit(RenderTask.EVENT_NAMES.RENDER_START, evtParam);
+    task._updateObjs.forEach(function (item) {if(isFunc(item.render))item.render(state);});
+    task._invalid = false;
+  }
+  task.emit(RenderTask.EVENT_NAMES.RENDER_END, evtParam);
+}
+function finalizeTask(task,state){
+  var taskItems=(state.task=task)._updateObjs,index,finItems=task._finalizeObjs;
+  if(finItems.length){
+    task.invalid();
+    finItems.forEach(function(item){
+      if((index=taskItems.indexOf(item))!=-1)
+        taskItems[index]=null;
+      if(item._task==task)
+        item._task=null;
+      isObj(item)&&isFunc(item.finalize)&&item.finalize(state);
+    });
+    task._finalizeObjs=[];
+  }
+}
+function finalizeAnimation(animation){
+  var task;
+  if(!animation.persistAfterFinished&&(task=animation._task)){
+    task.toFinalize(animation);
+  }
+}
+
+function updateAnimation(animation,renderState){
+  var clock=animation.clock;
+  renderState.animation=animation;
+  if(updateClock(clock,renderState)){
+    animation.invalid();
+    animation.emit(ANI_EVT.UPDATE, renderState);
+  }
+  if(clock.finished){
+    //trigger finished event after render
+    animation._finished=true;
+    finalizeAnimation(animation);
+  }
+  renderState.animatetion=null;
+  return true;
+}
+function renderAnimation(ani,state){
+  state.animation = ani;
+  updateAnimationCss(ani);
+  state.styleStack.push(getAnimationStyle(ani));
+  ani.emit(ANI_EVT.RENDER, state);
+  if(ani._finished)ani.emit(ANI_EVT.FINISHED,state);
+  state.animation = null;
+}
+function updateAnimationCss(animation){
+  var cssMap=animation._cssMap={},cssRule;
+  objForEach(animation._cssCallback,function(cbs,selector){
+    cssRule=new CssContainer();
+    cbs.forEach(function(cb){resolveCss(cb,animation,cssRule)});
+    mergeRule(cssMap,selector,cssRule);
+  });
+  objForEach(animation._matCallback,function(cbs,selector){
+    var mat=new Mat3();
+    cssRule=new CssContainer();
+    cbs.forEach(function(cb){mat=cb.apply(animation,[mat])||mat});
+    cssRule.withPrefix('transform',mat.toString());
+    mergeRule(cssMap,selector,cssRule);
+  });
+}
+function resolveCss(rule,thisObj,cssContainer){
+  var ret=cssContainer||new CssContainer();
+  if(isObj(rule))
+    objForEach(rule,cloneFunc,ret);
+  else if(isFunc(rule))
+     ret=rule.apply(thisObj,[ret])||ret;
+  return ret;
+}
+function getStyleRuleStr(ruleObj,selector,separator,ignoreEmpty){
+  var rules=[];
+  objForEach(ruleObj,function(value,key){
+    rules.push(key.replace(/[A-Z]/g,function(c){return '-'+ c.toLowerCase()})+':'+value+';');
+  });
+  if(!rules.length&&ignoreEmpty)return '';
+  separator=separator||'\n';
+  return selector +'{'+separator+rules.join(separator)+separator+'}';
+}
+function addMap(key,Map,cb){
+  var cbs=Map[key];
+  if(!cbs)Map[key]=[cb];
+  else arrAdd(cbs,cb);
+}
+function getAnimationStyle(ani){
+  var styles=[],slt=ani.selector||'';
+  objForEach(ani._cssMap,function(ruleObj,selector){
+    styles.push(getStyleRuleStr(ruleObj,selector.replace(/&/g,slt)));
+  });
+  return ani.lastStyleRule=styles.join('\n');
+}
+function mergeRule(map,selector,cssContainer){
+  var oriRule=map[selector];
+  if(oriRule)oriRule.merge(cssContainer);
+  else map[selector]=cssContainer;
+}
 function RenderTask(name) {
   if (!(this instanceof  RenderTask))return new RenderTask(name);
   this.name = name;
@@ -1401,37 +1452,7 @@ inherit(RenderTask, Flip.util.Object, {
     }
   }
 });
-function renderTask(task,state){
-  var evtParam = [state, state.task=task];
-  if (task._invalid) {
-    task.emit(RenderTask.EVENT_NAMES.RENDER_START, evtParam);
-    task._updateObjs.forEach(function (item) {
-      if (item.render) item.render(state);
-    });
-    task._invalid = false;
-  }
-  task.emit(RenderTask.EVENT_NAMES.RENDER_END, evtParam);
-}
-function updateTask(task,state){
-  var updateParam = [state, state.task=task];
-  (state.timeline = task.timeline).move();
-  task.emit(RenderTask.EVENT_NAMES.UPDATE, updateParam);
-  task._updateObjs = arrSafeFilter(task._updateObjs, filterIUpdate, state);
-}
-function finalizeTask(task,state){
-  var taskItems=(state.task=task)._updateObjs,index,finItems=task._finalizeObjs;
-  if(finItems.length){
-    task.invalid();
-    finItems.forEach(function(item){
-      if((index=taskItems.indexOf(item))!=-1)
-        taskItems[index]=null;
-      if(item._task==task)
-        item._task=null;
-      isObj(item)&&isFunc(item.finalize)&&item.finalize(state);
-    });
-    task._finalizeObjs=[];
-  }
-}
+
 function filterIUpdate(item) {
   if (!isObj(item))return false;
   else if (isFunc(item.update))
@@ -1480,7 +1501,7 @@ Flip.animation({
     angle: Math.PI
   },
   beforeCallBase: function (proxy) {
-    proxy.source('timingFunction', Clock.EASE.sineInOut);
+    proxy.source('ease', Clock.EASE.sineInOut);
   },
   transform:function(){
     return Mat3.setFlip(this.angle*this.clock.value,this.vertical);
@@ -1539,7 +1560,7 @@ Flip.animation({
     angle: Math.PI * 2
   },
   beforeCallBase: function (proxy) {
-    proxy.source('timingFunction', Flip.EASE.circInOut);
+    proxy.source('ease', Flip.EASE.circInOut);
   },
   transform: function () {
     return Flip.Mat3.setRotate(this.angle * this.clock.value);
@@ -1551,7 +1572,7 @@ Flip.animation({
     sx: 0, sy: 0, dy: 1, dx: 1
   },
   beforeCallBase: function (proxy) {
-    proxy.source('timingFunction', Flip.EASE.sineInOut);
+    proxy.source('ease', Flip.EASE.sineInOut);
   },
   transform: function () {
     var sx = this.sx, sy = this.sy, dx = this.dx, dy = this.dy, v = this.clock.value;

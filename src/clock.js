@@ -8,9 +8,9 @@ function Clock(opt) {
   this.reset(1,0,0,0);
 }
 Flip.Clock = Clock;
-Clock.createOptProxy = function (opt, duration, timingFunction, infinite, iteration, autoReverse,delay) {
+Clock.createOptProxy = function (opt, duration, ease, infinite, iteration, autoReverse,delay) {
   var setter = createProxy(opt);
-  setter('duration', duration, 'timingFunction', timingFunction, 'infinite', infinite, 'iteration', iteration, 'autoReverse', autoReverse,'delay',delay);
+  setter('duration', duration, 'ease', ease, 'infinite', infinite, 'iteration', iteration, 'autoReverse', autoReverse,'delay',delay);
   return setter;
 };
 
@@ -36,10 +36,10 @@ Clock.createOptProxy = function (opt, duration, timingFunction, infinite, iterat
     get paused() {
       return this._paused;
     },
-    get timingFunction() {
+    get ease() {
       return this._tf;
     },
-    set timingFunction(src) {
+    set ease(src) {
       var tf;
       if ((isFunc(tf=src))||(tf = Clock.EASE[src]))
         this._tf = tf;
@@ -176,7 +176,7 @@ function updateClock(c,state) {
       t = c.t = c.d ? dur / c.duration : 1 - dur / c.duration;
       if (t > 1)t = c.t = 1;
       else if (t < 0)t = c.t = 0;
-      curValue = c.value = c.timingFunction(t);
+      curValue = c.value = c.ease(t);
       evtArg = Object.create(state);
       evtArg.clock = c;
       evtArg.currentValue = curValue;

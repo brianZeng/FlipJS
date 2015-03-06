@@ -92,28 +92,8 @@ inherit(RenderGlobal, Flip.util.Object, {
     }
   },
   createRenderState: function () {
-    return {global: this, task: this.activeTask,styleStack:[]}
+    return {global: this, task:null,styleStack:[],forceRender:0}
   }
 });
-function loopGlobal(global){
-  var state = global.createRenderState();
-  global.emit(RenderGlobal.EVENT_NAMES.FRAME_START, [state]);
-  updateGlobal(global,state);
-  renderGlobal(global,state);
-  global.emit(RenderGlobal.EVENT_NAMES.FRAME_END, [state]);
-}
-function updateGlobal(global,state){
-  state.global.emit(RenderGlobal.EVENT_NAMES.UPDATE, [state,global]);
-  objForEach(global._tasks,function(task){updateTask(task,state)});
-  global.apply();
-}
-function renderGlobal(global,state){
-  if(global._invalid){
-    objForEach(global._tasks,function(task){renderTask(task,state);});
-    global._styleElement.innerHTML=state.styleStack.join('\n');
-    global._invalid=false;
-  }
-  objForEach(global._tasks,function(task){finalizeTask(task,state)});
-}
 FlipScope.global = new RenderGlobal();
 

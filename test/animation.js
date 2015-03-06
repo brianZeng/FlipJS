@@ -12,9 +12,17 @@ describe('Construct Animation:', function () {
     });
   });
   describe('2.use Flip.animation() to construct an animation:', function () {
-    it('first param can be animation type', function () {
+    it('1.first param can be animation type', function () {
       var ani = Flip.animate('translate');
       expect(ani instanceof Flip.Animation).toBeTruthy();
+    });
+    it('2.ease function set by name or ease',function(){
+      var ani=Flip.animate({
+        ease:Flip.EASE.backIn
+      });
+      expect(ani.clock.ease).toBe(Flip.EASE.backIn);
+      ani.clock.ease='backInOut';
+      expect(ani.clock.ease).toBe(Flip.EASE.backInOut);
     });
     it('animation clock ticks when change:', function (done) {
       var tickSpy = jasmine.createSpy('tick'), finishSpy = jasmine.createSpy('finish');
@@ -70,11 +78,9 @@ describe('Construct Animation:', function () {
       ani.start();
       ani.once('update',function(){
         expect(ani.percent).toBe(0);
-        expect(ani._invalid).toBeTruthy();
       });
       ani.once('render',function(){
         expect(ani.percent).toBe(0);
-        expect(ani._invalid).toBeFalsy();
       });
       ani.once('finished',function(){
         expect(ani.percent).toBe(1);
@@ -107,4 +113,30 @@ describe('css function',function(){
     cancel();
     expect(Flip.instance._persistStyles[cancel.id]).toBeFalsy();
   });
+  it('animation css overwrite and merge',function(done){
+     var ani=Flip.animate({
+       duration:.5,selector:'a',
+       css:{
+         '&:hover':{
+           background:'#fff'
+         }
+       },
+       once:{
+         render:function(){
+           expect(this.lastStyleRule).toContain('background:#fff');
+           expect(this.lastStyleRule).toContain('border:none');
+           expect(this._cssMap['&'].color).toBe('red');
+           done();
+         }
+       }
+     });
+    ani.css({
+      '&:hover':{
+        border:'none'
+      }
+    });
+    ani.css({color:'red'});
+    ani.start();
+  });
+
 });
