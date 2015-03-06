@@ -1,7 +1,7 @@
 /**
  * Created by 柏子 on 2015/2/9.
  */
-describe('interpolation basic test',function(){
+xdescribe('interpolation basic test',function(){
   var data=[[0,0],[10,10],[20,20]],itpl;
   function pointEquals(p1,p2){
     expect(Flip.Vec.get(p1,'x')).toBeCloseTo(Flip.Vec.get(p2,'x'));

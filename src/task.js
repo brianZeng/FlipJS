@@ -6,7 +6,7 @@ function RenderTask(name) {
   this.name = name;
   this.timeline = new TimeLine(this);
   this._updateObjs = [];
-  this._onAction = false;
+  this._finalizeObjs=[];
   this._global = null;
 }
 Flip.RenderTask = RenderTask;
@@ -18,25 +18,14 @@ RenderTask.EVENT_NAMES = {
   AFTER_CONSUME_EVENTS: 'afterConsumeEvents'
 };
 inherit(RenderTask, Flip.util.Object, {
-  update: function (state) {
-    var t = state.task, updateParam = [state, this], nextComs;
-    (state.timeline = t.timeline).move();
-    this.emit(RenderTask.EVENT_NAMES.UPDATE, updateParam);
-    this._updateObjs = arrSafeFilter(this._updateObjs, filterIUpdate, state);
-  },
   invalid: function () {
+    var g;
     this._invalid = true;
+    if(g=this._global)
+      g.invalid();
   },
-  render: function (state) {
-    var evtParam = [state, this];
-    if (this._invalid) {
-      this.emit(RenderTask.EVENT_NAMES.RENDER_START, evtParam);
-      this._updateObjs.forEach(function (component) {
-        if (component.render) component.render(state);
-      });
-      this._invalid = false;
-    }
-    this.emit(RenderTask.EVENT_NAMES.RENDER_END, evtParam);
+  toFinalize:function(obj){
+   return this._updateObjs.indexOf(obj)>-1 && arrAdd(this._finalizeObjs,obj);
   },
   add: function (obj, type) {
     if (type == 'update') return arrAdd(this._updateObjs, obj);
@@ -44,13 +33,18 @@ inherit(RenderTask, Flip.util.Object, {
       arrAdd(this._updateObjs, obj) && (obj._task = this);
   },
   remove: function (obj) {
-    if (obj._task == this)
+    if (obj._task == this && arrRemove(this._updateObjs, obj)){
       obj._task = null;
-    arrRemove(this._updateObjs, obj);
+      this.invalid();
+    }
   }
 });
-function filterIUpdate(obj) {
-  if (obj == null || !(typeof obj == "object"))return false;
-  else if (typeof obj.update == "function")return obj.update(this);
-  else if (typeof obj.emit == "function") return obj.emit(RenderTask.EVENT_NAMES.UPDATE, this);
+
+function filterIUpdate(item) {
+  if (!isObj(item))return false;
+  else if (isFunc(item.update))
+    item.update(this);
+  else if (isFunc(item.emit))
+    item.emit(RenderTask.EVENT_NAMES.UPDATE, this);
+  return true;
 }

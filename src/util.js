@@ -245,34 +245,17 @@ function addEventListenerOnce(obj, evtName, handler) {
 }
 obj.once = addEventListenerOnce;
 function objForEach(object, callback, thisObj, arg) {
-  if (object) {
+  if (isObj(object)) {
     if (thisObj == undefined)thisObj = object;
-    for (var i = 0, names = Object.getOwnPropertyNames(object), name = names[0]; name; name = names[++i])
-      callback.apply(thisObj, [object[name], name, arg]);
+    if(object instanceof Array) object.forEach(callback,thisObj);
+    else
+      for (var i = 0, names = Object.getOwnPropertyNames(object), name = names[0]; name; name = names[++i])
+        callback.apply(thisObj, [object[name], name, arg]);
   }
   return object;
+
 }
 obj.forEach = objForEach;
-/*function objMap(object, callback, thisObj, arg) {
-  var r = obj();
-  if (object) {
-    if (thisObj == undefined)thisObj = object;
-    for (var keys = Object.getOwnPropertyNames(object), i = 0, key = keys[0]; key; key = keys[++i])
-      r[key] = callback.apply(thisObj, [key, object[key], arg]);
-  }
-  return r;
-}
-obj.map = objMap;
-function objReduce(object, callback, initialValue, thisObj, arg) {
-  if (object) {
-    if (thisObj == undefined)thisObj = object;
-    for (var keys = Object.getOwnPropertyNames(object), i = 0, key = keys[0]; key; key = keys[++i])
-      initialValue = callback.apply(thisObj, [initialValue, key, object[key], arg]);
-  }
-  return initialValue;
-}
-
-obj.reduce = objReduce;*/
 inherit(obj, null, {
   on: function (evtName, handler) {
     return addEventListener(this, evtName, handler);
@@ -293,3 +276,5 @@ inherit(obj, null, {
 function cloneFunc(value, key) {
   this[key] = value;
 }
+function isFunc(value){return typeof value==="function"}
+function isObj(value){return (typeof value==="object") && value}

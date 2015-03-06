@@ -69,7 +69,7 @@
             width: wpx,
             height: hpx
         });
-        var animation = Flip.animate('flip', {selector: '.flip', angle: Math.PI * 6, duration: 4, keepWhenFinished: 1})
+        var animation = Flip.animate('flip', {selector: '.flip', angle: Math.PI * 6, duration: 4, persistAfterFinished: 1})
                 .css({position: 'relative'})
                 .css('& >.front', function (css) {
                     css.display = this.front ? 'block' : 'none';
@@ -84,7 +84,7 @@
                 }).start();
         animation.then({
             selector: '.card-title',
-            keepWhenFinished: 1,
+            persistAfterFinished: 1,
             duration: 1,
             css: {
                 '&>p': {
@@ -100,7 +100,7 @@
         }).then({
                     selector: '.card-content',
                     duration: 1.5,
-                    keepWhenFinished: 1,
+                    persistAfterFinished: 1,
                     timingFunction: Flip.EASE.bounceInOut,
                     css: {
                         '&': function (css) {

@@ -8,7 +8,7 @@ Flip.animation({
     angle: Math.PI
   },
   beforeCallBase: function (proxy) {
-    proxy.source('timingFunction', Clock.EASE.sineInOut);
+    proxy.source('ease', Clock.EASE.sineInOut);
   },
   transform:function(){
     return Mat3.setFlip(this.angle*this.clock.value,this.vertical);
