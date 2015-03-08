@@ -10,6 +10,7 @@ function Animation(opt) {
   this._cssMap={};
   this._matCallback={};
   this._cssCallback={};
+  //todo:param
   this.use(opt);
   this.init();
 }
@@ -101,6 +102,7 @@ inherit(Animation, Flip.util.Object, {
     return this;
   },
   update: function (state) {
+    //todo:update param
     updateAnimation(this,state);
   },
   render: function (state) {
