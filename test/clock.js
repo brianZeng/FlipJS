@@ -18,7 +18,7 @@ describe('clock test',function(){
   function clampTime(millsec,base){
    console.log( millsec=millsec/1000);
     expect(millsec).toBeGreaterThan(base);
-    expect(millsec).toBeLessThan(base*1.15);
+    expect(millsec).toBeLessThan(base*1.15+20);
   }
   it('1.support autoReverse',function(done){
     var t1,dur=.2,t2,t3;
@@ -54,5 +54,29 @@ describe('clock test',function(){
     }).on('iterate',function(){clampTime(now()-t1,.2)})
       .on('finished',function(){ clampTime(now()-t1,.4);done()})
   });
-
+  it('4.when infinite,emits iterate event',function(done){
+    var i=5;
+    setClock({duration:.2,infinite:true}).on('start',function(){
+      t1=now();
+    }).on('iterate',function(){
+      clampTime(now()-t1,.2*(6-i));
+      if(--i==0){
+        clock.finalize();
+        done();
+      }
+    });
+  });
+  it('5.when infinite and autoReverse,emits reverse and reverse events',function(done){
+    var i=2;
+    setClock({duration:.1,infinite:true,autoReverse:true}).on('start',function(){
+      t1=now();
+    }).on('reverse',function(){
+      i--;
+    }).on('iterate',function(){
+      if(i==0){
+        clampTime(now()-t1,.4);
+        done();
+      }
+    })
+  })
 });

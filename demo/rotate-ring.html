@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        .circle{
+            border-radius: 50%;
+            width: 6px;
+            height: 6px;
+            display: inline-block;
+            left: 50px;
+            top: 50px;
+            background-color: #0b97c4;
+            position: absolute;
+        }
+        #ring{
+            width:100px;
+            height: 100px;
+            border-radius: 50%;
+            margin: 200px auto;
+            position: relative;
+        }
+        .shadow{
+            border: 2px solid blueviolet;
+        }
+    </style>
+    <script src="../bin/flip.js"></script>
+</head>
+<body>
+<div data-num="4" id="ring">
+
+</div>
+<script>
+    Flip(function(){
+       var p= document.querySelector('#ring'),num=parseInt(p.getAttribute('data-num')),rotate;
+        for(var i= 0,circle,d=360/num;i<num;i++){
+            createChild('rotate('+d*i+'deg) translate(40px,0)','circle');
+        }
+        p.children[0].classList.add('shadow');
+        rotate=d;
+        Flip.animate({
+            selector:'#ring',
+            autoReverse:true,
+            iteration:5,
+            on:{
+                iterate:function(){
+                    rotate+=d;
+                }
+            },
+            css:{
+                '&':function(css)
+                {
+                    css.withPrefix('transform','rotate('+rotate+'deg)')
+                }
+            }
+        }).start();
+        function createChild(transform,className){
+            var circle=document.createElement('div');
+            circle.className=className;
+            circle.style.transform=transform;
+            p.appendChild(circle);
+        }
+    })
+</script>
+</body>
+</html>

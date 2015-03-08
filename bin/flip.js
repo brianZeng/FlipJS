@@ -276,80 +276,6 @@ function cloneFunc(value, key) {
 function isFunc(value){return typeof value==="function"}
 function isObj(value){return (typeof value==="object") && value}
 
-function RenderTask(name) {
-  if (!(this instanceof  RenderTask))return new RenderTask(name);
-  this.name = name;
-  this.timeline = new TimeLine(this);
-  this._updateObjs = [];
-  this._finalizeObjs=[];
-  this._global = null;
-}
-Flip.RenderTask = RenderTask;
-RenderTask.EVENT_NAMES = {
-  RENDER_START: 'renderStart',
-  RENDER_END: 'renderEnd',
-  UPDATE: 'update',
-  BEFORE_CONSUME_EVENTS: 'beforeConsumeEvents',
-  AFTER_CONSUME_EVENTS: 'afterConsumeEvents'
-};
-inherit(RenderTask, Flip.util.Object, {
-  invalid: function () {
-    var g;
-    this._invalid = true;
-    if(g=this._global)
-      g.invalid();
-  },
-  toFinalize:function(obj){
-   return this._updateObjs.indexOf(obj)>-1 && arrAdd(this._finalizeObjs,obj);
-  },
-  add: function (obj, type) {
-    if (type == 'update') return arrAdd(this._updateObjs, obj);
-    if (obj instanceof Clock || obj instanceof Animation)
-      arrAdd(this._updateObjs, obj) && (obj._task = this);
-  },
-  remove: function (obj) {
-    if (obj._task == this && arrRemove(this._updateObjs, obj)){
-      obj._task = null;
-      this.invalid();
-    }
-  }
-});
-
-function filterIUpdate(item) {
-  if (!isObj(item))return false;
-  else if (isFunc(item.update))
-    item.update(this);
-  else if (isFunc(item.emit))
-    item.emit(RenderTask.EVENT_NAMES.UPDATE, this);
-  return true;
-}
-function TimeLine(task) {
-  this.last = this.now = this._stopTime = 0;
-  this._startTime = this._lastStop = Date.now();
-  this.task = task;
-  this._isStop = true;
-}
-inherit(TimeLine, Flip.util.Object, {
-  ticksPerSecond: 1000,
-  stop: function () {
-    if (!this._isStop) {
-      this._isStop = true;
-      this._lastStop = Date.now();
-    }
-  },
-  start: function () {
-    if (this._isStop) {
-      this._isStop = false;
-      this._stopTime += Date.now() - this._lastStop;
-    }
-  },
-  move: function () {
-    if (!this._isStop) {
-      this.last = this.now;
-      this.now = Date.now() - this._startTime - this._stopTime;
-    }
-  }
-});
 function Animation(opt) {
   if (!(this instanceof Animation))return new Animation(opt);
   var r = Animation.createOptProxy(opt).result;
@@ -680,9 +606,7 @@ Clock.createOptProxy = function (opt, duration, ease, infinite, iteration, autoR
       this.autoReverse ? this.reverse(evtArg) : this.iterate(evtArg);
     },
     iterate: function (evtArg) {
-      if (this.infinite)
-        this.toggle();
-      else if (--this.i > 0 )
+      if (--this.i > 0 ||this.infinite)
         this.reset(0, 1,1,0);
       else
         this.finish(evtArg);
@@ -899,10 +823,18 @@ Flip.EASE = Clock.EASE = (function () {
 
   return Object.freeze(F);
 })();
-function CssContainer(){
-  if(!(this instanceof CssContainer))return new CssContainer();
+function CssContainer(obj){
+  if(!(this instanceof CssContainer))return new CssContainer(obj);
+  this.merge(obj);
 }
 CssContainer.prototype={
+  toString:function(){
+    var rules=[];
+    objForEach(this,function(value,key){
+      rules.push(key.replace(/[A-Z]/g,function(c){return '-'+ c.toLowerCase()})+':'+value);
+    });
+    return rules.join(';')
+  },
   withPrefix:function(key,value,prefixes){
     var self=this;
     (prefixes||['-moz-','-ms-','-webkit-','-o-','']).forEach(function(prefix){
@@ -1419,6 +1351,80 @@ function mergeRule(map,selector,cssContainer){
   if(oriRule)oriRule.merge(cssContainer);
   else map[selector]=cssContainer;
 }
+function RenderTask(name) {
+  if (!(this instanceof  RenderTask))return new RenderTask(name);
+  this.name = name;
+  this.timeline = new TimeLine(this);
+  this._updateObjs = [];
+  this._finalizeObjs=[];
+  this._global = null;
+}
+Flip.RenderTask = RenderTask;
+RenderTask.EVENT_NAMES = {
+  RENDER_START: 'renderStart',
+  RENDER_END: 'renderEnd',
+  UPDATE: 'update',
+  BEFORE_CONSUME_EVENTS: 'beforeConsumeEvents',
+  AFTER_CONSUME_EVENTS: 'afterConsumeEvents'
+};
+inherit(RenderTask, Flip.util.Object, {
+  invalid: function () {
+    var g;
+    this._invalid = true;
+    if(g=this._global)
+      g.invalid();
+  },
+  toFinalize:function(obj){
+   return this._updateObjs.indexOf(obj)>-1 && arrAdd(this._finalizeObjs,obj);
+  },
+  add: function (obj, type) {
+    if (type == 'update') return arrAdd(this._updateObjs, obj);
+    if (obj instanceof Clock || obj instanceof Animation)
+      arrAdd(this._updateObjs, obj) && (obj._task = this);
+  },
+  remove: function (obj) {
+    if (obj._task == this && arrRemove(this._updateObjs, obj)){
+      obj._task = null;
+      this.invalid();
+    }
+  }
+});
+
+function filterIUpdate(item) {
+  if (!isObj(item))return false;
+  else if (isFunc(item.update))
+    item.update(this);
+  else if (isFunc(item.emit))
+    item.emit(RenderTask.EVENT_NAMES.UPDATE, this);
+  return true;
+}
+function TimeLine(task) {
+  this.last = this.now = this._stopTime = 0;
+  this._startTime = this._lastStop = Date.now();
+  this.task = task;
+  this._isStop = true;
+}
+inherit(TimeLine, Flip.util.Object, {
+  ticksPerSecond: 1000,
+  stop: function () {
+    if (!this._isStop) {
+      this._isStop = true;
+      this._lastStop = Date.now();
+    }
+  },
+  start: function () {
+    if (this._isStop) {
+      this._isStop = false;
+      this._stopTime += Date.now() - this._lastStop;
+    }
+  },
+  move: function () {
+    if (!this._isStop) {
+      this.last = this.now;
+      this.now = Date.now() - this._startTime - this._stopTime;
+    }
+  }
+});
 var nextUid=(function(map){
   return function (type){
     if(!map[type])map[type]=1;

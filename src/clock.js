@@ -83,9 +83,7 @@ Clock.createOptProxy = function (opt, duration, ease, infinite, iteration, autoR
       this.autoReverse ? this.reverse(evtArg) : this.iterate(evtArg);
     },
     iterate: function (evtArg) {
-      if (this.infinite)
-        this.toggle();
-      else if (--this.i > 0 )
+      if (--this.i > 0 ||this.infinite)
         this.reset(0, 1,1,0);
       else
         this.finish(evtArg);
