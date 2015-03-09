@@ -29,7 +29,7 @@
         this.targets = eles.map(mapValue);
         proxy.source('duration', 1.2);
       },
-      defParam: {
+      param: {
         fracPrecision: 1
       },
       prototype: {

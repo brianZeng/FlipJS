@@ -3,7 +3,7 @@
  */
 Flip.animation({
   name: 'translate',
-  defParam: {
+  param: {
     sx: 0, dx: 100, sy: 0, dy: 0
   },
   transform:function () {

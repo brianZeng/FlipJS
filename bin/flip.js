@@ -25,9 +25,7 @@ Flip.fallback = function (window) {
     }, Array.prototype)
   }
 };
-if (typeof module !== "undefined" && module.exports)
-  module.exports = Flip;
-else if (window) window.Flip = Flip;
+
 
 Flip.util = {Object: obj, Array: array, inherit: inherit};
 function createProxy(obj) {
@@ -98,15 +96,6 @@ function arrSort(array, func_ProName, des) {
   } : function (a, b) {
     return compare(a) > compare(b)
   });
-}
-
-function arrUnique(array, func_ProName) {
-  var compare = arrMapFun(func_ProName);
-  return array.reduce(function (r, item) {
-    var res = compare(item);
-    if (r.indexOf(res) == -1)r.push(item);
-    return r;
-  }, []);
 }
 function arrFirst(array, func_ProName) {
   for (var i = 0, item, len = array.length, compare = arrMapFun(func_ProName); i < len; i++)
@@ -276,6 +265,86 @@ function cloneFunc(value, key) {
 function isFunc(value){return typeof value==="function"}
 function isObj(value){return (typeof value==="object") && value}
 
+if (typeof module !== "undefined" && module.exports)
+  module.exports = Flip;
+else if(typeof define!=="undefined")define(function(){return Flip});
+else if (window) {
+  window.Flip = Flip;
+}
+function RenderTask(name) {
+  if (!(this instanceof  RenderTask))return new RenderTask(name);
+  this.name = name;
+  this.timeline = new TimeLine(this);
+  this._updateObjs = [];
+  this._finalizeObjs=[];
+  this._global = null;
+}
+Flip.RenderTask = RenderTask;
+RenderTask.EVENT_NAMES = {
+  RENDER_START: 'renderStart',
+  RENDER_END: 'renderEnd',
+  UPDATE: 'update',
+  BEFORE_CONSUME_EVENTS: 'beforeConsumeEvents',
+  AFTER_CONSUME_EVENTS: 'afterConsumeEvents'
+};
+inherit(RenderTask, Flip.util.Object, {
+  invalid: function () {
+    var g;
+    this._invalid = true;
+    if(g=this._global)
+      g.invalid();
+  },
+  toFinalize:function(obj){
+   return this._updateObjs.indexOf(obj)>-1 && arrAdd(this._finalizeObjs,obj);
+  },
+  add: function (obj, type) {
+    if (type == 'update') return arrAdd(this._updateObjs, obj);
+    if (obj instanceof Clock || obj instanceof Animation)
+      arrAdd(this._updateObjs, obj) && (obj._task = this);
+  },
+  remove: function (obj) {
+    if (obj._task == this && arrRemove(this._updateObjs, obj)){
+      obj._task = null;
+      this.invalid();
+    }
+  }
+});
+
+function filterIUpdate(item) {
+  if (!isObj(item))return false;
+  else if (isFunc(item.update))
+    item.update(this);
+  else if (isFunc(item.emit))
+    item.emit(RenderTask.EVENT_NAMES.UPDATE, this);
+  return true;
+}
+function TimeLine(task) {
+  this.last = this.now = this._stopTime = 0;
+  this._startTime = this._lastStop = Date.now();
+  this.task = task;
+  this._isStop = true;
+}
+inherit(TimeLine, Flip.util.Object, {
+  ticksPerSecond: 1000,
+  stop: function () {
+    if (!this._isStop) {
+      this._isStop = true;
+      this._lastStop = Date.now();
+    }
+  },
+  start: function () {
+    if (this._isStop) {
+      this._isStop = false;
+      this._stopTime += Date.now() - this._lastStop;
+    }
+  },
+  move: function () {
+    if (!this._isStop) {
+      this.last = this.now;
+      this.now = Date.now() - this._startTime - this._stopTime;
+    }
+  }
+});
 function Animation(opt) {
   if (!(this instanceof Animation))return new Animation(opt);
   var r = Animation.createOptProxy(opt).result;
@@ -285,7 +354,7 @@ function Animation(opt) {
   this._cssMap={};
   this._matCallback={};
   this._cssCallback={};
-  //todo:param
+  this._param={};
   this.use(opt);
   this.init();
 }
@@ -345,23 +414,16 @@ inherit(Animation, Flip.util.Object, {
     if(!skipInit)
       this.init();
   },
-  use:(function(){
-    var pros=['transform','css','on','once'];
-    return function use(opt){
-      var self=this;
-      pros.forEach(function(proName){
-        setUpdateOpt(self,opt[proName],proName)
-      });
-      return this;
-    };
-    function setUpdateOpt(animation,obj,type){
-      if(isFunc(obj))
-        animation[type](obj);
-      else if(isObj(obj)){
-        hasNestedObj(obj)? objForEach(obj,function(rule,slt){animation[type](slt,rule)}):animation[type](obj);
-      }
-    }
-  })(),
+  use:function(opt){
+    return useAniOption(this,opt);
+  },
+  param:function(key,value){
+    if(arguments.length==2)
+      this._param[key]=value;
+    else if(arguments.length==1&&isObj(key))
+      objForEach(key,cloneFunc,this._param);
+    return this;
+  },
   transform:function(selector,matCallback){
     var map=this._matCallback;
     objForEach(normalizeMapArgs(arguments),function(callback,selector){
@@ -377,7 +439,6 @@ inherit(Animation, Flip.util.Object, {
     return this;
   },
   update: function (state) {
-    //todo:update param
     updateAnimation(this,state);
   },
   render: function (state) {
@@ -414,10 +475,10 @@ inherit(Animation, Flip.util.Object, {
     return this.promise.then(onFinished,onerror);
   },
   follow:function(thenables){
-    //TODO:directly past Array
-    if(arguments.length>1)thenables=Array.prototype.slice.apply(arguments);
+    throw Error('deprecated');
+    /*if(arguments.length>1)thenables=Array.prototype.slice.apply(arguments);
     else if(!(thenables instanceof Array))thenables=[thenables];
-    return this.promise.then(function(){ return Flip.Promise.all(thenables.map(Flip.Promise))});
+    return this.promise.then(function(){ return Flip.Promise.all(thenables.map(Flip.Promise))});*/
   }
 });
 var ANI_EVT=Animation.EVENT_NAMES = {
@@ -475,26 +536,23 @@ Flip.css=function(selector,rule){
 };
 Flip.animation = (function () {
   function register(definition) {
-    var beforeCallBase, defParam, name = definition.name, Constructor;
+    var beforeCallBase, name = definition.name, Constructor;
     beforeCallBase = definition.beforeCallBase || _beforeCallBase;
-    defParam = definition.defParam || {};
     Constructor = function (opt) {
       if (!(this instanceof Constructor))return new Constructor(opt);
       var proxy = createProxy(opt);
-      objForEach(defParam, function (value, key) {
-        proxy(key, value)
-      });
-      objForEach(proxy.result, cloneFunc, this);
       beforeCallBase.apply(this, [proxy, opt]);
-      Animation.call(this, proxy);
-      this.use(definition);
+      Animation.call(this,proxy);
     };
     if (name) {
       register[name] = Constructor;
       Constructor.name = name;
     }
     inherit(Constructor, Animation.prototype,{
-      type:definition.name
+      type:definition.name,
+      use:function(opt){
+        return useAniOption(this,definition,opt);
+      }
     });
     return Constructor;
   }
@@ -503,6 +561,21 @@ Flip.animation = (function () {
     return proxy;
   }
 })();
+function useAniOption(animation){
+  for(var i= 1,opt=arguments[1],optPro;opt;opt=arguments[++i])
+  {
+    useAniOption.pros.forEach(function(proName){
+      if(isFunc(optPro=opt[proName]))
+        animation[proName](optPro);
+      else if(isObj(optPro)){
+        hasNestedObj(optPro)? objForEach(optPro,function(rule,slt){animation[proName](slt,rule)})
+          :animation[proName](obj);
+      }});
+    animation.param(opt.param);
+  }
+  return animation;
+}
+useAniOption.pros=['transform','css','on','once'];
 function normalizeMapArgs(args){
   var ret={},arg;
   if(args.length==2){
@@ -626,12 +699,6 @@ Clock.createOptProxy = function (opt, duration, ease, infinite, iteration, autoR
         this._paused = false;
       }
     },
-    toggle: function () {
-      if (this.t == 0)
-        this.start();
-      else if (this.t == 1)
-        this.reverse();
-    },
     finalize:function(){
       var task;
       if(task=this._task)
@@ -670,16 +737,12 @@ Clock.createOptProxy = function (opt, duration, ease, infinite, iteration, autoR
 });
 function updateClock(c,state) {
   if (c&&!c.finished) {
-    var timeline = state.timeline,evtName;
+    var timeline = state.timeline,evtName,controller= c.controller;
     if (c._startTime == -1) {
       c._startTime = timeline.now;
-      if(c.d){
-        evtName= Clock.EVENT_NAMES[c.i== c.iteration? 'START':'ITERATE'];
-        c.emit(evtName,state);
-        c.controller&&c.controller.emit(evtName,state);
-      }
-      else
-        c.emit(Clock.EVENT_NAMES.REVERSE, state);
+      evtName= Clock.EVENT_NAMES[c.d?(c.i== c.iteration? 'START':'ITERATE'):'REVERSE'];
+      c.emit(evtName,state);
+      controller&&controller.emit(evtName,state);
       return true;
     }
     else if (c._paused) {
@@ -1286,6 +1349,7 @@ function updateAnimation(animation,renderState){
   renderState.animation=animation;
   if(updateClock(clock,renderState)){
     animation.invalid();
+    updateAnimationParam(animation);
     animation.emit(ANI_EVT.UPDATE, renderState);
   }
   if(clock.finished){
@@ -1304,27 +1368,33 @@ function renderAnimation(ani,state){
   if(ani._finished)ani.emit(ANI_EVT.FINISHED,state);
   state.animation = null;
 }
+function updateAnimationParam(animation){
+  var p=animation.percent,cur=animation.current={};
+  objForEach(animation._param,function(value,key){
+    cur[key]=isFunc(value)? value(p):(isNaN(value)?value:p*value);
+  })
+}
 function updateAnimationCss(animation){
-  var cssMap=animation._cssMap={},cssRule;
+  var cssMap=animation._cssMap={},cssRule,cur=animation.current;
   objForEach(animation._cssCallback,function(cbs,selector){
     cssRule=new CssContainer();
-    cbs.forEach(function(cb){resolveCss(cb,animation,cssRule)});
+    cbs.forEach(function(cb){resolveCss(cb,animation,cssRule,cur)});
     mergeRule(cssMap,selector,cssRule);
   });
   objForEach(animation._matCallback,function(cbs,selector){
-    var mat=new Mat3();
+    var mat=new Mat3(),arg=[mat,cur];
     cssRule=new CssContainer();
-    cbs.forEach(function(cb){mat=cb.apply(animation,[mat])||mat});
+    cbs.forEach(function(cb){mat=cb.apply(animation,arg)||mat});
     cssRule.withPrefix('transform',mat.toString());
     mergeRule(cssMap,selector,cssRule);
   });
 }
-function resolveCss(rule,thisObj,cssContainer){
-  var ret=cssContainer||new CssContainer();
+function resolveCss(rule,thisObj,cssContainer,e){
+  var ret=cssContainer||new CssContainer(),arg=[ret,e];
   if(isObj(rule))
     objForEach(rule,cloneFunc,ret);
   else if(isFunc(rule))
-     ret=rule.apply(thisObj,[ret])||ret;
+     ret=rule.apply(thisObj,arg)||ret;
   return ret;
 }
 function getStyleRuleStr(ruleObj,selector,separator,ignoreEmpty){
@@ -1353,80 +1423,6 @@ function mergeRule(map,selector,cssContainer){
   if(oriRule)oriRule.merge(cssContainer);
   else map[selector]=cssContainer;
 }
-function RenderTask(name) {
-  if (!(this instanceof  RenderTask))return new RenderTask(name);
-  this.name = name;
-  this.timeline = new TimeLine(this);
-  this._updateObjs = [];
-  this._finalizeObjs=[];
-  this._global = null;
-}
-Flip.RenderTask = RenderTask;
-RenderTask.EVENT_NAMES = {
-  RENDER_START: 'renderStart',
-  RENDER_END: 'renderEnd',
-  UPDATE: 'update',
-  BEFORE_CONSUME_EVENTS: 'beforeConsumeEvents',
-  AFTER_CONSUME_EVENTS: 'afterConsumeEvents'
-};
-inherit(RenderTask, Flip.util.Object, {
-  invalid: function () {
-    var g;
-    this._invalid = true;
-    if(g=this._global)
-      g.invalid();
-  },
-  toFinalize:function(obj){
-   return this._updateObjs.indexOf(obj)>-1 && arrAdd(this._finalizeObjs,obj);
-  },
-  add: function (obj, type) {
-    if (type == 'update') return arrAdd(this._updateObjs, obj);
-    if (obj instanceof Clock || obj instanceof Animation)
-      arrAdd(this._updateObjs, obj) && (obj._task = this);
-  },
-  remove: function (obj) {
-    if (obj._task == this && arrRemove(this._updateObjs, obj)){
-      obj._task = null;
-      this.invalid();
-    }
-  }
-});
-
-function filterIUpdate(item) {
-  if (!isObj(item))return false;
-  else if (isFunc(item.update))
-    item.update(this);
-  else if (isFunc(item.emit))
-    item.emit(RenderTask.EVENT_NAMES.UPDATE, this);
-  return true;
-}
-function TimeLine(task) {
-  this.last = this.now = this._stopTime = 0;
-  this._startTime = this._lastStop = Date.now();
-  this.task = task;
-  this._isStop = true;
-}
-inherit(TimeLine, Flip.util.Object, {
-  ticksPerSecond: 1000,
-  stop: function () {
-    if (!this._isStop) {
-      this._isStop = true;
-      this._lastStop = Date.now();
-    }
-  },
-  start: function () {
-    if (this._isStop) {
-      this._isStop = false;
-      this._stopTime += Date.now() - this._lastStop;
-    }
-  },
-  move: function () {
-    if (!this._isStop) {
-      this.last = this.now;
-      this.now = Date.now() - this._startTime - this._stopTime;
-    }
-  }
-});
 var nextUid=(function(map){
   return function (type){
     if(!map[type])map[type]=1;
@@ -1435,7 +1431,7 @@ var nextUid=(function(map){
 })({});
 Flip.animation({
   name: 'flip',
-  defParam: {
+  param: {
     vertical: true,
     angle: Math.PI
   },
@@ -1479,7 +1475,7 @@ Flip.animation({
         this.targets = eles.map(mapValue);
         proxy.source('duration', 1.2);
       },
-      defParam: {
+      param: {
         fracPrecision: 1
       },
       prototype: {
@@ -1495,7 +1491,7 @@ Flip.animation({
 })(Flip.animation);
 Flip.animation({
   name: 'rotate',
-  defParam: {
+  param: {
     angle: Math.PI * 2
   },
   beforeCallBase: function (proxy) {
@@ -1507,7 +1503,7 @@ Flip.animation({
 });
 Flip.animation({
   name: 'scale',
-  defParam: {
+  param: {
     sx: 0, sy: 0, dy: 1, dx: 1
   },
   beforeCallBase: function (proxy) {
@@ -1520,7 +1516,7 @@ Flip.animation({
 });
 Flip.animation({
   name: 'translate',
-  defParam: {
+  param: {
     sx: 0, dx: 100, sy: 0, dy: 0
   },
   transform:function () {

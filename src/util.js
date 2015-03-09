@@ -28,9 +28,7 @@ Flip.fallback = function (window) {
     }, Array.prototype)
   }
 };
-if (typeof module !== "undefined" && module.exports)
-  module.exports = Flip;
-else if (window) window.Flip = Flip;
+
 
 Flip.util = {Object: obj, Array: array, inherit: inherit};
 function createProxy(obj) {
@@ -101,15 +99,6 @@ function arrSort(array, func_ProName, des) {
   } : function (a, b) {
     return compare(a) > compare(b)
   });
-}
-
-function arrUnique(array, func_ProName) {
-  var compare = arrMapFun(func_ProName);
-  return array.reduce(function (r, item) {
-    var res = compare(item);
-    if (r.indexOf(res) == -1)r.push(item);
-    return r;
-  }, []);
 }
 function arrFirst(array, func_ProName) {
   for (var i = 0, item, len = array.length, compare = arrMapFun(func_ProName); i < len; i++)
@@ -278,3 +267,10 @@ function cloneFunc(value, key) {
 }
 function isFunc(value){return typeof value==="function"}
 function isObj(value){return (typeof value==="object") && value}
+
+if (typeof module !== "undefined" && module.exports)
+  module.exports = Flip;
+else if(typeof define!=="undefined")define(function(){return Flip});
+else if (window) {
+  window.Flip = Flip;
+}

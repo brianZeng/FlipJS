@@ -3,7 +3,7 @@
  */
 Flip.animation({
   name: 'rotate',
-  defParam: {
+  param: {
     angle: Math.PI * 2
   },
   beforeCallBase: function (proxy) {

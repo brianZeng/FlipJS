@@ -3,7 +3,7 @@
  */
 Flip.animation({
   name: 'scale',
-  defParam: {
+  param: {
     sx: 0, sy: 0, dy: 1, dx: 1
   },
   beforeCallBase: function (proxy) {

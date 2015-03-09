@@ -10,7 +10,7 @@ function Animation(opt) {
   this._cssMap={};
   this._matCallback={};
   this._cssCallback={};
-  //todo:param
+  this._param={};
   this.use(opt);
   this.init();
 }
@@ -70,23 +70,16 @@ inherit(Animation, Flip.util.Object, {
     if(!skipInit)
       this.init();
   },
-  use:(function(){
-    var pros=['transform','css','on','once'];
-    return function use(opt){
-      var self=this;
-      pros.forEach(function(proName){
-        setUpdateOpt(self,opt[proName],proName)
-      });
-      return this;
-    };
-    function setUpdateOpt(animation,obj,type){
-      if(isFunc(obj))
-        animation[type](obj);
-      else if(isObj(obj)){
-        hasNestedObj(obj)? objForEach(obj,function(rule,slt){animation[type](slt,rule)}):animation[type](obj);
-      }
-    }
-  })(),
+  use:function(opt){
+    return useAniOption(this,opt);
+  },
+  param:function(key,value){
+    if(arguments.length==2)
+      this._param[key]=value;
+    else if(arguments.length==1&&isObj(key))
+      objForEach(key,cloneFunc,this._param);
+    return this;
+  },
   transform:function(selector,matCallback){
     var map=this._matCallback;
     objForEach(normalizeMapArgs(arguments),function(callback,selector){
@@ -102,7 +95,6 @@ inherit(Animation, Flip.util.Object, {
     return this;
   },
   update: function (state) {
-    //todo:update param
     updateAnimation(this,state);
   },
   render: function (state) {
@@ -139,10 +131,10 @@ inherit(Animation, Flip.util.Object, {
     return this.promise.then(onFinished,onerror);
   },
   follow:function(thenables){
-    //TODO:directly past Array
-    if(arguments.length>1)thenables=Array.prototype.slice.apply(arguments);
+    throw Error('deprecated');
+    /*if(arguments.length>1)thenables=Array.prototype.slice.apply(arguments);
     else if(!(thenables instanceof Array))thenables=[thenables];
-    return this.promise.then(function(){ return Flip.Promise.all(thenables.map(Flip.Promise))});
+    return this.promise.then(function(){ return Flip.Promise.all(thenables.map(Flip.Promise))});*/
   }
 });
 var ANI_EVT=Animation.EVENT_NAMES = {
@@ -200,26 +192,23 @@ Flip.css=function(selector,rule){
 };
 Flip.animation = (function () {
   function register(definition) {
-    var beforeCallBase, defParam, name = definition.name, Constructor;
+    var beforeCallBase, name = definition.name, Constructor;
     beforeCallBase = definition.beforeCallBase || _beforeCallBase;
-    defParam = definition.defParam || {};
     Constructor = function (opt) {
       if (!(this instanceof Constructor))return new Constructor(opt);
       var proxy = createProxy(opt);
-      objForEach(defParam, function (value, key) {
-        proxy(key, value)
-      });
-      objForEach(proxy.result, cloneFunc, this);
       beforeCallBase.apply(this, [proxy, opt]);
-      Animation.call(this, proxy);
-      this.use(definition);
+      Animation.call(this,proxy);
     };
     if (name) {
       register[name] = Constructor;
       Constructor.name = name;
     }
     inherit(Constructor, Animation.prototype,{
-      type:definition.name
+      type:definition.name,
+      use:function(opt){
+        return useAniOption(this,definition,opt);
+      }
     });
     return Constructor;
   }
@@ -228,6 +217,21 @@ Flip.animation = (function () {
     return proxy;
   }
 })();
+function useAniOption(animation){
+  for(var i= 1,opt=arguments[1],optPro;opt;opt=arguments[++i])
+  {
+    useAniOption.pros.forEach(function(proName){
+      if(isFunc(optPro=opt[proName]))
+        animation[proName](optPro);
+      else if(isObj(optPro)){
+        hasNestedObj(optPro)? objForEach(optPro,function(rule,slt){animation[proName](slt,rule)})
+          :animation[proName](obj);
+      }});
+    animation.param(opt.param);
+  }
+  return animation;
+}
+useAniOption.pros=['transform','css','on','once'];
 function normalizeMapArgs(args){
   var ret={},arg;
   if(args.length==2){

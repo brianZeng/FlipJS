@@ -7,6 +7,7 @@ function updateAnimation(animation,renderState){
   renderState.animation=animation;
   if(updateClock(clock,renderState)){
     animation.invalid();
+    updateAnimationParam(animation);
     animation.emit(ANI_EVT.UPDATE, renderState);
   }
   if(clock.finished){
@@ -25,27 +26,33 @@ function renderAnimation(ani,state){
   if(ani._finished)ani.emit(ANI_EVT.FINISHED,state);
   state.animation = null;
 }
+function updateAnimationParam(animation){
+  var p=animation.percent,cur=animation.current={};
+  objForEach(animation._param,function(value,key){
+    cur[key]=isFunc(value)? value(p):(isNaN(value)?value:p*value);
+  })
+}
 function updateAnimationCss(animation){
-  var cssMap=animation._cssMap={},cssRule;
+  var cssMap=animation._cssMap={},cssRule,cur=animation.current;
   objForEach(animation._cssCallback,function(cbs,selector){
     cssRule=new CssContainer();
-    cbs.forEach(function(cb){resolveCss(cb,animation,cssRule)});
+    cbs.forEach(function(cb){resolveCss(cb,animation,cssRule,cur)});
     mergeRule(cssMap,selector,cssRule);
   });
   objForEach(animation._matCallback,function(cbs,selector){
-    var mat=new Mat3();
+    var mat=new Mat3(),arg=[mat,cur];
     cssRule=new CssContainer();
-    cbs.forEach(function(cb){mat=cb.apply(animation,[mat])||mat});
+    cbs.forEach(function(cb){mat=cb.apply(animation,arg)||mat});
     cssRule.withPrefix('transform',mat.toString());
     mergeRule(cssMap,selector,cssRule);
   });
 }
-function resolveCss(rule,thisObj,cssContainer){
-  var ret=cssContainer||new CssContainer();
+function resolveCss(rule,thisObj,cssContainer,e){
+  var ret=cssContainer||new CssContainer(),arg=[ret,e];
   if(isObj(rule))
     objForEach(rule,cloneFunc,ret);
   else if(isFunc(rule))
-     ret=rule.apply(thisObj,[ret])||ret;
+     ret=rule.apply(thisObj,arg)||ret;
   return ret;
 }
 function getStyleRuleStr(ruleObj,selector,separator,ignoreEmpty){

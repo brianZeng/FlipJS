@@ -8,18 +8,6 @@
 }
 var config = {
   concat: {
-   /* flipCore:{
-      src:['src/util.js','src/*.js'],
-      dest:'temp/flip_core.js'
-    },
-    flipBasic: {
-      src:['bin/flip_core.js','src/animations/*.js'],
-      dest:'temp/flip_basic.js'
-    },
-    flipExtra:{
-      src:['bin/flip_core.js','src/animations/*.js','src/extra/interpolation.js','src/interpolation/*.js'],
-      dest:'temp/flip_extra.js'
-    },*/
     flip:{
       files:{
         'temp/flip_core.js':['src/util.js','src/*.js'],

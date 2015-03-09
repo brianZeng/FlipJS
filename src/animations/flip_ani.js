@@ -3,7 +3,7 @@
  */
 Flip.animation({
   name: 'flip',
-  defParam: {
+  param: {
     vertical: true,
     angle: Math.PI
   },

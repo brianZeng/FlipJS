@@ -101,12 +101,6 @@ Clock.createOptProxy = function (opt, duration, ease, infinite, iteration, autoR
         this._paused = false;
       }
     },
-    toggle: function () {
-      if (this.t == 0)
-        this.start();
-      else if (this.t == 1)
-        this.reverse();
-    },
     finalize:function(){
       var task;
       if(task=this._task)
@@ -145,16 +139,12 @@ Clock.createOptProxy = function (opt, duration, ease, infinite, iteration, autoR
 });
 function updateClock(c,state) {
   if (c&&!c.finished) {
-    var timeline = state.timeline,evtName;
+    var timeline = state.timeline,evtName,controller= c.controller;
     if (c._startTime == -1) {
       c._startTime = timeline.now;
-      if(c.d){
-        evtName= Clock.EVENT_NAMES[c.i== c.iteration? 'START':'ITERATE'];
-        c.emit(evtName,state);
-        c.controller&&c.controller.emit(evtName,state);
-      }
-      else
-        c.emit(Clock.EVENT_NAMES.REVERSE, state);
+      evtName= Clock.EVENT_NAMES[c.d?(c.i== c.iteration? 'START':'ITERATE'):'REVERSE'];
+      c.emit(evtName,state);
+      controller&&controller.emit(evtName,state);
       return true;
     }
     else if (c._paused) {
