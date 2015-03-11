@@ -2,21 +2,13 @@
  * Created by 柏然 on 2014/12/13.
  */
 describe('Construct translate animation:', function () {
-  it('1. .dx .dy stands for the translation distance:', function () {
-    var ani = Flip.animation.translate({dx: 100, dy: 200});
-    expect(ani.dx).toBe(100);
-    expect(ani.dy).toBe(200);
-  });
-  it('2.create from Flip.animation:', function () {
-    var ani = Flip.animate({animationType: 'translate', dx: 20, dy: 100, iteration: 10});
-    expect(ani.dx).toBe(20);
-    expect(ani.dy).toBe(100);
+
+  it('2.create from Flip.animate:', function () {
+    var ani = Flip.animate({animationType: 'translate',param:{dx:20,dy:100,get sx(){return 40}}, iteration: 10});
+    expect(ani._param.dx).toBe(20);
+    expect(ani._param.dy).toBe(100);
     expect(ani.clock.iteration).toBe(10);
   });
-  xit('work will',function(){
-    var ani = Flip.animate('translate',{dx: 100, dy: 200,selector:'div',duration:2});
-    ani.start();
-  })
 });
 /**
  * Created by 柏然 on 2014/12/13.
@@ -124,7 +116,48 @@ describe('Construct Animation:', function () {
         done();
       })
     })
-  })
+  });
+  describe('4.restart animation',function(){
+    it('add to last task if not specify',function(done){
+      var ani= Flip.animate({
+        duration:.2
+      }),spy=jasmine.createSpy('onrestart'),t=Date.now();
+      ani.start();
+      ani.then(function(){
+        ani.restart();
+        ani.once('start',function(){
+          expect(task._updateObjs).toContain(ani);
+          spy();
+        });
+        return ani;
+      }).then(function(last){
+        expect(last).toBe(ani);
+        expect(Date.now()-t).toBeGreaterThan(400);
+        debugger;
+        done();
+      });
+    });
+    it('add to specify task',function(done){
+      var ani= Flip.animate({
+        duration:.1
+      }),t2=global.getTask('t2',true);
+      ani.start();
+      ani.once('start',function(){
+        expect(ani._task).toBe(task);
+
+      }).then(function(){
+        expect(ani._ltName).toBe(task.name);
+        return ani.restart({task:t2}).once(function(){
+          expect(ani._task).toBe(t2);
+          expect(task._updateObjs).not.toContain(ani);
+        })
+      }).then(function(){
+        expect(ani._ltName).toBe(t2.name);
+        done();
+      })
+    })
+  });
+
 });
 describe('css function',function(){
   it('Flip.css setImmediate css style',function(){
@@ -421,9 +454,9 @@ describe('animation promise',function(){
       });
     ani.start();
   });
-  it('2animation follow many animations',function(done){
+  it('2 animation::then accept array of animations',function(done){
     var ani=Flip.animate({selector:'div',duration:1}),now=Date.now();
-    ani.follow({selector:'div',duration:0.2,animationType:'flip'},{selector:'div',duration:0.5}).
+    ani.then([{selector:'div',duration:0.2,animationType:'flip'},{selector:'div',duration:0.5}]).
       then(function(ans){
         expect(ans.length).toBe(2);
         expect(ans.every(function(ani){return ani.finished})).toBe(true);

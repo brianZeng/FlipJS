@@ -63,6 +63,9 @@ Clock.createOptProxy = function (opt, duration, ease, infinite, iteration, autoR
       return this.start();
     },
     reset: function (finished, keepIteration,delayed, atEnd, reverseDir, pause) {
+      if(arguments.length==0)
+      //reset to a new clock
+        return this.reset(0,0,0,0);
       this._startTime = -1;
       if (!keepIteration)
         this.i = this.iteration||1;

@@ -10,7 +10,7 @@ var config = {
   concat: {
     flip:{
       files:{
-        'temp/flip_core.js':['src/util.js','src/*.js'],
+        'temp/flip_core.js':['src/flip.js','src/util.js','src/*.js'],
         'temp/flip_basic.js':['temp/flip_core.js','src/animations/*.js'],
         'temp/flip_extra.js':['temp/flip_core.js','src/animations/*.js','src/extra/*.js','src/interpolation/*.js'],
         'bin/flip.js':'temp/flip_basic.js',

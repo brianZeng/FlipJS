@@ -23,7 +23,7 @@ function renderGlobal(global,state){
   if(global._invalid||state.forceRender){
     objForEach(global._tasks,function(task){renderTask(task,state);});
     global._styleElement.innerHTML=state.styleStack.join('\n');
-    global._invalid=false;
+    FlipScope.forceRender=global._invalid=false;
   }
   objForEach(global._tasks,function(task){finalizeTask(task,state)});
 }
@@ -51,8 +51,7 @@ function finalizeTask(task,state){
   }
 }
 function finalizeAnimation(animation){
-  var task;
-  if(!animation.persistAfterFinished&&(task=animation._task)){
-    task.toFinalize(animation);
+  if(!animation.persistAfterFinished){
+    animation.finalize();
   }
 }

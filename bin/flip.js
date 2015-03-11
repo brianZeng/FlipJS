@@ -26,7 +26,6 @@ Flip.fallback = function (window) {
   }
 };
 
-
 Flip.util = {Object: obj, Array: array, inherit: inherit};
 function createProxy(obj) {
   var from, result = {}, func, objType = typeof obj;
@@ -368,6 +367,16 @@ function getPromiseByAni(ani){
     function go(){resolve(ani);}
   });
 }
+function cloneWithPro(from,to){
+  var pro,getter;
+  to=to||{};
+  objForEach(from,function(value,key){
+    if((pro=Object.getOwnPropertyDescriptor(from,key))&&(typeof (getter=pro.get)=="function"))
+      Object.defineProperty(to,key,{get:getter});
+    else to[key]=value
+  });
+  return to;
+}
 inherit(Animation, Flip.util.Object, {
   get percent(){
     return this.clock.value;
@@ -420,8 +429,8 @@ inherit(Animation, Flip.util.Object, {
   param:function(key,value){
     if(arguments.length==2)
       this._param[key]=value;
-    else if(arguments.length==1&&isObj(key))
-      objForEach(key,cloneFunc,this._param);
+    else if(arguments.length==1)
+      cloneWithPro(key,this._param);
     return this;
   },
   transform:function(selector,matCallback){
@@ -450,7 +459,10 @@ inherit(Animation, Flip.util.Object, {
   finalize:function(){
     var task;
     if(task=this._task)
-     task.toFinalize(this);
+    {
+      this._ltName=task.name;
+      task.toFinalize(this);
+    }
     else {
       this.reset(1);
       this.emit(ANI_EVT.FINALIZED);
@@ -471,14 +483,19 @@ inherit(Animation, Flip.util.Object, {
     if(clock)clock.stop();
     return this;
   },
+  restart:function(opt){
+    var t,global;
+    if(!this._task){
+      opt=opt||{};
+      t=opt.task||(global=opt.global||FlipScope.global).getTask(opt.taskName||this._ltName)||global.defaultTask;
+      if(t instanceof RenderTask) t.add(this);
+      else throw Error('please specify the render task for animation to restart');
+    }
+    this.clock.reset(); this.init();
+    return this.start();
+  },
   then:function(onFinished,onerror){
     return this.promise.then(onFinished,onerror);
-  },
-  follow:function(thenables){
-    throw Error('deprecated');
-    /*if(arguments.length>1)thenables=Array.prototype.slice.apply(arguments);
-    else if(!(thenables instanceof Array))thenables=[thenables];
-    return this.promise.then(function(){ return Flip.Promise.all(thenables.map(Flip.Promise))});*/
   }
 });
 var ANI_EVT=Animation.EVENT_NAMES = {
@@ -542,7 +559,7 @@ Flip.animation = (function () {
       if (!(this instanceof Constructor))return new Constructor(opt);
       var proxy = createProxy(opt);
       beforeCallBase.apply(this, [proxy, opt]);
-      Animation.call(this,proxy);
+      Animation.call(this,opt);
     };
     if (name) {
       register[name] = Constructor;
@@ -661,6 +678,9 @@ Clock.createOptProxy = function (opt, duration, ease, infinite, iteration, autoR
       return this.start();
     },
     reset: function (finished, keepIteration,delayed, atEnd, reverseDir, pause) {
+      if(arguments.length==0)
+      //reset to a new clock
+        return this.reset(0,0,0,0);
       this._startTime = -1;
       if (!keepIteration)
         this.i = this.iteration||1;
@@ -1003,14 +1023,18 @@ inherit(RenderGlobal, Flip.util.Object, {
     this._persistStyle=false;
     return cancel;
   },
+  refresh:function(){
+    this._foreceRender=true;
+  },
   init: function () {
     if(typeof window==="object"){
-      var head=document.head;
+      var head=document.head,self=this;
       if(!this._styleElement.parentNode){
         head.appendChild(this._styleElement);
         head.appendChild(this._persistElement);
       }
       Flip.fallback(window);
+      window.addEventListener('resize',function(){self.refresh()});
       this.loop();
     }
     this.init = function () {
@@ -1033,7 +1057,7 @@ inherit(RenderGlobal, Flip.util.Object, {
     }
   },
   createRenderState: function () {
-    return {global: this, task:null,styleStack:[],forceRender:0}
+    return {global: this, task:null,styleStack:[],forceRender:this._foreceRender}
   }
 });
 FlipScope.global = new RenderGlobal();
@@ -1319,7 +1343,7 @@ function renderGlobal(global,state){
   if(global._invalid||state.forceRender){
     objForEach(global._tasks,function(task){renderTask(task,state);});
     global._styleElement.innerHTML=state.styleStack.join('\n');
-    global._invalid=false;
+    FlipScope.forceRender=global._invalid=false;
   }
   objForEach(global._tasks,function(task){finalizeTask(task,state)});
 }
@@ -1347,9 +1371,8 @@ function finalizeTask(task,state){
   }
 }
 function finalizeAnimation(animation){
-  var task;
-  if(!animation.persistAfterFinished&&(task=animation._task)){
-    task.toFinalize(animation);
+  if(!animation.persistAfterFinished){
+    animation.finalize();
   }
 }
 

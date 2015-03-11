@@ -62,14 +62,18 @@ inherit(RenderGlobal, Flip.util.Object, {
     this._persistStyle=false;
     return cancel;
   },
+  refresh:function(){
+    this._foreceRender=true;
+  },
   init: function () {
     if(typeof window==="object"){
-      var head=document.head;
+      var head=document.head,self=this;
       if(!this._styleElement.parentNode){
         head.appendChild(this._styleElement);
         head.appendChild(this._persistElement);
       }
       Flip.fallback(window);
+      window.addEventListener('resize',function(){self.refresh()});
       this.loop();
     }
     this.init = function () {
@@ -92,7 +96,7 @@ inherit(RenderGlobal, Flip.util.Object, {
     }
   },
   createRenderState: function () {
-    return {global: this, task:null,styleStack:[],forceRender:0}
+    return {global: this, task:null,styleStack:[],forceRender:this._foreceRender}
   }
 });
 FlipScope.global = new RenderGlobal();

@@ -121,9 +121,9 @@ describe('animation promise',function(){
       });
     ani.start();
   });
-  it('2animation follow many animations',function(done){
+  it('2 animation::then accept array of animations',function(done){
     var ani=Flip.animate({selector:'div',duration:1}),now=Date.now();
-    ani.follow({selector:'div',duration:0.2,animationType:'flip'},{selector:'div',duration:0.5}).
+    ani.then([{selector:'div',duration:0.2,animationType:'flip'},{selector:'div',duration:0.5}]).
       then(function(ans){
         expect(ans.length).toBe(2);
         expect(ans.every(function(ani){return ani.finished})).toBe(true);

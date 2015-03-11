@@ -104,7 +104,48 @@ describe('Construct Animation:', function () {
         done();
       })
     })
-  })
+  });
+  describe('4.restart animation',function(){
+    it('add to last task if not specify',function(done){
+      var ani= Flip.animate({
+        duration:.2
+      }),spy=jasmine.createSpy('onrestart'),t=Date.now();
+      ani.start();
+      ani.then(function(){
+        ani.restart();
+        ani.once('start',function(){
+          expect(task._updateObjs).toContain(ani);
+          spy();
+        });
+        return ani;
+      }).then(function(last){
+        expect(last).toBe(ani);
+        expect(Date.now()-t).toBeGreaterThan(400);
+        debugger;
+        done();
+      });
+    });
+    it('add to specify task',function(done){
+      var ani= Flip.animate({
+        duration:.1
+      }),t2=global.getTask('t2',true);
+      ani.start();
+      ani.once('start',function(){
+        expect(ani._task).toBe(task);
+
+      }).then(function(){
+        expect(ani._ltName).toBe(task.name);
+        return ani.restart({task:t2}).once(function(){
+          expect(ani._task).toBe(t2);
+          expect(task._updateObjs).not.toContain(ani);
+        })
+      }).then(function(){
+        expect(ani._ltName).toBe(t2.name);
+        done();
+      })
+    })
+  });
+
 });
 describe('css function',function(){
   it('Flip.css setImmediate css style',function(){
