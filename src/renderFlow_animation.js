@@ -55,10 +55,16 @@ function resolveCss(rule,thisObj,cssContainer,e){
      ret=rule.apply(thisObj,arg)||ret;
   return ret;
 }
+function formatValue(value){
+  return isNaN(value)? value:Number(value).toFixed(5).replace(/\.0+$/,'')
+}
+function formatKey(key){
+  return key.replace(/[A-Z]/g,function(c){return '-'+ c.toLowerCase()})
+}
 function getStyleRuleStr(ruleObj,selector,separator,ignoreEmpty){
   var rules=[];
   objForEach(ruleObj,function(value,key){
-    rules.push(key.replace(/[A-Z]/g,function(c){return '-'+ c.toLowerCase()})+':'+value+';');
+    rules.push(formatKey(key)+':'+formatValue(value)+';');
   });
   if(!rules.length&&ignoreEmpty)return '';
   separator=separator||'\n';
