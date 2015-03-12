@@ -111,7 +111,7 @@
   function acceptAnimation(obj){
     var t,ani;
     if(strictRet){
-      if(obj instanceof Animation)return obj;
+      if(obj instanceof Animation)return obj._finished? obj:obj.promise;
       if((t=typeof obj)=="object"){
         if(likePromise(obj))return obj;
         else if(obj instanceof Array)

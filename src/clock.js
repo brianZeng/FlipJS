@@ -8,15 +8,18 @@ function Clock(opt) {
   this.reset(1,0,0,0);
 }
 Flip.Clock = Clock;
-Clock.createOptProxy = function (opt, duration, ease, infinite, iteration, autoReverse,delay) {
-  var setter = createProxy(opt);
-  setter('duration', duration, 'ease', ease, 'infinite', infinite, 'iteration', iteration, 'autoReverse', autoReverse,'delay',delay);
-  return setter;
-};
 
-(function (EVTS) {
-  Object.seal(EVTS);
-  inherit(Clock, obj, {
+var CLOCK_EVT=Clock.EVENT_NAMES =Object.seal({
+  UPDATE: 'update',
+  ITERATE: 'iterate',
+  START: 'start',
+  REVERSE: 'reverse',
+  TICK: 'tick',
+  FINISH: 'finish',
+  FINALIZE: 'finalize',
+  CONTROLLER_CHANGE: 'controllerChange'
+});
+inherit(Clock, obj, {
     get controller() {
       return this._controller || null;
     },
@@ -25,7 +28,7 @@ Clock.createOptProxy = function (opt, duration, ease, infinite, iteration, autoR
       c = c || null;
       if (oc === c)return;
       this._controller = c;
-      this.emit(EVTS.CONTROLLER_CHANGED, {before: oc, after: c, clock: this});
+      this.emit(CLOCK_EVT.CONTROLLER_CHANGE, {before: oc, after: c, clock: this});
     },
     get started(){
       return this._startTime!==-1;
@@ -46,7 +49,7 @@ Clock.createOptProxy = function (opt, duration, ease, infinite, iteration, autoR
     },
     start: function () {
       if (this.t == 0) {
-        this.reset(0, 1).emit(EVTS.START, this);
+        this.reset(0, 1).emit(CLOCK_EVT.START, this);
         return !(this._finished=false);
       }
       return false;
@@ -78,7 +81,7 @@ Clock.createOptProxy = function (opt, duration, ease, infinite, iteration, autoR
       return this;
     },
     finish: function (evtArg) {
-      this.emit(EVTS.FINISHED, evtArg);
+      this.emit(CLOCK_EVT.FINISH, evtArg);
       this.reset(1,1,1);
       this._finished=true;
     },
@@ -98,7 +101,7 @@ Clock.createOptProxy = function (opt, duration, ease, infinite, iteration, autoR
         this._paused = true;
       }
     },
-    restore: function () {
+    resume: function () {
       if (this._paused && this._startTime > 0) {
         this._startTime += this._pausedDur;
         this._paused = false;
@@ -110,7 +113,7 @@ Clock.createOptProxy = function (opt, duration, ease, infinite, iteration, autoR
         task.toFinalize(this);
       else{
         this.reset(1);
-        this.emit(EVTS.FINALIZED);
+        this.emit(CLOCK_EVT.FINALIZE);
       }
     },
     update:function(state){
@@ -123,23 +126,13 @@ Clock.createOptProxy = function (opt, duration, ease, infinite, iteration, autoR
       }
     }
   });
-  objForEach(EVTS, function (evtName, key) {
+objForEach(CLOCK_EVT, function (evtName, key) {
     Object.defineProperty(this, 'on' + evtName, {
       set: function (func) {
-        this.on(EVTS[key], func);
+        this.on(CLOCK_EVT[key], func);
       }
     })
   }, Clock.prototype);
-})(Clock.EVENT_NAMES = {
-  UPDATE: 'update',
-  ITERATE: 'iterate',
-  START: 'start',
-  REVERSE: 'reverse',
-  TICK: 'tick',
-  FINISHED: 'finished',
-  FINALIZED:'finalized',
-  CONTROLLER_CHANGED: 'controllerChanged'
-});
 function updateClock(c,state) {
   if (c&&!c.finished) {
     var timeline = state.timeline,evtName,controller= c.controller;
@@ -180,7 +173,11 @@ function updateClock(c,state) {
     }
   }
 }
-
+Clock.createOptProxy = function (opt, duration, ease, infinite, iteration, autoReverse,delay) {
+  var setter = createProxy(opt);
+  setter('duration', duration, 'ease', ease, 'infinite', infinite, 'iteration', iteration, 'autoReverse', autoReverse,'delay',delay);
+  return setter;
+};
 Flip.EASE = Clock.EASE = (function () {
   /**
    * from jQuery.easing

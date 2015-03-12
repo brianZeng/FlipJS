@@ -31,7 +31,7 @@ describe('Construct Animation:', function () {
         tickSpy();
         console.log(arguments);
       });
-      ani.clock.once(Flip.Clock.EVENT_NAMES.FINISHED, function () {
+      ani.clock.once(Flip.Clock.EVENT_NAMES.FINISH, function () {
         finishSpy(this.value);
         expect(tickSpy).toHaveBeenCalled();
         expect(finishSpy).toHaveBeenCalledWith(1);
@@ -82,13 +82,13 @@ describe('Construct Animation:', function () {
       ani.once('render',function(){
         expect(ani.percent).toBe(0);
       });
-      ani.once('finished',function(){
+      ani.once('finish',function(){
         expect(ani.percent).toBe(1);
         expect(ani.lastStyleRule.indexOf('width:100')).toBeGreaterThan(-1);
         notCall=jasmine.createSpy();
-        ani.once('finished',notCall);
+        ani.once('finish',notCall);
       });
-      ani.once('finalized',function(){
+      ani.once('finalize',function(){
         expect(notCall).not.toHaveBeenCalled();
         expect(ani.finished).toBe(true);
         ani=null;
@@ -99,7 +99,7 @@ describe('Construct Animation:', function () {
       isNewAnimation(ani);
       ani.clock.autoReverse=true;
       ani.start();
-      ani.on('finalized',function(){
+      ani.on('finalize',function(){
         expect(this.percent).toBe(0);
         done();
       })

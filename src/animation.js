@@ -14,26 +14,6 @@ function Animation(opt) {
   this.use(opt);
   this.init();
 }
-function getPromiseByAni(ani){
-  return FlipScope.Promise(function(resolve){
-    ani.once('finished',function(state){
-      if(state&&state.global)
-        state.global.once('frameEnd',go);
-      else go();
-    });
-    function go(){resolve(ani);}
-  });
-}
-function cloneWithPro(from,to){
-  var pro,getter;
-  to=to||{};
-  objForEach(from,function(value,key){
-    if((pro=Object.getOwnPropertyDescriptor(from,key))&&(typeof (getter=pro.get)=="function"))
-      Object.defineProperty(to,key,{get:getter});
-    else to[key]=value
-  });
-  return to;
-}
 inherit(Animation, Flip.util.Object, {
   get percent(){
     return this.clock.value;
@@ -70,7 +50,7 @@ inherit(Animation, Flip.util.Object, {
   },
   init:function(){
     this._promise=null;
-    this._finished=false;
+    this._canceled=this._finished=false;
     this.invalid();
   },
   reset:function(skipInit){
@@ -79,6 +59,7 @@ inherit(Animation, Flip.util.Object, {
       clock.reset(1);
     if(!skipInit)
       this.init();
+    return this;
   },
   use:function(opt){
     return useAniOption(this,opt);
@@ -120,47 +101,93 @@ inherit(Animation, Flip.util.Object, {
       this._ltName=task.name;
       task.toFinalize(this);
     }
-    else {
+    else if(!this._canceled) {
       this.reset(1);
-      this.emit(ANI_EVT.FINALIZED);
+      this.emit(ANI_EVT.FINALIZE);
     }
+    return this;
   },
   getStyleRule:function(){
     return getAnimationStyle(this);
   },
   start:function(){
-    var clock=this.clock;
-    if(clock){
-      clock.start();
-    }
-    return this;
+    findTaskToAddOrThrow(this);
+    return this._canceled? this.restart():invokeClock(this,'start');
   },
-  stop:function(){
-    var clock=this.clock;
-    if(clock)clock.stop();
+  resume:function(evt){
+    return invokeClock(this,'resume',ANI_EVT.RESUME,evt);
+  },
+  pause:function(evt){
+    return invokeClock(this,'pause',ANI_EVT.PAUSE,evt);
+  },
+  cancel:function(evt){
+    var t;
+    if(!this._canceled &&!this._finished){
+      if(t=this._task)this._ltName=t.name;
+      this._canceled=true;
+      this.emit(ANI_EVT.CANCEL,evt);
+      this.finalize();
+    }
     return this;
   },
   restart:function(opt){
-    var t,global;
-    if(!this._task){
-      opt=opt||{};
-      t=opt.task||(global=opt.global||FlipScope.global).getTask(opt.taskName||this._ltName)||global.defaultTask;
-      if(t instanceof RenderTask) t.add(this);
-      else throw Error('please specify the render task for animation to restart');
-    }
-    this.clock.reset(); this.init();
+    findTaskToAddOrThrow(this,opt);
+    this.clock.reset();
+    this.init();
     return this.start();
   },
   then:function(onFinished,onerror){
     return this.promise.then(onFinished,onerror);
   }
 });
-var ANI_EVT=Animation.EVENT_NAMES = {
+var ANI_EVT=Animation.EVENT_NAMES =Object.seal({
   UPDATE: 'update',
-  FINALIZED: 'finalized',
+  FINALIZE: 'finalize',
   RENDER: 'render',
-  FINISHED: 'finished'
-};
+  FINISH: 'finish',
+  CANCEL:'cancel',
+  PAUSE:'pause',
+  RESUME:'resume'
+});
+function findTaskToAddOrThrow(ani,opt){
+  var t,global;
+  if(!(t=ani._task)){
+    opt=opt||{};
+    t=opt.task||(global=opt.global||FlipScope.global).getTask(opt.taskName||ani._ltName)||global.defaultTask;
+    if(t instanceof RenderTask)
+      t.add(ani);
+    else
+      throw Error('please specify the render task for animation to restart');
+  }return t;
+}
+function invokeClock(animation,method,evtName,evtArg){
+  var clock=animation.clock;
+  if(clock){
+    clock[method]();
+    if(evtName) animation.emit(evtName,evtArg);
+  }
+  return animation;
+}
+function getPromiseByAni(ani){
+  return FlipScope.Promise(function(resolve,reject){
+    ani.once(ANI_EVT.FINISH,function(state){
+      if(state&&state.global)
+        state.global.once('frameEnd',go);
+      else go();
+    }).once(ANI_EVT.CANCEL,function(){reject(ani)});
+    function go(){resolve(ani);}
+  });
+}
+function cloneWithPro(from,to){
+  var pro,getter;
+  to=to||{};
+  objForEach(from,function(value,key){
+    if((pro=Object.getOwnPropertyDescriptor(from,key))&&(typeof (getter=pro.get)=="function"))
+      Object.defineProperty(to,key,{get:getter});
+    else to[key]=value
+  });
+  return to;
+}
 Animation.createOptProxy = function (setter,selector,persist) {
   setter = createProxy(setter);
   if (!setter.proxy.clock)

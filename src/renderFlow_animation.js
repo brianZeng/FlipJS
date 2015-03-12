@@ -18,12 +18,13 @@ function updateAnimation(animation,renderState){
   renderState.animatetion=null;
   return true;
 }
+
 function renderAnimation(ani,state){
   state.animation = ani;
   updateAnimationCss(ani);
   state.styleStack.push(getAnimationStyle(ani));
   ani.emit(ANI_EVT.RENDER, state);
-  if(ani._finished)ani.emit(ANI_EVT.FINISHED,state);
+  if(ani._finished)ani.emit(ANI_EVT.FINISH,state);
   state.animation = null;
 }
 function updateAnimationParam(animation){

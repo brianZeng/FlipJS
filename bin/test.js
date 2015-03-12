@@ -2,11 +2,12 @@
  * Created by 柏然 on 2014/12/13.
  */
 describe('Construct translate animation:', function () {
-
-  it('2.create from Flip.animate:', function () {
-    var ani = Flip.animate({animationType: 'translate',param:{dx:20,dy:100,get sx(){return 40}}, iteration: 10});
+  it('1.create from Flip.animate:', function () {
+    var ani = Flip.animate({animationType: 'translate',param:{dx:20,dy:100,get sx(){return i++}}, iteration: 10}),i=0;
     expect(ani._param.dx).toBe(20);
     expect(ani._param.dy).toBe(100);
+    expect(ani._param.sx).toBe(0);
+    expect(ani._param.sx).toBe(1);
     expect(ani.clock.iteration).toBe(10);
   });
 });
@@ -43,7 +44,7 @@ describe('Construct Animation:', function () {
         tickSpy();
         console.log(arguments);
       });
-      ani.clock.once(Flip.Clock.EVENT_NAMES.FINISHED, function () {
+      ani.clock.once(Flip.Clock.EVENT_NAMES.FINISH, function () {
         finishSpy(this.value);
         expect(tickSpy).toHaveBeenCalled();
         expect(finishSpy).toHaveBeenCalledWith(1);
@@ -94,13 +95,13 @@ describe('Construct Animation:', function () {
       ani.once('render',function(){
         expect(ani.percent).toBe(0);
       });
-      ani.once('finished',function(){
+      ani.once('finish',function(){
         expect(ani.percent).toBe(1);
         expect(ani.lastStyleRule.indexOf('width:100')).toBeGreaterThan(-1);
         notCall=jasmine.createSpy();
-        ani.once('finished',notCall);
+        ani.once('finish',notCall);
       });
-      ani.once('finalized',function(){
+      ani.once('finalize',function(){
         expect(notCall).not.toHaveBeenCalled();
         expect(ani.finished).toBe(true);
         ani=null;
@@ -111,7 +112,7 @@ describe('Construct Animation:', function () {
       isNewAnimation(ani);
       ani.clock.autoReverse=true;
       ani.start();
-      ani.on('finalized',function(){
+      ani.on('finalize',function(){
         expect(this.percent).toBe(0);
         done();
       })
@@ -229,7 +230,7 @@ describe('clock test',function(){
     clock.on('reverse',function(){
       clamp((t2=now())-t1,dur*1190,dur*1000);
     });
-    clock.on('finished',function(){
+    clock.on('finish',function(){
       clamp(now()-t1,dur*2*1100,dur*2*1000);
       done();
     });
@@ -239,7 +240,7 @@ describe('clock test',function(){
       t1=now();
     }).once('tick',function(){
       clampTime(now()-t1,.3);
-    }).on('finished',function(){
+    }).on('finish',function(){
       clampTime(now()-t1,.4999);
       done();
     });
@@ -248,7 +249,7 @@ describe('clock test',function(){
     setClock({duration:.2,iteration:2}).on('start',function(){
       t1=now();
     }).on('iterate',function(){clampTime(now()-t1,.2)})
-      .on('finished',function(){ clampTime(now()-t1,.4);done()})
+      .on('finish',function(){ clampTime(now()-t1,.4);done()})
   });
   it('4.when infinite,emits iterate event',function(done){
     var i=5;
@@ -258,9 +259,8 @@ describe('clock test',function(){
       clampTime(now()-t1,.2*(6-i));
       if(--i==0){
         clock.finalize();
-        done();
       }
-    });
+    }).on('finalize',done);
   });
   it('5.when infinite and autoReverse,emits reverse and reverse events',function(done){
     var i=2;
@@ -295,6 +295,73 @@ xdescribe('interpolation basic test',function(){
     expect(itpl.deriveWhen(0)).toBe(1);
     expect(itpl.deriveWhen(0.5)).toBe(1);
     expect(itpl.deriveWhen(1)).toBe(1);
+  })
+});
+/**
+ * Created by Administrator on 2015/3/12.
+ */
+describe('interrupt animation',function(){
+  var ani,opt;
+  function setAni(option){
+    ani=Flip.animate(opt=(option||{duration:0.1}));
+    ani.start();
+    return ani;
+  }
+  function clamp(v,min,max){
+    expect(v).toBeGreaterThan(min);
+    expect(v).toBeLessThan(max);
+  }
+   it('pause and resume',function(done){
+     var pauseSpy=jasmine.createSpy('paused'),onresume=jasmine.createSpy('resumed'),t1=Date.now();
+     setAni({duration:0.1,once:{
+       pause:pauseSpy,
+       resume:onresume,
+       start:function(){
+         ani.pause();
+         t1=Date.now();
+         setTimeout(function(){ani.resume()},300);
+       }
+     }}).then(function(ani){
+       clamp(Date.now()-t1,300,630);
+       expect(pauseSpy).toHaveBeenCalled();
+       expect(onresume).toHaveBeenCalled();
+       done();
+     });
+   });
+  it('cancel -> reset -> start',function(done){
+      var oncancel=jasmine.createSpy('canceled'),t1;
+      setAni({
+        duration:.1,once:{cancel:oncancel,update:function(){
+          ani.cancel();
+        }}
+      }).then(function(){
+        expect(true).toBe(false);
+      },function(){
+        setTimeout(function(){ani.start()},300);
+        t1=Date.now();
+        return ani.reset();
+      }).then(function(){
+        clamp(Date.now()-t1,400,430);
+        expect(oncancel).toHaveBeenCalled();
+        done();
+      })
+  });
+  it('cancel -> restart',function(done){
+    var oncancel=jasmine.createSpy('canceled'),t1;
+    setAni({
+      duration:.1,once:{cancel:oncancel,update:function(){
+        ani.cancel();
+      }}
+    }).then(function(){
+      expect(true).toBe(false);
+    },function(){
+      t1=Date.now();
+      return ani.restart();
+    }).then(function(){
+      clamp(Date.now()-t1,100,130);
+      expect(oncancel).toHaveBeenCalled();
+      done();
+    })
   })
 });
 /**
