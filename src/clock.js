@@ -247,7 +247,7 @@ Flip.EASE = Clock.EASE = (function () {
       var easeIn = func;
       F[name + 'In'] = easeIn;
       F[name + 'Out'] = function (t) {
-        return 1 - easeIn(t);
+        return 1-easeIn(1-t);
       };
       F[name + 'InOut'] = function (t) {
         return t < 0.5 ? easeIn(t * 2) / 2 : 1 - easeIn(t * -2 + 2) / 2;

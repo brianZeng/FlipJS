@@ -216,7 +216,6 @@ function objForEach(object, callback, thisObj, arg) {
         callback.apply(thisObj, [object[name], name, arg]);
   }
   return object;
-
 }
 obj.forEach = objForEach;
 inherit(obj, null, {
