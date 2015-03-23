@@ -28,9 +28,9 @@ function renderAnimation(ani,state){
   state.animation = null;
 }
 function updateAnimationParam(animation){
-  var p=animation.percent,cur=animation.current={};
-  objForEach(animation._param,function(value,key){
-    cur[key]=isFunc(value)? value(p):(isNaN(value)?value:p*value);
+  var p=animation.percent,cur=animation.current=Object.create(animation._immutable);
+  objForEach(animation._variable,function(value,key){
+    cur[key]=isFunc(value)? value(p,cur):(isNaN(value)?value:p*value);
   })
 }
 function updateAnimationCss(animation){

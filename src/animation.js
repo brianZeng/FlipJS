@@ -10,6 +10,8 @@ function Animation(opt) {
   this._cssMap={};
   this._matCallback={};
   this._cssCallback={};
+  this._immutable={};
+  this._variable={};
   this._param={};
   this.use(opt);
   this.init();
@@ -64,11 +66,11 @@ inherit(Animation, Flip.util.Object, {
   use:function(opt){
     return useAniOption(this,opt);
   },
-  param:function(key,value){
-    if(arguments.length==2)
-      this._param[key]=value;
-    else if(arguments.length==1)
-      cloneWithPro(key,this._param);
+  param:function(key,value,immutable){
+    if(isObj(key))
+      cloneWithPro(key,this[value?'_immutable':'_variable']);
+    else if(typeof key==="string")
+      this[immutable?'_immutable':'_variable'][key]=value;
     return this;
   },
   transform:function(selector,matCallback){
@@ -272,7 +274,7 @@ function useAniOption(animation){
         hasNestedObj(optPro)? objForEach(optPro,function(rule,slt){animation[proName](slt,rule)})
           :animation[proName](obj);
       }});
-    animation.param(opt.param);
+    animation.param(opt.param).param(opt.variable).param(opt.immutable,true);
   }
   return animation;
 }

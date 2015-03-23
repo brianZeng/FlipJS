@@ -269,6 +269,17 @@ else if(typeof define!=="undefined")define(function(){return Flip});
 else if (window) {
   window.Flip = Flip;
 }
+function Render(){
+
+}
+inherit(Render,Flip.util.Object,{
+  update:function(){},render:function(){},invalid:function(){
+    var t,p;
+    if(t=this._task) t.invalid();
+    else if(p=this.parent) p.invalid();
+    this._invalid=true;
+  }
+});
 function RenderTask(name) {
   if (!(this instanceof  RenderTask))return new RenderTask(name);
   this.name = name;
@@ -351,6 +362,8 @@ function Animation(opt) {
   this._cssMap={};
   this._matCallback={};
   this._cssCallback={};
+  this._immutable={};
+  this._variable={};
   this._param={};
   this.use(opt);
   this.init();
@@ -405,11 +418,11 @@ inherit(Animation, Flip.util.Object, {
   use:function(opt){
     return useAniOption(this,opt);
   },
-  param:function(key,value){
-    if(arguments.length==2)
-      this._param[key]=value;
-    else if(arguments.length==1)
-      cloneWithPro(key,this._param);
+  param:function(key,value,immutable){
+    if(isObj(key))
+      cloneWithPro(key,this[value?'_immutable':'_variable']);
+    else if(typeof key==="string")
+      this[immutable?'_immutable':'_variable'][key]=value;
     return this;
   },
   transform:function(selector,matCallback){
@@ -613,7 +626,7 @@ function useAniOption(animation){
         hasNestedObj(optPro)? objForEach(optPro,function(rule,slt){animation[proName](slt,rule)})
           :animation[proName](obj);
       }});
-    animation.param(opt.param);
+    animation.param(opt.param).param(opt.variable).param(opt.immutable,true);
   }
   return animation;
 }
@@ -1175,7 +1188,7 @@ Mat3.prototype = {
   }
 };
 (function(Flip){
-  var strictRet=true,syncEnqueue;
+  var strictRet=true,syncEnqueue=1;
   function enqueue(callback){
    syncEnqueue? callback():setTimeout(callback,0);
   }
@@ -1427,9 +1440,9 @@ function renderAnimation(ani,state){
   state.animation = null;
 }
 function updateAnimationParam(animation){
-  var p=animation.percent,cur=animation.current={};
-  objForEach(animation._param,function(value,key){
-    cur[key]=isFunc(value)? value(p):(isNaN(value)?value:p*value);
+  var p=animation.percent,cur=animation.current=Object.create(animation._immutable);
+  objForEach(animation._variable,function(value,key){
+    cur[key]=isFunc(value)? value(p,cur):(isNaN(value)?value:p*value);
   })
 }
 function updateAnimationCss(animation){
@@ -1495,17 +1508,17 @@ var nextUid=(function(map){
 })({});
 Flip.animation({
   name: 'flip',
-  param: {
-    vertical: true,
+  immutable:{
+    vertical:true
+  },
+  variable: {
     angle: Math.PI
   },
   beforeCallBase: function (proxy) {
     proxy.source('ease', Clock.EASE.sineInOut);
   },
-  transform:function(){
-    return Mat3.setFlip(this.angle*this.clock.value,this.vertical);
-      /*var angle = this.angle * this.clock.value, sin = Math.sin(angle), cos = Math.cos(angle);
-      return new Mat3(this.vertical ? [cos, 0, 0, sin, 1, 0] : [1, -sin, 0, 0, cos, 0])*/
+  transform:function(mat,param){
+    mat.flip(param.angle,param.vertical);
   },
   css:{
     '&':{'transform-origin':'center'}
@@ -1555,36 +1568,38 @@ Flip.animation({
 })(Flip.animation);
 Flip.animation({
   name: 'rotate',
-  param: {
+  variable: {
     angle: Math.PI * 2
   },
   beforeCallBase: function (proxy) {
     proxy.source('ease', Flip.EASE.circInOut);
   },
-  transform: function () {
-    return Flip.Mat3.setRotate(this.angle * this.clock.value);
+  transform: function (mat,param) {
+    mat.rotate(param.angle)
   }
 });
 Flip.animation({
   name: 'scale',
-  param: {
-    sx: 0, sy: 0, dy: 1, dx: 1
+  immutable:{
+    sx:0,sy:0
+  },
+  variable: {
+    dx:1,dy:1
   },
   beforeCallBase: function (proxy) {
     proxy.source('ease', Flip.EASE.sineInOut);
   },
-  transform: function () {
-    var sx = this.sx, sy = this.sy, dx = this.dx, dy = this.dy, v = this.clock.value;
-    return Mat3.setScale(sx + (dx - sx) * v, sy + (dy - sy) * v);
+  transform: function (mat,param) {
+    mat.scale(param.sx+param.dx,param.sy+param.dy)
   }
 });
 Flip.animation({
   name: 'translate',
-  param: {
-    sx: 0, dx: 100, sy: 0, dy: 0
+  immutable:{sx:0,sy:0},
+  variable: {
+    dx: 100, dy: 0
   },
-  transform:function () {
-    var v = this.clock.value, sx = this.sx, sy = this.sy;
-    return Mat3.setTranslate(sx + (this.dx - sx) * v, sy + (this.dy - sy) * v);
+  transform:function (mat,param) {
+    mat.translate(param.dx+param.sx,param.dy+param.sy);
   }
 });})();

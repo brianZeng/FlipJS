@@ -2,7 +2,7 @@
  * Created by 柏子 on 2015/1/29.
  */
 (function(Flip){
-  var strictRet=true,syncEnqueue;
+  var strictRet=true,syncEnqueue=1;
   function enqueue(callback){
    syncEnqueue? callback():setTimeout(callback,0);
   }
