@@ -29,7 +29,7 @@ inherit(RenderTask, Flip.util.Object, {
   },
   add: function (obj, type) {
     if (type == 'update') return arrAdd(this._updateObjs, obj);
-    if (obj instanceof Clock || obj instanceof Animation)
+    if (obj instanceof Clock || obj instanceof Render)
       arrAdd(this._updateObjs, obj) && (obj._task = this);
   },
   remove: function (obj) {

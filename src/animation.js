@@ -16,7 +16,7 @@ function Animation(opt) {
   this.use(opt);
   this.init();
 }
-inherit(Animation, Flip.util.Object, {
+inherit(Animation,Render, {
   get percent(){
     return this.clock.value;
   },

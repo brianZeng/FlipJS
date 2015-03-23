@@ -116,14 +116,14 @@ function arrMapFun(func_ProName) {
     return item
   };
 }
-function arrSameSeq(arr, func_ProName, des) {
+/*function arrSameSeq(arr, func_ProName, des) {
   if (arr.length == 1)return true;
   var compare = arrMapFun(func_ProName);
   des = !!des;
   for (var i = 1, len = arr.length; i < len; i++)
     if (des != (compare(arr[i]) < compare(arr[i - 1])))return false;
   return true;
-}
+}*/
 array.remove = arrRemove;
 array.add = arrAdd;
 array.first = arrFirst;
@@ -270,9 +270,8 @@ else if (window) {
   window.Flip = Flip;
 }
 function Render(){
-
 }
-inherit(Render,Flip.util.Object,{
+inherit(Flip.Render=Render,Flip.util.Object,{
   update:function(){},render:function(){},invalid:function(){
     var t,p;
     if(t=this._task) t.invalid();
@@ -308,7 +307,7 @@ inherit(RenderTask, Flip.util.Object, {
   },
   add: function (obj, type) {
     if (type == 'update') return arrAdd(this._updateObjs, obj);
-    if (obj instanceof Clock || obj instanceof Animation)
+    if (obj instanceof Clock || obj instanceof Render)
       arrAdd(this._updateObjs, obj) && (obj._task = this);
   },
   remove: function (obj) {
@@ -368,7 +367,7 @@ function Animation(opt) {
   this.use(opt);
   this.init();
 }
-inherit(Animation, Flip.util.Object, {
+inherit(Animation,Render, {
   get percent(){
     return this.clock.value;
   },
