@@ -19,6 +19,7 @@ Mat3.prototype={
     var eles=mat.elements;
     return concatMat(this,eles[0],eles[2],eles[4],eles[1],eles[3],eles[5]);
   },
+
   /*
   * z=f(x,y)=> z= m*x+n*y+dz
   * @param rX rotation angle of x
