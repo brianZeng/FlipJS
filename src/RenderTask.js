@@ -31,6 +31,7 @@ inherit(RenderTask, Flip.util.Object, {
     if (type == 'update') return arrAdd(this._updateObjs, obj);
     if (obj instanceof Clock || obj instanceof Render)
       arrAdd(this._updateObjs, obj) && (obj._task = this);
+    this.invalid();
   },
   remove: function (obj) {
     if (obj._task == this && arrRemove(this._updateObjs, obj)){

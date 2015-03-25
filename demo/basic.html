@@ -8,6 +8,9 @@
         .red {
             background-color: red;
         }
+        #project{
+            background-color: orange;
+        }
         #scale {
             background-color: fuchsia;
         }
@@ -36,6 +39,9 @@
 <div>
     <div class="square" id="scale"></div>
 </div>
+<div>
+    <div class="square" id="project"></div>
+</div>
 <script>
     Flip(function(){
         var dur=0.5,ani=Flip.animate('translate', {selector: '#translate',duration:0.5,autoReverse:1}).start();
@@ -53,6 +59,13 @@
                         mat.rotate(Math.PI*2*this.percent);
                     }
                 });
+        Flip.animate({
+            duration:2,
+            selector:'#project',
+            transform:function(mat){
+                mat.obliqueProject(Math.PI/6,Math.PI/4,0,0,5*this.percent);
+            }
+        }).start()
     });
 </script>
 </body>

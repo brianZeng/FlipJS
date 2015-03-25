@@ -31,7 +31,7 @@ function updateAnimationParam(animation){
   var p=animation.percent,cur=animation.current=Object.create(animation._immutable);
   objForEach(animation._variable,function(value,key){
     cur[key]=isFunc(value)? value(p,cur):(isNaN(value)?value:p*value);
-  })
+  });
 }
 function updateAnimationCss(animation){
   var cssMap=animation._cssMap={},cssRule,cur=animation.current;

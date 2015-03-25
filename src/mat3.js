@@ -1,90 +1,80 @@
 /**
- * Created by 柏然 on 2014/12/13.
+ * Created by Administrator on 2015/3/25.
  */
-
-function Mat3(arrayOrMat3) {
-  if (!(this instanceof Mat3))return new Mat3(arrayOrMat3);
-  var s, d;
-  if (arrayOrMat3) {
-    if (arrayOrMat3.elements)
-      s = arrayOrMat3.elements;
-    else s = arrayOrMat3;
-    d = new Float32Array(s);
-  }
-  this.elements = d || new Float32Array([1, 0, 0, 0, 1, 0]);
+function Mat3(arrayOrX1,y1,dx,x2,y2,dy){
+  if(!(this instanceof Mat3))return new Mat3(arrayOrX1,y1,dx,x2,y2,dy);
+  var eles;
+  if(arrayOrX1==undefined)eles=[1,0,0,1,0,0];
+  else if(y1==undefined)eles=arrayOrX1;
+  else eles=[arrayOrX1,x2,y1,y2,dx,dy];
+  this.elements=new Float32Array(eles);
 }
-Flip.Mat3 = Mat3;
-Mat3.set = function (x1, x2, y1, y2, dx, dy) {
-  return new Mat3([x1, y1, dx, x2, y2, dy]);
-};
-Mat3.setTranslate = function (dx, dy) {
-  return new Mat3([1, 0, dx || 0, 0, 1, dy || 0]);
-};
-Mat3.setScale = function (x, y) {
-  return new Mat3([x || 1, 0, 0, 0, y || 1, 0]);
-};
-Mat3.setFlip=function(angle,vertical){
-  var sin = Math.sin(angle), cos = Math.cos(angle);
-  return new Mat3(vertical ? [cos, 0, 0, sin, 1, 0] : [1, -sin, 0, 0, cos, 0])
-};
-Mat3.setRotate = function (angle) {
-  if (typeof angle == "string") {
-    var match = angle.match(/^((\d+(\.\d+)?)|(\.\d+))d|deg/i);
-    if (match) angle = (parseFloat(match[1]) / 180) * Math.PI;
-  }
-  angle = parseFloat(angle) || 0;
-  var a00 = 1, a01 = 0, a02 = 0, a10 = 0, a11 = 1, a12 = 0, s = Math.sin(angle), c = Math.cos(angle), out = [];
-  out[0] = c * a00 + s * a10;
-  out[1] = c * a01 + s * a11;
-  out[2] = c * a02 + s * a12;
-
-  out[3] = c * a10 - s * a00;
-  out[4] = c * a11 - s * a01;
-  out[5] = c * a12 - s * a02;
-  return new Mat3(out);
-};
 function getFloat(d) {
   return parseFloat(d).toFixed(5);
 }
-Mat3.prototype = {
-  toString: (function (seq) {
-    return function () {
-      var e = this.elements, r = seq.map(function (i) {
-        return getFloat(e[i])
-      });
-      return 'matrix(' + r.join(',') + ')';
-    }
-  })([0, 3, 1, 4, 2, 5]),
-  translate: function (dx, dy, immutable) {
-    return this.concat(Mat3.setTranslate(dx, dy), immutable);
+var sin=Math.sin,cos=Math.cos,tan=Math.tan;
+Flip.Mat3=Mat3;
+Mat3.prototype={
+  concat:function(mat){
+    var eles=mat.elements;
+    return concatMat(this,eles[0],eles[2],eles[4],eles[1],eles[3],eles[5]);
   },
-  scale: function (x, y, immutable) {
-    return this.concat(Mat3.setScale(x, y), immutable);
+  /*
+  * z=f(x,y)=> z= m*x+n*y+dz
+  * @param rX rotation angle of x
+  * @param rY rotation angle of y
+  * @param [mx]
+  * @param [ny]
+  * @param [dz]
+  * @returns {Flip.Mat3}
+  */
+  axonProject:function(rX,rY,mx,ny,dz){
+    rX=rX||0;rY=rY||0;mx=mx||0;ny=ny||0;dz=dz||0;
+    var cosX=cos(rX),sinX=sin(rX),cosY=cos(rY),sinY=sin(rY),yd=-cosY*sinX;
+
+    return concatMat(this,mx*sinY+cosY,ny*sinY,sinY*dz,sinY*sinX+yd*mx,cosX+ny*yd,yd*dz);
   },
-  rotate: function (angle, immutable) {
-    return this.concat(Mat3.setRotate(angle), immutable);
+  obliqueProject:function(rV,rH,mx,ny,dz){
+    rH=rH||0;rV=rV||0;
+    var s=1/tan(rV),sSin=sin(rH)*s,sCos=cos(rH)*s;
+    mx=mx||0;ny=ny||0;dz=dz||0;
+    return concatMat(this,1+mx*sCos,sCos*ny,sCos*dz,sSin*mx,1+ny*sSin,sSin*dz);
   },
-  flip:function(angle,vertical,immutable){
-    return this.concat(Mat3.setFlip(angle,vertical),immutable);
+  toString:function(){
+    return 'matrix('+Array.prototype.map.call(this.elements,getFloat).join(',')+')';
   },
-  concat: function (mat3, immutable) {
-    var n = this.elements, e = mat3.elements, r;
-    var m11 = e[0], m21 = e[1], mx = e[2], m12 = e[3], m22 = e[4], my = e[5],
-      n11 = n[0], n21 = n[1], nx = n[2], n12 = n[3], n22 = n[4], ny = n[5];
-    r = new Mat3([m11 * n11 + m12 * n21, m21 * n11 + m22 * n21, mx * n11 + my * n21 + nx, m11 * n12 + m12 * n22, m21 * n12 + m22 * n22, mx * n12 + my * n22 + ny]);
-    if (!immutable)
-      this.elements = new Float32Array(r.elements);
-    return r;
+  applyContext2D:function(ctx){
+    ctx.transform.apply(ctx,this.elements);
   },
-  set:function(x1, y1, dx, x2, y2, dy,immutable){
-    if(arguments.length<=2){
-      var eles=x1;
-      immutable=arguments[1];
-    }else{
-      eles=[x1, y1, dx, x2, y2, dy];
-    }
-    if(!immutable)
-      this.elements=new Float32Array(eles);
-    return new Mat3(eles);
+  clone:function(){
+    return new Mat3(this.elements);
+  },
+  scale:function(x,y){
+    return concatMat(this,x||1,0,0,0,y||1,0);
+  },
+  skew:function(angleX,angleY){
+    return concatMat(this,1,tan(angleX),0,tan(angleY),1,0)
+  },
+  translate:function(x,y){
+    return concatMat(this,1,0,x||0,0,1,y||0);
+  },
+  flip:function(angle,horizontal){
+    var sinA = sin(angle), cosA = cos(angle);
+    return horizontal? concatMat(this,cosA,0,0,sinA,1,0):concatMat(this,1,-sinA, 0, 0, cosA, 0);
+  },
+  rotate:function(angle){
+    var sina=sin(angle),cosa=cos(angle);
+    return concatMat(this,cosa,-sina,0,sina,cosa,0)
   }
 };
+/*
+          |t1 t2 0| |x1 x2 0|  |(t1*x1+t2*y1)   (t1*x2+t2*y2)     0|
+  [x,y,1] |p1 p2 0| |y1 y2 0|=>|(p1*x1+p2*y1)   (p1*x2+p2*y2)     0|
+          |dt dp 1| |dx dy 1|  |(dt*x1+dp*y1+dx)(dt*x2+dp*y2+dy)  1|
+
+ */
+function concatMat(mat,x1,y1,dx,x2,y2,dy){
+  var eles=mat.elements,t1=eles[0],t2=eles[1],p1=eles[2],p2=eles[3],dt=eles[4],dp=eles[5];
+  mat.elements=new Float32Array([t1*x1+t2*x2,t1*x2+t2*y2,p1*x1+p2*y1,p1*x2+p2*y2,dt*x1+dp*y1+dx,dt*x2+dp*y2+dy]);
+  return mat;
+}

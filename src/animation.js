@@ -13,12 +13,13 @@ function Animation(opt) {
   this._immutable={};
   this._variable={};
   this._param={};
+  this.current={};
   this.use(opt);
   this.init();
 }
 inherit(Animation,Render, {
   get percent(){
-    return this.clock.value;
+    return this.clock.value||0;
   },
   set clock(c) {
     var oc = this._clock;
@@ -64,7 +65,8 @@ inherit(Animation,Render, {
     return this;
   },
   use:function(opt){
-    return useAniOption(this,opt);
+    useAniOption(this,opt);
+    return this;
   },
   param:function(key,value,immutable){
     if(isObj(key))
