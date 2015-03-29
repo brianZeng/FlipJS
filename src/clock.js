@@ -133,6 +133,7 @@ objForEach(CLOCK_EVT, function (evtName, key) {
       }
     })
   }, Clock.prototype);
+//todo:it fires start when delay passed
 function updateClock(c,state) {
   if (c&&!c.finished) {
     var timeline = state.timeline,evtName,controller= c.controller;
