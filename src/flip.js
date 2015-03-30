@@ -11,9 +11,17 @@ Object.defineProperty(Flip, 'instance', {get: function () {
 }});
 Flip.fallback = function (window) {
   if (!window.requestAnimationFrame)
+  {
+    //IE9
     window.requestAnimationFrame = function (callback) {
       setTimeout(callback, 30);
     };
+    Flip.Mat3.prototype.applyContext2D=function(ctx){
+      //there is a bug in IE9 ctx.apply
+      var eles=this.elements;
+      ctx.transform(eles[0],eles[1],eles[2],eles[3],eles[4],eles[5]);
+    }
+  }
   if (!window.Float32Array) {
     window.Float32Array = inherit(function (lengthOrArray) {
       if (!(this instanceof arguments.callee))return new arguments.callee(lengthOrArray);
