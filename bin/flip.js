@@ -8,9 +8,17 @@ Object.defineProperty(Flip, 'instance', {get: function () {
 }});
 Flip.fallback = function (window) {
   if (!window.requestAnimationFrame)
+  {
+    //IE9
     window.requestAnimationFrame = function (callback) {
       setTimeout(callback, 30);
     };
+    Flip.Mat3.prototype.applyContext2D=function(ctx){
+      //there is a bug in IE9 ctx.apply
+      var eles=this.elements;
+      ctx.transform(eles[0],eles[1],eles[2],eles[3],eles[4],eles[5]);
+    }
+  }
   if (!window.Float32Array) {
     window.Float32Array = inherit(function (lengthOrArray) {
       if (!(this instanceof arguments.callee))return new arguments.callee(lengthOrArray);
@@ -260,9 +268,16 @@ inherit(obj, null, {
 function cloneFunc(value, key) {
   this[key] = value;
 }
+function mixObj(){
+  var ret={};
+  for(var i=0,len=arguments.length;i<len;i++){
+    objForEach(arguments[i],cloneFunc,ret)
+  }
+  return ret;
+}
 function isFunc(value){return typeof value==="function"}
 function isObj(value){return (typeof value==="object") && value}
-
+function noop(){}
 if (typeof module !== "undefined" && module.exports)
   module.exports = Flip;
 else if(typeof define!=="undefined")define(function(){return Flip});
@@ -272,7 +287,9 @@ else if (window) {
 function Render(){
 }
 inherit(Flip.Render=Render,Flip.util.Object,{
-  update:function(){},render:function(){},invalid:function(){
+  update:function(){},
+  render:function(){},
+  invalid:function(){
     var t,p;
     if(t=this._task) t.invalid();
     else if(p=this.parent) p.invalid();
@@ -296,6 +313,7 @@ RenderTask.EVENT_NAMES = {
   AFTER_CONSUME_EVENTS: 'afterConsumeEvents'
 };
 inherit(RenderTask, Flip.util.Object, {
+  update:noop,
   invalid: function () {
     var g;
     this._invalid = true;
@@ -567,7 +585,7 @@ function animate() {
   }
 function setAniEnv(aniOpt, animation) {
   (aniOpt.renderGlobal||FlipScope.global).getTask(aniOpt.taskName,true).add(animation);
-  aniOpt.autoStart&& animation.start();
+  aniOpt.autoStart!==false && animation.start();
   return animation;
 }
 animate.createOptProxy = function (setter, autoStart, taskName, defaultGlobal) {
@@ -788,6 +806,7 @@ objForEach(CLOCK_EVT, function (evtName, key) {
       }
     })
   }, Clock.prototype);
+//todo:it fires start when delay passed
 function updateClock(c,state) {
   if (c&&!c.finished) {
     var timeline = state.timeline,evtName,controller= c.controller;
@@ -977,7 +996,7 @@ function CssContainer(obj){
      })
    }
  };
-  Flip.template=p.t=p.template;
+  Flip.stringTemplate=p.t=p.template;
 })();
 (function (Flip) {
   function $(slt, ele) {
@@ -991,11 +1010,13 @@ function CssContainer(obj){
 
   Flip.$ = Flip.$ = $;
   document.addEventListener('DOMContentLoaded', function () {
+    var funcs=FlipScope.readyFuncs;
     FlipScope.global.init();
-    FlipScope.readyFuncs.forEach(function (callback) {
+    FlipScope.readyFuncs = null;
+    funcs.forEach(function (callback) {
       callback(Flip);
     });
-    FlipScope.readyFuncs = null;
+
   });
 })(Flip);
 
@@ -1368,6 +1389,7 @@ function updateGlobal(global,state){
 function updateTask(task,state){
   var updateParam = [state, state.task=task];
   (state.timeline = task.timeline).move();
+  task.update(state);
   task.emit(RenderTask.EVENT_NAMES.UPDATE, updateParam);
   task._updateObjs = arrSafeFilter(task._updateObjs, filterIUpdate, state);
 }

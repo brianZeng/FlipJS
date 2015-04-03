@@ -18,6 +18,7 @@ RenderTask.EVENT_NAMES = {
   AFTER_CONSUME_EVENTS: 'afterConsumeEvents'
 };
 inherit(RenderTask, Flip.util.Object, {
+  update:noop,
   invalid: function () {
     var g;
     this._invalid = true;

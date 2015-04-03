@@ -7,8 +7,8 @@ function Interpolation(opt) {
     var pts = opt.data, len = pts.length, xs = new Float32Array(len), ys = new Float32Array(len);
     for (var i = 0, p = pts[0]; i < len; p = pts[++i]) {
       //both p={x:0,y:0} or p=[0,0] are ok
-      xs[i] = Vec.get(p,'x');
-      ys[i] = Vec.get(p,'y');
+      xs[i] = GLVec.get(p,'x');
+      ys[i] = GLVec.get(p,'y');
     }
     this.axis = {x: xs, y: ys}
   }
@@ -167,7 +167,7 @@ InterItor.prototype = {
       if (matLike instanceof Matrix)mat = matLike;
       else if (matLike instanceof Array)mat = Matrix.fromRows.apply(matLike, matLike);
       proto.calcPoint = function (vt, vx, vy) {
-        var pv = Vec.multiMat(vt, mat);
+        var pv = GLVec.multiMat(vt, mat);
         return {x: pv.dot(vx), y: pv.dot(vy)}
       }
     }

@@ -238,9 +238,16 @@ inherit(obj, null, {
 function cloneFunc(value, key) {
   this[key] = value;
 }
+function mixObj(){
+  var ret={};
+  for(var i=0,len=arguments.length;i<len;i++){
+    objForEach(arguments[i],cloneFunc,ret)
+  }
+  return ret;
+}
 function isFunc(value){return typeof value==="function"}
 function isObj(value){return (typeof value==="object") && value}
-
+function noop(){}
 if (typeof module !== "undefined" && module.exports)
   module.exports = Flip;
 else if(typeof define!=="undefined")define(function(){return Flip});

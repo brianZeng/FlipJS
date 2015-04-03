@@ -13,8 +13,10 @@ var config = {
         'temp/flip_core.js':['src/flip.js','src/util.js','src/*.js'],
         'temp/flip_basic.js':['temp/flip_core.js','src/animations/*.js'],
         'temp/flip_extra.js':['temp/flip_core.js','src/animations/*.js','src/extra/*.js','src/interpolation/*.js'],
+        'temp/flip_gl.js':['temp/flip_core.js','src/webgl/gl.js','src/webgl/base/GLRender.js','src/webgl/**/*.js'],
         'bin/flip.js':'temp/flip_basic.js',
-        'bin/flip_extra.js':'temp/flip_extra.js'
+        'bin/flip_extra.js':'temp/flip_extra.js',
+        'bin/flip_gl.js':'temp/flip_gl.js'
       },
       options:{
         process:function(src,path){

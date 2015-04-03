@@ -16,6 +16,7 @@ function updateGlobal(global,state){
 function updateTask(task,state){
   var updateParam = [state, state.task=task];
   (state.timeline = task.timeline).move();
+  task.update(state);
   task.emit(RenderTask.EVENT_NAMES.UPDATE, updateParam);
   task._updateObjs = arrSafeFilter(task._updateObjs, filterIUpdate, state);
 }

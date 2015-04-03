@@ -33,5 +33,5 @@ function CssContainer(obj){
      })
    }
  };
-  Flip.template=p.t=p.template;
+  Flip.stringTemplate=p.t=p.template;
 })();

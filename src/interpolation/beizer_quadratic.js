@@ -22,8 +22,8 @@ Flip.interpolation({
       //C(i+1)+Ci=2P(i+1);
       if (isNaN(cox[0]) || isNaN(coy[0])) {  //2(Pc-P0)=Pt0
         vec = opt.startVec || [1, 1];
-        cox[0] = Vec.get(vec, 'x') + xs[0];
-        coy[0] = Vec.get(vec, 'y') + ys[0];
+        cox[0] = GLVec.get(vec, 'x') + xs[0];
+        coy[0] = GLVec.get(vec, 'y') + ys[0];
       }
       for (var i = 0, len = cox.length, ni; i < len; i++) {
         if (isNaN(cox[ni = i + 1]))cox[ni] = 2 * xs[ni] - cox[i];
@@ -37,8 +37,8 @@ Flip.interpolation({
       };
       if (opt.cps)
         opt.cps.forEach(function (cp, i) {
-          co.x[i] = Vec.get(cp, 'x');
-          co.y[i] = Vec.get(cp, 'y');
+          co.x[i] = GLVec.get(cp, 'x');
+          co.y[i] = GLVec.get(cp, 'y');
         });
       else if ((cx = opt.cx) && (cy = opt.cy) && cx.length == cy.length)
         cx.forEach(function (x, i) {
@@ -58,8 +58,8 @@ Flip.interpolation({
     setCP: function (i, cpOrx1, y) {
       var co = this.coefficeint, x;
       if (typeof cpOrx1 == "object") {
-        co.x[i] = Vec.get(cpOrx1, 'x');
-        co.y[i] = Vec.get(cpOrx1, 'y');
+        co.x[i] = GLVec.get(cpOrx1, 'x');
+        co.y[i] = GLVec.get(cpOrx1, 'y');
       } else {
         co.x[i] = cpOrx1;
         co.y[i] = y;
