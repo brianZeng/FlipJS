@@ -11,9 +11,13 @@ function GLAttribute(name, bufferOrData, stride, offset) {
 }
 GLAttribute.prototype={
   set buffer(v){
+    var ob=this._buffer;
+    if(ob instanceof GLBuffer)
+      ob.release(this);
     if(v instanceof GLBuffer) this._buffer=v;
     else if(v.length) this._buffer=new GLBuffer(v);
     else throw Error('expect data array or GLBuffer');
+    this._buffer.ref(this);
   },
   get buffer(){
     return this._buffer;
@@ -34,8 +38,9 @@ GLAttribute.prototype={
   invalid:function(){
     this.buffer.invalid();
   },
-  dispose:function(){
-    this.buffer.dispose();
+  finalize:function(state,gl){
+    this.buffer.release(this);
+    this.buffer.finalize(gl);
   }
 };
 function AttributeEntry(type, loc,name) {

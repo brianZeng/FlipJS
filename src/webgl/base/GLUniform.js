@@ -60,8 +60,8 @@ UniformEntry.converter={
   float: function (val) {
     return new GLUniform({name:this.name,value:parseFloat(val)})
   },
-  sampler2D: function (gl, index) {
-    throw Error('not implement')
+  sampler2D: function (source) {
+    return new GLSampler2D({name:this.name,source:source})
   },
   samplerCube: function (gl, index) {
     throw Error('not implement')

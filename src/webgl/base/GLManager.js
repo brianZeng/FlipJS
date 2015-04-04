@@ -29,5 +29,8 @@ GLManager.prototype={
     }
     usages[index]++;
     return index;
+  },
+  releaseTextureIndex:function(index){
+    return --this._indexUsage[index];
   }
 };

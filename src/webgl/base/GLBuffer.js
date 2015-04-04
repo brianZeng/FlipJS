@@ -6,6 +6,7 @@ function GLBuffer(data, isElementBuffer, usage) {
     (isElementBuffer ? WebGLRenderingContext.ELEMENT_ARRAY_BUFFER : WebGLRenderingContext.ARRAY_BUFFER);
   if (data)
     this.data = data;
+  this._refs=[];
   this._glHandle = null;
   this.usage = usage || WebGLRenderingContext.STATIC_DRAW;
   this._buffered = false;
@@ -14,14 +15,21 @@ GLBuffer.prototype={
   getGlHandle(gl){
     return this._glHandle||(this._glHandle=gl.createBuffer())
   },
-  dispose: function (gl) {
-    var handle=this._glHandle;
-    if(handle) gl.deleteBuffer(handle);
+  ref:function(obj){
+    arrAdd(this._refs,obj);
+  },
+  release:function(obj){
+    arrRemove(this._refs,obj)
   },
   invalid:function(){
     this._buffered=false;
   },
-  release: function () {
+  finalize: function (gl) {
+    if(this._refs.length==0){
+      var handle=this._glHandle;
+      if(handle) gl.deleteBuffer(handle);
+      this._data=null;
+    }
   },
   get data() {
     return this._data;

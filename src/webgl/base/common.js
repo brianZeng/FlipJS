@@ -7,6 +7,13 @@ function useBinder(target,renderState){
       binderOrFunc.bind(gl,renderState);
   })
 }
+function finalizeBinder(binder,state){
+  var gl=state.gl,resMng=state.glResMng;
+  objForEach(binder,function(b){
+    if(isFunc(b.finalize))
+      b.finalize(state,gl,resMng);
+  })
+}
 function correlateBinder(ctrl,state){
   var scene=state.glSecne,attributes=scene.attributes,uniforms=scene.uniforms,param,cvt,target=ctrl.binder;
   if(ctrl._invalidBinder){

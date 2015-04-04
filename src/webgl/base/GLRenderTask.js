@@ -15,6 +15,14 @@ inherit(GLRenderTask,RenderTask,{
   update:function(state){
     state.gl=this.gl;
     state.glResMng=this.resMng;
+  },
+  remove:function(item){
+    var upobjs=this._updateObjs,index=upobjs.indexOf(item);
+    if(index>-1){
+      upobjs[index]=null;
+      arrAdd(this._finalizeObjs,item);
+      this.invalid();
+    }
   }
 });
 

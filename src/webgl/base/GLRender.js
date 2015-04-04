@@ -19,6 +19,10 @@ inherit(GLRender,Render.prototype,{
     updateGLRender(this,state);
     this._children.forEach(function(c){c.update(state)})
   },
+  finalize:function(state){
+    finalizeBinder(this.binder,state.glResMng);
+    this._children.forEach(function(c){c.finalize(state)});
+  },
   add:function(){
     for(var i=0,arg=arguments[0];arg;arg=arguments[++i]){
       if(arg instanceof GLRender){
