@@ -11,7 +11,7 @@ GLTexture.prototype={
     if(handle)
       gl.deleteTexture(handle);
   },
-  getGlHandle(gl){
+  getGlHandle:function(gl){
     return this._glHandle||(this._glHandle=gl.createTexture())
   },
   finalize:function(gl,resMng){

@@ -12,7 +12,7 @@ function GLBuffer(data, isElementBuffer, usage) {
   this._buffered = false;
 }
 GLBuffer.prototype={
-  getGlHandle(gl){
+  getGlHandle:function(gl){
     return this._glHandle||(this._glHandle=gl.createBuffer())
   },
   ref:function(obj){

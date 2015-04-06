@@ -45,7 +45,7 @@ inherit(RenderTask, Flip.util.Object, {
   }
 });
 function filterIUpdate(item) {
-  if (!isObj(item))return false;
+  if (!isObj(item)||item.disabled)return false;
   else if (isFunc(item.update))
     item.update(this);
   else if (isFunc(item.emit))

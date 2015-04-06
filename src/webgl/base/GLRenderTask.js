@@ -8,7 +8,7 @@ function GLRenderTask(opt){
 }
 inherit(GLRenderTask,RenderTask,{
   init:function(opt){
-    var gl=opt.gl||(opt.canvas.getContext('webgl'));
+    var cvs, gl=opt.gl||(cvs=opt.canvas).getContext('webgl')||cvs.getContext('experimental-webgl');
     this.gl=gl;
     this.resMng=gl.resMng||(gl.resMng=new GLManager(gl));
   },

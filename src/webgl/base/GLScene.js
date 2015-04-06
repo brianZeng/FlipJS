@@ -14,6 +14,12 @@ inherit(GLScene,GLRender.prototype,{
     state.glParam=this.glParam;
     updateGLRender(this,state);
   },
+  finalize:function(state){
+    GLRender.prototype.finalize.call(this,state);
+    var program=this.program;
+    if(program)
+      state.gl.deleteProgram(this.program);
+  },
   render:function(state){
     var program=this.program,gl=state.gl;
     if(program)gl.useProgram(program);

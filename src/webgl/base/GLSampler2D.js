@@ -50,7 +50,6 @@ GLSampler2D.prototype={
     if(!this._buffered){
       var source = this.source, params = this.param, tex = this._texture;
       tex.bind(gl);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, null);
       if (source) {
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, this.flipY);
         gl.texImage2D(gl.TEXTURE_2D, 0, this.format,this.format, gl.UNSIGNED_BYTE,source);
@@ -58,6 +57,8 @@ GLSampler2D.prototype={
           gl.texParameteri(gl.TEXTURE_2D, gl[key], gl[value]);
         });
       }
+      else
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, null);
       this._buffered=true;
   }
 }

@@ -14,11 +14,13 @@ function updateGlobal(global,state){
   global.apply();
 }
 function updateTask(task,state){
-  var updateParam = [state, state.task=task];
-  (state.timeline = task.timeline).move();
-  task.update(state);
-  task.emit(RenderTask.EVENT_NAMES.UPDATE, updateParam);
-  task._updateObjs = arrSafeFilter(task._updateObjs, filterIUpdate, state);
+  if(!task.disabled){
+    var updateParam = [state, state.task=task];
+    (state.timeline = task.timeline).move();
+    task.update(state);
+    task.emit(RenderTask.EVENT_NAMES.UPDATE, updateParam);
+    task._updateObjs = arrSafeFilter(task._updateObjs, filterIUpdate, state);
+  }
 }
 function renderGlobal(global,state){
   if(global._invalid||state.forceRender){
@@ -29,13 +31,15 @@ function renderGlobal(global,state){
   objForEach(global._tasks,function(task){finalizeTask(task,state)});
 }
 function renderTask(task,state){
-  var evtParam = [state, state.task=task];
-  if (task._invalid||state.forceRender) {
-    task.emit(RenderTask.EVENT_NAMES.RENDER_START, evtParam);
-    task._updateObjs.forEach(function (item) {if(isFunc(item.render))item.render(state);});
-    task._invalid = false;
+  if(!task.disabled){
+    var evtParam = [state, state.task=task];
+    if (task._invalid||state.forceRender) {
+      task.emit(RenderTask.EVENT_NAMES.RENDER_START, evtParam);
+      task._updateObjs.forEach(function (item) {if(isFunc(item.render)&&!item.disabled)item.render(state);});
+      task._invalid = false;
+    }
+    task.emit(RenderTask.EVENT_NAMES.RENDER_END, evtParam);
   }
-  task.emit(RenderTask.EVENT_NAMES.RENDER_END, evtParam);
 }
 function finalizeTask(task,state){
   var taskItems=(state.task=task)._updateObjs,index,finItems=task._finalizeObjs;
