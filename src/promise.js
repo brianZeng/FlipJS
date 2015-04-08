@@ -118,7 +118,6 @@
           return obj.map(acceptAnimation);
         else{
           ani=Flip.animate(obj);
-          if(obj.autoStart!==false)ani.start();
           return ani.promise;
         }
       }

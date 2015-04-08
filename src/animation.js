@@ -215,7 +215,8 @@ function animate() {
   }
 function setAniEnv(aniOpt, animation) {
   (aniOpt.renderGlobal||FlipScope.global).getTask(aniOpt.taskName,true).add(animation);
-  aniOpt.autoStart!==false && animation.start();
+  if(aniOpt.autoStart!==false)
+    animation.start();
   return animation;
 }
 animate.createOptProxy = function (setter, autoStart, taskName, defaultGlobal) {

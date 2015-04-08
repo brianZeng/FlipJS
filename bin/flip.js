@@ -588,7 +588,8 @@ function animate() {
   }
 function setAniEnv(aniOpt, animation) {
   (aniOpt.renderGlobal||FlipScope.global).getTask(aniOpt.taskName,true).add(animation);
-  aniOpt.autoStart!==false && animation.start();
+  if(aniOpt.autoStart!==false)
+    animation.start();
   return animation;
 }
 animate.createOptProxy = function (setter, autoStart, taskName, defaultGlobal) {
@@ -1145,7 +1146,18 @@ function getFloat(d) {
 }
 var sin=Math.sin,cos=Math.cos,tan=Math.tan;
 Flip.Mat3=Mat3;
+function defaultIfNaN(v,def){
+  var ret=+v;
+  return isNaN(ret)?def:ret;
+}
 Mat3.prototype={
+  new:function(){
+    return new Mat3();
+  },
+  set:function(x1,y1,x2,y2,dx,dy){
+    this.elements=new Float32Array([x1,x2,y1,y2,dx||0,dy||0]);
+    return this;
+  },
   concat:function(mat){
     var eles=mat.elements;
     return concatMat(this,eles[0],eles[2],eles[4],eles[1],eles[3],eles[5]);
@@ -1153,24 +1165,25 @@ Mat3.prototype={
 
   /*
   * z=f(x,y)=> z= m*x+n*y+dz
-  * @param rX rotation angle of x
-  * @param rY rotation angle of y
-  * @param [mx]
-  * @param [ny]
-  * @param [dz]
+  * @param {number}rotationX rotation angle of x
+  * @param {number}rY rotation angle of y
+  * @param {number}[mx]
+  * @param {number}[ny]
+  * @param {number}[dz]
   * @returns {Flip.Mat3}
   */
-  axonProject:function(rX,rY,mx,ny,dz){
-    rX=rX||0;rY=rY||0;mx=mx||0;ny=ny||0;dz=dz||0;
-    var cosX=cos(rX),sinX=sin(rX),cosY=cos(rY),sinY=sin(rY),yd=-cosY*sinX;
-
+  axonProject:function(rotationX,rotationY,mx,ny,dz){
+    rotationX=rotationX||0;rotationY=rotationY||0;mx=mx||0;ny=ny||0;dz=dz||0;
+    var cosX=cos(rotationX),sinX=sin(rotationX),cosY=cos(rotationY),sinY=sin(rotationY),yd=-cosY*sinX;
     return concatMat(this,mx*sinY+cosY,ny*sinY,sinY*dz,sinY*sinX+yd*mx,cosX+ny*yd,yd*dz);
   },
-  obliqueProject:function(rV,rH,mx,ny,dz){
+  obliqueProject:function(rV,rH,mx,ny,dz,x1,y2){
     rH=rH||0;rV=rV||0;
     var s=1/tan(rV),sSin=sin(rH)*s,sCos=cos(rH)*s;
     mx=mx||0;ny=ny||0;dz=dz||0;
-    return concatMat(this,1+mx*sCos,sCos*ny,sCos*dz,sSin*mx,1+ny*sSin,sSin*dz);
+    x1=defaultIfNaN(x1,1);
+    y2=defaultIfNaN(y2,1);
+    return concatMat(this,x1+mx*sCos,sCos*ny,sCos*dz,sSin*mx,y2+ny*sSin,sSin*dz);
   },
   toString:function(){
     return 'matrix('+Array.prototype.map.call(this.elements,getFloat).join(',')+')';
@@ -1182,7 +1195,7 @@ Mat3.prototype={
     return new Mat3(this.elements);
   },
   scale:function(x,y){
-    return concatMat(this,x||1,0,0,0,y||1,0);
+    return concatMat(this,x,0,0,0,y,0);
   },
   skew:function(angleX,angleY){
     return concatMat(this,1,tan(angleX),0,tan(angleY),1,0)
@@ -1327,7 +1340,6 @@ function concatMat(mat,x1,y1,dx,x2,y2,dy){
           return obj.map(acceptAnimation);
         else{
           ani=Flip.animate(obj);
-          if(obj.autoStart!==false)ani.start();
           return ani.promise;
         }
       }
