@@ -17,7 +17,7 @@ describe('clock test',function(){
   }
   function clampTime(millsec,base){
    console.log( millsec=millsec/1000);
-    expect(millsec).toBeGreaterThan(base);
+    expect(millsec).not.toBeLessThan(base);
     expect(millsec).toBeLessThan(base*1.15+20);
   }
   it('1.support autoReverse',function(done){
@@ -31,17 +31,18 @@ describe('clock test',function(){
       t1=Date.now();
     });
     clock.on('reverse',function(){
-      clamp((t2=now())-t1,dur*1190,dur*1000);
+      clampTime((t2=now())-t1,dur);
+      //clamp((t2=now())-t1,dur*1190,dur*1000);
     });
     clock.on('finish',function(){
-      clamp(now()-t1,dur*2*1100,dur*2*1000);
+      clampTime(now()-t1,dur*2);
       done();
     });
   });
   it('2.support delay',function(done){
-    setClock({delay:.3,duration:.2}).on('start',function(){
+    setClock({delay:.3,duration:.2}).on('init',function(){
       t1=now();
-    }).once('tick',function(){
+    }).once('start',function(){
       clampTime(now()-t1,.3);
     }).on('finish',function(){
       clampTime(now()-t1,.4999);

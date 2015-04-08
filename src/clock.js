@@ -11,6 +11,7 @@ Flip.Clock = Clock;
 
 var CLOCK_EVT=Clock.EVENT_NAMES =Object.seal({
   UPDATE: 'update',
+  INIT:'init',
   ITERATE: 'iterate',
   START: 'start',
   REVERSE: 'reverse',
@@ -133,15 +134,21 @@ objForEach(CLOCK_EVT, function (evtName, key) {
       }
     })
   }, Clock.prototype);
-//todo:it fires start when delay passed
+function emitWithCtrl(clock,evtName,arg){
+  var ctrl=clock.controller;
+  clock.emit(evtName,arg);
+  if(ctrl&&isFunc(ctrl.emit))ctrl.emit(evtName,arg);
+}
 function updateClock(c,state) {
   if (c&&!c.finished) {
-    var timeline = state.timeline,evtName,controller= c.controller;
+    var timeline = state.timeline;
+    state.clock=c;
     if (c._startTime == -1) {
       c._startTime = timeline.now;
-      evtName= Clock.EVENT_NAMES[c.d?(c.i== c.iteration? 'START':'ITERATE'):'REVERSE'];
-      c.emit(evtName,state);
-      controller&&controller.emit(evtName,state);
+      emitWithCtrl(c,CLOCK_EVT[c.d?(c.i== c.iteration? 'INIT':'ITERATE'):'REVERSE'],state);
+    //  evtName= ;
+     // c.emit(evtName,state);
+     // controller&&controller.emit(evtName,state);
       return true;
     }
     else if (c._paused) {
@@ -150,28 +157,26 @@ function updateClock(c,state) {
       return false;
     }
     var dur = (timeline.now - c._startTime) / timeline.ticksPerSecond - (c._delayed? 0:c.delay),
-      curValue, evtArg;
+      curValue;
     if (dur > 0) {
       var ov = c.value, t;
       //only delay once
       if(!c._delayed){
         c._delayed=1;
         c._startTime+=c.delay*timeline.ticksPerSecond;
+        emitWithCtrl(c,CLOCK_EVT.START,state);
       }
       t = c.t = c.d ? dur / c.duration : 1 - dur / c.duration;
       if (t > 1)t = c.t = 1;
       else if (t < 0)t = c.t = 0;
       curValue = c.value = c.ease(t);
-      evtArg = Object.create(state);
-      evtArg.clock = c;
-      evtArg.currentValue = curValue;
-      evtArg.lastValue = ov;
-      if (ov != curValue) c.emit(Clock.EVENT_NAMES.TICK, evtArg);
-      if (t == 1)c.end(evtArg);
-      else if (t == 0)c.iterate(evtArg);
+      if (ov != curValue) c.emit(CLOCK_EVT.TICK,state);
+      if (t == 1)c.end(state);
+      else if (t == 0)c.iterate(state);
       state.task.invalid();
       return true;
     }
+    state.clock=null;
   }
 }
 Clock.createOptProxy = function (opt, duration, ease, infinite, iteration, autoReverse,delay) {
