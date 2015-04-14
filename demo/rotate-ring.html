@@ -45,7 +45,7 @@
        var p= document.querySelector('#ring'),num=parseInt(attr('num'))
                ,rotate,radius=attr('radius'),color= attr('color'),className='shadow-compute';
         for(var i= 0,circle,d=360/num;i<num;i++){
-            createChild(Flip.template('rotate({1}deg) translate({2}px,0)',d*i,radius),'circle');//'rotate('+d*i+'deg) translate('+radius+'px,0)','circle');
+            createChild(Flip.stringTemplate('rotate({1}deg) translate({2}px,0)',d*i,radius),'circle');
         }
         p.children[i=0].classList.add(className);
         rotate=d;
@@ -71,7 +71,8 @@
                 '.shadow-js':{
                     boxShadow:'0 0 4px 4px rgba(170, 228, 254,.7)',
                     borderColor:'rgb(170, 228, 254)'
-                },'.shadow-compute':function(css,cur){
+                },
+                '.shadow-compute':function(css,cur){
                     css.boxShadow=css.template('0 0 4px {1}px rgba(170, 228, 254,.7)',cur.r);
                     css.borderColor='rgb(170, 228, 254)';
                     css.transition='none';

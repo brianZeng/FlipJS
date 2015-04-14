@@ -13,7 +13,7 @@ Flip.animation({
     proxy.source('ease', Clock.EASE.sineInOut);
   },
   transform:function(mat,param){
-    mat.flip(param.angle,param.vertical);
+    mat.flip(param.angle,!param.vertical);
   },
   css:{
     '&':{'transform-origin':'center'}
