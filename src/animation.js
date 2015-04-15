@@ -242,13 +242,14 @@ Flip.css=function(selector,rule){
 };
 Flip.animation = (function () {
   function register(definition) {
-    var beforeCallBase, name = definition.name, Constructor;
+    var beforeCallBase, name = definition.name, Constructor,afterCallBase;
     beforeCallBase = definition.beforeCallBase || _beforeCallBase;
     Constructor = function (opt) {
       if (!(this instanceof Constructor))return new Constructor(opt);
       var proxy = createProxy(opt);
       beforeCallBase.apply(this, [proxy, opt]);
       Animation.call(this,opt);
+      (definition.afterInit||noop).call(this,proxy,opt);
     };
     if (name) {
       register[name] = Constructor;
@@ -263,7 +264,7 @@ Flip.animation = (function () {
     return Constructor;
   }
   return register;
-  function _beforeCallBase(proxy, opt, instance) {
+  function _beforeCallBase(proxy, opt, definition) {
     return proxy;
   }
 })();
