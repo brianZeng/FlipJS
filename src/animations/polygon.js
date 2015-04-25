@@ -2,7 +2,7 @@
  * Created by Administrator on 2015/4/15.
  */
 Flip.animation({
-  name:'box',
+  name:'polygon',
   variable:{
     rotateY:Math.PI*2,
     faceTranslate:0

@@ -70,7 +70,10 @@ Mat3.prototype={
     return multiplyMat(this,[defaultIfNaN(x,1),0,0,0,defaultIfNaN(y,1),0,0,0,1]);
   },
   skew:function(angleX,angleY){
-    return multiplyMat(this,[1,tan(angleX),0,tan(angleY),1,0,0,1]);
+    return multiplyMat(this,[1,tan(angleX),0,tan(angleY),1,0,0,1])
+  },
+  transform:function(m11,m12,m21,m22,dx,dy){
+    return multiplyMat(this,[m11,m21,0,m12,m22,0,dx||0,dy||0,1])
   },
   translate:function(x,y,z){
     return multiplyMat(this,[1,0,0,0,1,0,x||0,y||0,z||0])

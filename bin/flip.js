@@ -613,6 +613,25 @@ Flip.css=function(selector,rule){
     if(str)literal.push(str);
   }
 };
+Flip.transform=function(selector,rule){
+  var matMap={},literal=[];
+  if(arguments.length==2)
+    warpMatrix(rule,selector);
+  else if(isObj(selector))
+    objForEach(selector,warpMatrix);
+  else throw Error('argument error');
+  objForEach(matMap,function(mat,selector){
+    literal.push(selector,'{','transform:'+mat,'}')
+  });
+  return FlipScope.global.immediate(literal.join('\n'));
+  function warpMatrix(val,selector){
+    var mat;
+    if(isFunc(val)) mat=val(mat=new Mat3())||mat;
+    else if(val instanceof Mat3) mat=val;
+    else mat=new Mat3(val);
+    matMap[selector]=mat;
+  }
+};
 Flip.animation = (function () {
   function register(definition) {
     var beforeCallBase, name = definition.name, Constructor,afterCallBase;
@@ -1202,7 +1221,10 @@ Mat3.prototype={
     return multiplyMat(this,[defaultIfNaN(x,1),0,0,0,defaultIfNaN(y,1),0,0,0,1]);
   },
   skew:function(angleX,angleY){
-    return multiplyMat(this,[1,tan(angleX),0,tan(angleY),1,0,0,1]);
+    return multiplyMat(this,[1,tan(angleX),0,tan(angleY),1,0,0,1])
+  },
+  transform:function(m11,m12,m21,m22,dx,dy){
+    return multiplyMat(this,[m11,m21,0,m12,m22,0,dx||0,dy||0,1])
   },
   translate:function(x,y,z){
     return multiplyMat(this,[1,0,0,0,1,0,x||0,y||0,z||0])
@@ -1582,62 +1604,6 @@ var nextUid=(function(map){
   }
 })({});
 Flip.animation({
-  name:'box',
-  variable:{
-    rotateY:Math.PI*2,
-    faceTranslate:0
-  },
-  immutable:{
-    projectY:Math.PI/6,
-    projectX:Math.PI/6,
-    faceWidth:100,
-    faceHeight:100,
-    faceCount:4
-  },
-  css:{
-    '&':{
-      position:'relative'
-    }
-  },
-  afterInit:function(proxy){
-    var imm=this._immutable, n=imm.faceCount,self=this,faceClass=proxy('faceClass')||'f';
-    var faceRotate=Math.PI*2/ n,dz=-imm.faceWidth/2/Math.tan(faceRotate/2),rotateY=this._variable.rotateY|| 0,ryFunc,lastAngle,indices;
-    ryFunc=typeof rotateY=="number"?function(p){return rotateY*p}:rotateY;
-    for(var i=0;i<n;i++)
-      registerFace(i);
-    this.param('zIndices',function(p){
-      var ry=ryFunc(p),ret=[],rf=faceRotate,min=1,max=-1;
-      if(lastAngle&&Math.abs(lastAngle-ry)<rf)return indices;
-      for(var i= 0,v;i<n;i++){
-        v=ret[i]=Math.cos(ry+rf*i);
-        if(v<=min)min=v;
-        if(v>=max)max=v;
-      }
-      var range=max-min;
-      return indices= ret.map(function(num){
-        return Math.round((num-min)/range*6);
-      })
-    });
-    Flip.$(proxy('selector')+'> *[class]').forEach(function(ele){
-      ele.className+=' '+faceClass;
-    });
-    this.css('& .'+faceClass,{
-      width:imm.faceWidth+'px',
-      height:imm.faceHeight+'px',
-      position:'absolute',
-      transformOrigin:'center'
-    });
-    function registerFace(index){
-      var selector='& .'+faceClass+index,fR=faceRotate*i;
-      self.css(selector,function(css,param){
-        css.zIndex=param.zIndices[index]});
-      self.transform(selector,function(mat,param){
-        mat.rotateY(fR).translate(0,0,dz-param.faceTranslate).axonProject(param.projectX,param.projectY+param.rotateY)
-      })
-    }
-  }
-});
-Flip.animation({
   name: 'flip',
   immutable:{
     vertical:true
@@ -1697,6 +1663,62 @@ Flip.animation({
     }
   )
 })(Flip.animation);
+Flip.animation({
+  name:'polygon',
+  variable:{
+    rotateY:Math.PI*2,
+    faceTranslate:0
+  },
+  immutable:{
+    projectY:Math.PI/6,
+    projectX:Math.PI/6,
+    faceWidth:100,
+    faceHeight:100,
+    faceCount:4
+  },
+  css:{
+    '&':{
+      position:'relative'
+    }
+  },
+  afterInit:function(proxy){
+    var imm=this._immutable, n=imm.faceCount,self=this,faceClass=proxy('faceClass')||'f';
+    var faceRotate=Math.PI*2/ n,dz=-imm.faceWidth/2/Math.tan(faceRotate/2),rotateY=this._variable.rotateY|| 0,ryFunc,lastAngle,indices;
+    ryFunc=typeof rotateY=="number"?function(p){return rotateY*p}:rotateY;
+    for(var i=0;i<n;i++)
+      registerFace(i);
+    this.param('zIndices',function(p){
+      var ry=ryFunc(p),ret=[],rf=faceRotate,min=1,max=-1;
+      if(lastAngle&&Math.abs(lastAngle-ry)<rf)return indices;
+      for(var i= 0,v;i<n;i++){
+        v=ret[i]=Math.cos(ry+rf*i);
+        if(v<=min)min=v;
+        if(v>=max)max=v;
+      }
+      var range=max-min;
+      return indices= ret.map(function(num){
+        return Math.round((num-min)/range*6);
+      })
+    });
+    Flip.$(proxy('selector')+'> *[class]').forEach(function(ele){
+      ele.className+=' '+faceClass;
+    });
+    this.css('& .'+faceClass,{
+      width:imm.faceWidth+'px',
+      height:imm.faceHeight+'px',
+      position:'absolute',
+      transformOrigin:'center'
+    });
+    function registerFace(index){
+      var selector='& .'+faceClass+index,fR=faceRotate*i;
+      self.css(selector,function(css,param){
+        css.zIndex=param.zIndices[index]});
+      self.transform(selector,function(mat,param){
+        mat.rotateY(fR).translate(0,0,dz-param.faceTranslate).axonProject(param.projectX,param.projectY+param.rotateY)
+      })
+    }
+  }
+});
 Flip.animation({
   name: 'rotate',
   variable: {

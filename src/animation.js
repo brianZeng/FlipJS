@@ -240,6 +240,25 @@ Flip.css=function(selector,rule){
     if(str)literal.push(str);
   }
 };
+Flip.transform=function(selector,rule){
+  var matMap={},literal=[];
+  if(arguments.length==2)
+    warpMatrix(rule,selector);
+  else if(isObj(selector))
+    objForEach(selector,warpMatrix);
+  else throw Error('argument error');
+  objForEach(matMap,function(mat,selector){
+    literal.push(selector,'{','transform:'+mat,'}')
+  });
+  return FlipScope.global.immediate(literal.join('\n'));
+  function warpMatrix(val,selector){
+    var mat;
+    if(isFunc(val)) mat=val(mat=new Mat3())||mat;
+    else if(val instanceof Mat3) mat=val;
+    else mat=new Mat3(val);
+    matMap[selector]=mat;
+  }
+};
 Flip.animation = (function () {
   function register(definition) {
     var beforeCallBase, name = definition.name, Constructor,afterCallBase;
