@@ -2,6 +2,16 @@
  * Created by Administrator on 2015/3/11.
  */
 var FlipScope = {readyFuncs: []};
+/**
+ *
+ * @namespace Flip
+ * @global
+ * @function
+ * @example
+ * Flip(function(Flip){
+ *  //this will executed when dom ready
+ * })
+ */
 function Flip () {
   var first = arguments[0], readyFuncs = FlipScope.readyFuncs;
   if (typeof first === "function") readyFuncs ? arrAdd(FlipScope.readyFuncs, first) : first(Flip);
@@ -36,3 +46,13 @@ Flip.fallback = function (window) {
     }, Array.prototype)
   }
 };
+/**
+ * @typedef {Object} Flip.AnimationOptions
+ * @property {string} [animationType] a registed animation name
+ * @property {number} [duration=.7] animation duration (in second)
+ * @property {number} [iteration=1] how many times the animation will iterate
+ * @property {number} [delay=0] how many seconds it will begin after it starts
+ * @property {boolean}[infinite=false] if set true the animation will loop forever
+ * @property {boolean}[autoReverse=false] if set true,the animation will replay in reverse order
+ * @property {Flip.EASE}[ease=Flip.EASE.LINEAR] the easing function of the animation
+ */

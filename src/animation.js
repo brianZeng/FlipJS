@@ -1,6 +1,12 @@
 /**
  * Created by 柏然 on 2014/12/13.
  */
+/**
+ * @namespace Flip.Animation
+ * @param {Flip#AnimationOptions} opt
+ * @returns {Flip.Animation}
+ * @constructor
+ */
 function Animation(opt) {
   if (!(this instanceof Animation))return new Animation(opt);
   var r = Animation.createOptProxy(opt).result;
@@ -200,18 +206,22 @@ Animation.createOptProxy = function (setter,selector,persist) {
   setter('persistAfterFinished',persist);
   return setter;
 };
-function animate() {
-    var firstParam = typeof arguments[0], constructor, opt;
-    if (firstParam === "string") {
-      constructor = Flip.animation[arguments[0]];
-      opt = arguments[1];
-    }
-    else if (firstParam === "object") {
-      constructor = Flip.animation[arguments[0].animationType];
-      opt = arguments[0];
-    }
-    if (!constructor) constructor = Animation;
-    return setAniEnv(animate.createOptProxy(opt).result, new constructor(opt));
+/**
+ * construct an animation instance
+ * @function animate
+ * @param {Flip#AnimationOptions} opt
+ * @memberof Flip
+ * @return {Flip.Animation}
+ * @static
+ */
+function animate(opt) {
+  if (isObj(opt)) {
+    var  constructor = Flip.animation[arguments[0].animationType];
+    opt = arguments[0];
+  }
+  else throw Error('cannot construct an animation');
+  if (!constructor) constructor = Animation;
+  return setAniEnv(animate.createOptProxy(opt).result, new constructor(opt));
   }
 function setAniEnv(aniOpt, animation) {
   (aniOpt.renderGlobal||FlipScope.global).getTask(aniOpt.taskName,true).add(animation);
@@ -224,6 +234,7 @@ animate.createOptProxy = function (setter, autoStart, taskName, defaultGlobal) {
     setter('autoStart', autoStart, 'taskName', taskName, 'renderGlobal', defaultGlobal);
     return setter;
 };
+
 Flip.animate = animate;
 Flip.css=function(selector,rule){
   var literal=[];
