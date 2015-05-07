@@ -13,10 +13,12 @@
 
   Flip.$$ = Flip.$ = $$;
   document.addEventListener('DOMContentLoaded', function () {
+    var funcs=FlipScope.readyFuncs;
     FlipScope.global.init();
-    FlipScope.readyFuncs.forEach(function (callback) {
+    FlipScope.readyFuncs = null;
+    funcs.forEach(function (callback) {
       callback(Flip);
     });
-    FlipScope.readyFuncs = null;
+
   });
 })(Flip);

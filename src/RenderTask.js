@@ -18,6 +18,7 @@ RenderTask.EVENT_NAMES = {
   AFTER_CONSUME_EVENTS: 'afterConsumeEvents'
 };
 inherit(RenderTask, Flip.util.Object, {
+  update:noop,
   invalid: function () {
     var g;
     this._invalid = true;
@@ -29,19 +30,22 @@ inherit(RenderTask, Flip.util.Object, {
   },
   add: function (obj, type) {
     if (type == 'update') return arrAdd(this._updateObjs, obj);
-    if (obj instanceof Clock || obj instanceof Animation)
-      arrAdd(this._updateObjs, obj) && (obj._task = this);
+    if (obj instanceof Clock || obj instanceof Render)
+      if(arrAdd(this._updateObjs, obj) && (obj._task = this)){
+
+      }
+    this.invalid();
   },
   remove: function (obj) {
     if (obj._task == this && arrRemove(this._updateObjs, obj)){
       obj._task = null;
+      this.toFinalize(obj);
       this.invalid();
     }
   }
 });
-
 function filterIUpdate(item) {
-  if (!isObj(item))return false;
+  if (!isObj(item)||item.disabled)return false;
   else if (isFunc(item.update))
     item.update(this);
   else if (isFunc(item.emit))

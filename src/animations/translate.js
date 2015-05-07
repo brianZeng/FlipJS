@@ -3,11 +3,11 @@
  */
 Flip.animation({
   name: 'translate',
-  defParam: {
-    sx: 0, dx: 100, sy: 0, dy: 0
+  immutable:{sx:0,sy:0},
+  variable: {
+    dx: 100, dy: 0
   },
-  transform:function () {
-    var v = this.clock.value, sx = this.sx, sy = this.sy;
-    return Mat3.setTranslate(sx + (this.dx - sx) * v, sy + (this.dy - sy) * v);
+  transform:function (mat,param) {
+    mat.translate(param.dx+param.sx,param.dy+param.sy);
   }
 });

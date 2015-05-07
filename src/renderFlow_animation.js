@@ -7,6 +7,7 @@ function updateAnimation(animation,renderState){
   renderState.animation=animation;
   if(updateClock(clock,renderState)){
     animation.invalid();
+    updateAnimationParam(animation);
     animation.emit(ANI_EVT.UPDATE, renderState);
   }
   if(clock.finished){
@@ -17,41 +18,54 @@ function updateAnimation(animation,renderState){
   renderState.animatetion=null;
   return true;
 }
+
 function renderAnimation(ani,state){
   state.animation = ani;
   updateAnimationCss(ani);
   state.styleStack.push(getAnimationStyle(ani));
   ani.emit(ANI_EVT.RENDER, state);
-  if(ani._finished)ani.emit(ANI_EVT.FINISHED,state);
+  if(ani._finished)ani.emit(ANI_EVT.FINISH,state);
   state.animation = null;
 }
+function updateAnimationParam(animation){
+  var p=animation.percent,cur=animation.current=Object.create(animation._immutable);
+  objForEach(animation._variable,function(value,key){
+    cur[key]=isFunc(value)? value(p,cur):(isNaN(value)?value:p*value);
+  });
+}
 function updateAnimationCss(animation){
-  var cssMap=animation._cssMap={},cssRule;
+  var cssMap=animation._cssMap={},cssRule,cur=animation.current;
   objForEach(animation._cssCallback,function(cbs,selector){
-    cssRule=new CssContainer();
-    cbs.forEach(function(cb){resolveCss(cb,animation,cssRule)});
+    cssRule=new CssProxy();
+    cbs.forEach(function(cb){resolveCss(cb,animation,cssRule,cur)});
     mergeRule(cssMap,selector,cssRule);
   });
   objForEach(animation._matCallback,function(cbs,selector){
-    var mat=new Mat3();
-    cssRule=new CssContainer();
-    cbs.forEach(function(cb){mat=cb.apply(animation,[mat])||mat});
+    var mat=new Mat3(),arg=[mat,cur];
+    cssRule=new CssProxy();
+    cbs.forEach(function(cb){mat=cb.apply(animation,arg)||mat});
     cssRule.withPrefix('transform',mat.toString());
     mergeRule(cssMap,selector,cssRule);
   });
 }
-function resolveCss(rule,thisObj,cssContainer){
-  var ret=cssContainer||new CssContainer();
+function resolveCss(rule,thisObj,cssContainer,e){
+  var ret=cssContainer||new CssProxy(),arg=[ret,e];
   if(isObj(rule))
     objForEach(rule,cloneFunc,ret);
   else if(isFunc(rule))
-     ret=rule.apply(thisObj,[ret])||ret;
+     ret=rule.apply(thisObj,arg)||ret;
   return ret;
+}
+function formatValue(value){
+  return isNaN(value)? value:Number(value).toFixed(5).replace(/\.0+$/,'')
+}
+function formatKey(key){
+  return key.replace(/[A-Z]/g,function(c){return '-'+ c.toLowerCase()})
 }
 function getStyleRuleStr(ruleObj,selector,separator,ignoreEmpty){
   var rules=[];
   objForEach(ruleObj,function(value,key){
-    rules.push(key.replace(/[A-Z]/g,function(c){return '-'+ c.toLowerCase()})+':'+value+';');
+    rules.push(formatKey(key)+':'+formatValue(value)+';');
   });
   if(!rules.length&&ignoreEmpty)return '';
   separator=separator||'\n';

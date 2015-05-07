@@ -1,7 +1,6 @@
 /**
  * Created by 柏然 on 2014/12/12.
  */
-Flip.RenderGlobal = RenderGlobal;
 function RenderGlobal(opt) {
   if(!(this instanceof RenderGlobal))return new RenderGlobal(opt);
   opt=opt||{};
@@ -12,6 +11,7 @@ function RenderGlobal(opt) {
   this._persistElement=document.createElement('style');
   this._styleElement=document.createElement('style');
 }
+Flip.RenderGlobal = RenderGlobal;
 RenderGlobal.EVENT_NAMES = {
   FRAME_START: 'frameStart',
   FRAME_END: 'frameEnd',
@@ -45,7 +45,7 @@ inherit(RenderGlobal, Flip.util.Object, {
         return this.invalid();
       }
     }
-    else if (obj instanceof Animation || obj instanceof Clock)
+    else if (obj instanceof Render || obj instanceof Clock)
       return this.defaultTask.add(obj);
     return false;
   },
@@ -62,14 +62,18 @@ inherit(RenderGlobal, Flip.util.Object, {
     this._persistStyle=false;
     return cancel;
   },
+  refresh:function(){
+    this._foreceRender=true;
+  },
   init: function () {
     if(typeof window==="object"){
-      var head=document.head;
+      var head=document.head,self=this;
       if(!this._styleElement.parentNode){
         head.appendChild(this._styleElement);
         head.appendChild(this._persistElement);
       }
       Flip.fallback(window);
+      window.addEventListener('resize',function(){self.refresh()});
       this.loop();
     }
     this.init = function () {
@@ -79,9 +83,9 @@ inherit(RenderGlobal, Flip.util.Object, {
   invalid:function(){
     return this._invalid=true;
   },
-  loop: function () {
+  loop: function (element) {
     loopGlobal(this);
-    window.requestAnimationFrame(this.loop.bind(this), window.document.body);
+    window.requestAnimationFrame(this.loop.bind(this), element||window.document.body);
   },
   apply:function(){
     if(!this._persistStyle){
@@ -92,8 +96,9 @@ inherit(RenderGlobal, Flip.util.Object, {
     }
   },
   createRenderState: function () {
-    return {global: this, task:null,styleStack:[],forceRender:0}
+    return {global: this, task:null,styleStack:[],forceRender:this._foreceRender}
   }
 });
 FlipScope.global = new RenderGlobal();
+
 

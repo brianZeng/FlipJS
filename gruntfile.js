@@ -8,25 +8,15 @@
 }
 var config = {
   concat: {
-   /* flipCore:{
-      src:['src/util.js','src/*.js'],
-      dest:'temp/flip_core.js'
-    },
-    flipBasic: {
-      src:['bin/flip_core.js','src/animations/*.js'],
-      dest:'temp/flip_basic.js'
-    },
-    flipExtra:{
-      src:['bin/flip_core.js','src/animations/*.js','src/extra/interpolation.js','src/interpolation/*.js'],
-      dest:'temp/flip_extra.js'
-    },*/
     flip:{
       files:{
-        'temp/flip_core.js':['src/util.js','src/*.js'],
+        'temp/flip_core.js':['src/flip.js','src/util.js','src/*.js'],
         'temp/flip_basic.js':['temp/flip_core.js','src/animations/*.js'],
         'temp/flip_extra.js':['temp/flip_core.js','src/animations/*.js','src/extra/*.js','src/interpolation/*.js'],
+        'temp/flip_gl.js':['temp/flip_core.js','src/webgl/gl.js','src/webgl/base/GLRender.js','src/webgl/**/*.js'],
         'bin/flip.js':'temp/flip_basic.js',
-        'bin/flip_extra.js':'temp/flip_extra.js'
+        'bin/flip_extra.js':'temp/flip_extra.js',
+        'bin/flip_gl.js':'temp/flip_gl.js'
       },
       options:{
         process:function(src,path){
@@ -120,10 +110,20 @@ config.changess={
     dest:'plugin/editor/styles/bss.css'
   }
 };
+config.jsdoc={
+  flip:{
+    src:['src/flip.js','src/animation.js','src/mat3.js','src/CssProxy.js','src/clock.js','src/promise.js'],
+    dest:'jsdoc',
+    options:{
+      access:'public'
+    }
+  }
+};
 module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-contrib-uglify');
+  grunt.loadNpmTasks('grunt-jsdoc');
   grunt.loadNpmTasks('changess-grunt');
   grunt.initConfig(config);
   grunt.registerTask('begin_editor',['concat:editor_test','concat:editor_ng','watch:editor_ng','watch:editor_test']);

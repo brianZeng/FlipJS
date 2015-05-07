@@ -3,24 +3,25 @@
 <head lang="en">
     <meta charset="UTF-8">
     <title>basic</title>
-    <script src="../bin/flip_extra.js"></script>
+    <script src="../bin/flip.js"></script>
     <style>
         .red {
             background-color: red;
         }
-
+        #project{
+            background-color: orange;
+        }
         #scale {
             background-color: fuchsia;
         }
-
         #flip {
             background-color: darkslateblue;
         }
         .square {
             width: 100px;
             height: 100px;
+            transform-origin: center;
         }
-
         .blue {
             background-color: cornflowerblue;
         }
@@ -39,6 +40,9 @@
 <div>
     <div class="square" id="scale"></div>
 </div>
+<div>
+    <div class="square" id="project"></div>
+</div>
 <script>
     Flip(function(){
         var dur=0.5,ani=Flip.animate('translate', {selector: '#translate',duration:0.5,autoReverse:1}).start();
@@ -49,12 +53,20 @@
                     selector:'#flip',
                     autoReverse:true,
                     ease:Flip.EASE.elasticInOut,
-                    css:{
-                        '&':function(css){
-                            css.borderRadius=50*this.percent+'%';
-                        }
+                    css:function(css){
+                        css.borderRadius=50*this.percent+'%';
+                    } ,
+                    transform:function(mat){
+                        mat.rotate(Math.PI*2*this.percent);
                     }
                 });
+        Flip.animate({
+            duration:2,
+            selector:'#project',
+            transform:function(mat){
+                mat.translate(this.percent*100).flip(this.percent*Math.PI)
+            }
+        }).start()
     });
 </script>
 </body>

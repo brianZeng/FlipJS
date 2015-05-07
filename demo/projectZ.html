@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>projection</title>
+    <style>
+        .circle{
+            border-radius: 50%;
+            position: absolute;
+            display: inline-block;
+            width:20px;
+            height: 20px;
+            background-color: #63b8ee;
+        }
+        .container{
+            width: 400px;
+            height: 400px;
+            margin: 20px auto;
+        }
+    </style>
+    <script src="../bin/flip.js"></script>
+</head>
+<body>
+<div class="container">
+
+</div>
+<script>
+    Flip(function(){
+       var parent=Flip.$('.container')[0],ani=Flip.animate({
+           selector:'.container',
+           duration:2,
+           autoReverse:1,
+           infinite:1,
+           immutable:{
+               near:-100,
+               far:200
+           },
+           variable:{
+               z:400
+           }
+
+       }),rx=Math.PI/6,ry=Math.PI/6;
+        for(var i=0;i<20;i++){
+            createCircle(random(20*i,30*i),random(400),random(-200,200),i)
+        }
+
+        function createCircle(x,y,z,i){
+            var d=document.createElement('div');
+            d.className='circle '+'c'+i;
+            parent.appendChild(d);
+            ani.transform('& .c'+i,function(mat,p){
+                var tz=z+ p.z,scale=2* (p.far-tz)/(p.far- p.near);
+                if(scale<0) scale=0;
+                mat.scale(scale, scale).translate(x,y,z).axonProject(rx,ry)
+            });
+        }
+        function random(max,min){
+            min=min||0;
+            return min+Math.random()*(max-min)
+        }
+    });
+</script>
+</body>
+</html>

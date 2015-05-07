@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <script src="../bin/flip_extra.js"></script>
+    <style>
+        .cubic,.triangle,.hexagon{
+            margin: 100px auto;
+            width: 200px;
+            height: 200px;
+        }
+        .coral{
+            background-color: coral;
+        }
+        .red{
+            background-color: red;
+        }
+        .orange{
+            background-color: orange;
+        }
+        .yellow{
+            background-color: yellow;
+        }
+        .b0{
+            background-color: #0b97c4;
+        }
+        .b1{
+            background-color: #63b8ee;
+        }
+        .b2{
+            background-color: cornflowerblue;
+        }
+        .fm{
+            background-color: orange;
+        }
+        .fl{
+            background-color: deeppink;
+        }
+        .fr{
+            background-color: lemonchiffon;
+        }
+        .bm{
+            background-color: #EE5757;
+        }
+        .bl{
+            background-color: orangered;
+        }
+        .br{
+            background-color: yellow;
+        }
+    </style>
+</head>
+<body>
+<div class="cubic">
+    <div class="f0 coral">front</div>
+    <div class="f1 red">left</div>
+    <div class="f3 orange">right</div>
+    <div class="f2 yellow">back</div>
+</div>
+<div class="triangle">
+    <div class="f0 b0">first</div>
+    <div class="f1 b1">second</div>
+    <div class="f2 b2">third</div>
+</div>
+<div class="hexagon">
+    <div class="fm f0">front middle</div>
+    <div class="fl f1">front left</div>
+    <div class="fr f5">front right</div>
+    <div class="bm f3">back middle</div>
+    <div class="bl f2">back left</div>
+    <div class="br f4">back right</div>
+</div>
+<script>
+    Flip(function(){
+        var ry=Math.PI*4;
+        Flip.animate({
+            animationType:'polygon',
+            selector:'.cubic',
+            duration:4,
+            infinite:1,
+            immutable:{
+                faceWidth:140,
+                faceHeight:120
+            },
+            variable:{
+                rotateY:ry,
+                faceTranslate:function(p){
+                    var d=300;
+                    return p<0.5? d*p:d*(1-p)
+                }
+            }
+        });
+        Flip.animate({
+            animationType:'polygon',
+            selector:'.triangle',
+            duration:1,
+            infinite:1,
+            immutable:{
+                faceWidth:120,
+                faceHeight:120,
+                faceCount:3
+            },
+            variable:{
+                faceTranslate:function(p){
+                    var d=200;
+                    return p<0.5? d*p:d*(1-p)
+                }
+            }
+        });
+        Flip.animate({
+            animationType:'polygon',
+            selector:'.hexagon',
+            duration:5,
+            infinite:1,
+            immutable:{
+                faceWidth:120,
+                faceHeight:120,
+                faceCount:6
+            }
+        })
+    })
+</script>
+
+</body>
+</html>

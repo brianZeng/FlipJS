@@ -3,13 +3,13 @@
  */
 Flip.animation({
   name: 'rotate',
-  defParam: {
+  variable: {
     angle: Math.PI * 2
   },
   beforeCallBase: function (proxy) {
     proxy.source('ease', Flip.EASE.circInOut);
   },
-  transform: function () {
-    return Flip.Mat3.setRotate(this.angle * this.clock.value);
+  transform: function (mat,param) {
+    mat.rotate(param.angle)
   }
 });

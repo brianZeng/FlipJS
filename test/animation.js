@@ -31,7 +31,7 @@ describe('Construct Animation:', function () {
         tickSpy();
         console.log(arguments);
       });
-      ani.clock.once(Flip.Clock.EVENT_NAMES.FINISHED, function () {
+      ani.clock.once(Flip.Clock.EVENT_NAMES.FINISH, function () {
         finishSpy(this.value);
         expect(tickSpy).toHaveBeenCalled();
         expect(finishSpy).toHaveBeenCalledWith(1);
@@ -82,13 +82,13 @@ describe('Construct Animation:', function () {
       ani.once('render',function(){
         expect(ani.percent).toBe(0);
       });
-      ani.once('finished',function(){
+      ani.once('finish',function(){
         expect(ani.percent).toBe(1);
         expect(ani.lastStyleRule.indexOf('width:100')).toBeGreaterThan(-1);
         notCall=jasmine.createSpy();
-        ani.once('finished',notCall);
+        ani.once('finish',notCall);
       });
-      ani.once('finalized',function(){
+      ani.once('finalize',function(){
         expect(notCall).not.toHaveBeenCalled();
         expect(ani.finished).toBe(true);
         ani=null;
@@ -99,12 +99,53 @@ describe('Construct Animation:', function () {
       isNewAnimation(ani);
       ani.clock.autoReverse=true;
       ani.start();
-      ani.on('finalized',function(){
+      ani.on('finalize',function(){
         expect(this.percent).toBe(0);
         done();
       })
     })
-  })
+  });
+  describe('4.restart animation',function(){
+    it('add to last task if not specify',function(done){
+      var ani= Flip.animate({
+        duration:.2
+      }),spy=jasmine.createSpy('onrestart'),t=Date.now();
+      ani.start();
+      ani.then(function(){
+        ani.restart();
+        ani.once('start',function(){
+          expect(task._updateObjs).toContain(ani);
+          spy();
+        });
+        return ani;
+      }).then(function(last){
+        expect(last).toBe(ani);
+        expect(Date.now()-t).toBeGreaterThan(400);
+        debugger;
+        done();
+      });
+    });
+    it('add to specify task',function(done){
+      var ani= Flip.animate({
+        duration:.1
+      }),t2=global.getTask('t2',true);
+      ani.start();
+      ani.once('start',function(){
+        expect(ani._task).toBe(task);
+
+      }).then(function(){
+        expect(ani._ltName).toBe(task.name);
+        return ani.restart({task:t2}).once(function(){
+          expect(ani._task).toBe(t2);
+          expect(task._updateObjs).not.toContain(ani);
+        })
+      }).then(function(){
+        expect(ani._ltName).toBe(t2.name);
+        done();
+      })
+    })
+  });
+
 });
 describe('css function',function(){
   it('Flip.css setImmediate css style',function(){

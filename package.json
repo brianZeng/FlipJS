@@ -1,6 +1,6 @@
 {
   "name": "flip",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "description": "javascript framework for css animation",
   "dependencies": {
@@ -9,5 +9,7 @@
     "grunt-contrib-watch": "~0.5",
     "grunt-contrib-uglify": "0.6"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "grunt-jsdoc": "^0.5.8"
+  }
 }

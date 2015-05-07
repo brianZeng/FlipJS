@@ -1,36 +1,8 @@
 /**
  * Created by 柏然 on 2014/12/12.
  */
-var FlipScope = {readyFuncs: []};
-function Flip () {
-  var first = arguments[0], readyFuncs = FlipScope.readyFuncs;
-  if (typeof first === "function") readyFuncs ? arrAdd(FlipScope.readyFuncs, first) : first(Flip);
-}
-Object.defineProperty(Flip, 'instance', {get: function () {
-  return FlipScope.global;
-}});
-Flip.fallback = function (window) {
-  if (!window.requestAnimationFrame)
-    window.requestAnimationFrame = function (callback) {
-      setTimeout(callback, 30);
-    };
-  if (!window.Float32Array) {
-    window.Float32Array = inherit(function (lengthOrArray) {
-      if (!(this instanceof arguments.callee))return new arguments.callee(lengthOrArray);
-      var i = 0, from, len;
-      if (typeof lengthOrArray === "number") {
-        from = [0];
-        len = lengthOrArray;
-      } else
-        len = (from = lengthOrArray).length;
-      for (i; i < len; i++)
-        this[i] = from[i] || 0;
-    }, Array.prototype)
-  }
-};
-if (typeof module !== "undefined" && module.exports)
-  module.exports = Flip;
-else if (window) window.Flip = Flip;
+
+
 
 Flip.util = {Object: obj, Array: array, inherit: inherit};
 function createProxy(obj) {
@@ -102,15 +74,6 @@ function arrSort(array, func_ProName, des) {
     return compare(a) > compare(b)
   });
 }
-
-function arrUnique(array, func_ProName) {
-  var compare = arrMapFun(func_ProName);
-  return array.reduce(function (r, item) {
-    var res = compare(item);
-    if (r.indexOf(res) == -1)r.push(item);
-    return r;
-  }, []);
-}
 function arrFirst(array, func_ProName) {
   for (var i = 0, item, len = array.length, compare = arrMapFun(func_ProName); i < len; i++)
     if (compare(item = array[i]))return item;
@@ -131,14 +94,14 @@ function arrMapFun(func_ProName) {
     return item
   };
 }
-function arrSameSeq(arr, func_ProName, des) {
+/*function arrSameSeq(arr, func_ProName, des) {
   if (arr.length == 1)return true;
   var compare = arrMapFun(func_ProName);
   des = !!des;
   for (var i = 1, len = arr.length; i < len; i++)
     if (des != (compare(arr[i]) < compare(arr[i - 1])))return false;
   return true;
-}
+}*/
 array.remove = arrRemove;
 array.add = arrAdd;
 array.first = arrFirst;
@@ -253,7 +216,6 @@ function objForEach(object, callback, thisObj, arg) {
         callback.apply(thisObj, [object[name], name, arg]);
   }
   return object;
-
 }
 obj.forEach = objForEach;
 inherit(obj, null, {
@@ -276,5 +238,19 @@ inherit(obj, null, {
 function cloneFunc(value, key) {
   this[key] = value;
 }
+function mixObj(){
+  var ret={};
+  for(var i=0,len=arguments.length;i<len;i++){
+    objForEach(arguments[i],cloneFunc,ret)
+  }
+  return ret;
+}
 function isFunc(value){return typeof value==="function"}
 function isObj(value){return (typeof value==="object") && value}
+function noop(){}
+if (typeof module !== "undefined" && module.exports)
+  module.exports = Flip;
+else if(typeof define!=="undefined")define(function(){return Flip});
+else if (window) {
+  window.Flip = Flip;
+}
