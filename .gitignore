@@ -8,5 +8,5 @@ plugin/test
 projectFilesBackup
 bower_components
 bin
-images
+dist
 temp

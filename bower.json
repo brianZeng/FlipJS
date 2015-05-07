@@ -1,8 +1,8 @@
 {
-  "name": "flip",
+  "name": "flip-js",
   "version": "0.0.1",
   "authors": [
-    "borian <borian@vip.qq.com>"
+    "bairan.zeng<borian@vip.qq.com>"
   ],
   "description": "javascript animation framework",
   "main": "bin/flip.js",
@@ -20,7 +20,11 @@
     "test.html",
     "images",
     "test",
-    "tests"
+    "tests",
+    "src",
+    "demo",
+    "jsdoc",
+    "bin"
   ],
   "devDependencies": {
     "angular": "~1.3.8",

@@ -27,6 +27,14 @@ var config = {
         stripBanners:true
       }
     },
+    bower_flip:{
+      files:{
+        'dist/flip.js':'bin/flip.js'
+      },
+      options:{
+        stripBanners:true
+      }
+    },
     ng_test_suit:{
       src:['angular','angular-mocks'].map(function(name){
         return 'bower_components/'+name+'/'+name+'.js';
@@ -90,6 +98,11 @@ config.uglify = {
       'bin/flip_extra.min.js': 'bin/flip_extra.js'
     }
   },
+  bower_flip:{
+    files:{
+      'dist/flip.min.js':'dist/flip.js'
+    }
+  },
   atrk: {
     files: {
       "bin/atrk.min.js": "bin/atrk.js"
@@ -128,5 +141,6 @@ module.exports = function (grunt) {
   grunt.initConfig(config);
   grunt.registerTask('begin_editor',['concat:editor_test','concat:editor_ng','watch:editor_ng','watch:editor_test']);
   grunt.registerTask('con-ugly', ['concat', 'uglify:flip']);
+  grunt.registerTask('bower_publish',['concat:flip','concat:bower_flip','uglify:bower_flip']);
   //grunt.registerTask('con-flip',['concat:flipCore','concat:flipBasic','concat:flipExtra','concat:flip'])
 };

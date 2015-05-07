@@ -1,9 +1,3 @@
-/**
- * Created by 柏然 on 2014/12/12.
- */
-
-
-
 Flip.util = {Object: obj, Array: array, inherit: inherit};
 function createProxy(obj) {
   var from, result = {}, func, objType = typeof obj;
