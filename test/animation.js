@@ -12,10 +12,6 @@ describe('Construct Animation:', function () {
     });
   });
   describe('2.use Flip.animation() to construct an animation:', function () {
-    it('1.first param can be animation type', function () {
-      var ani = Flip.animate('translate');
-      expect(ani instanceof Flip.Animation).toBeTruthy();
-    });
     it('2.ease function set by name or ease',function(){
       var ani=Flip.animate({
         ease:Flip.EASE.backIn

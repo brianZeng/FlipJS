@@ -1,17 +1,30 @@
 (function(){var FlipScope = {readyFuncs: []};
 /**
- *
+ * construct an animation with {@link AnimationOptions} or invoke function until dom ready
  * @namespace Flip
  * @global
- * @function
+ * @type {function}
+ * @param {function|AnimationOptions} readyFuncOrAniOpt
  * @example
  * Flip(function(Flip){
- *  //this will executed when dom ready
- * })
+ *  //this will executed until dom ready
+ * });
+ * //it will construct until dom ready
+ * Flip({
+ *  duration:1,
+ *  selector:'.ani',
+ *  transform:function(mat){
+ *    var s=1-this.percent;
+  *    mat.scale(s,s)
+  *   }
+ * });
  */
-function Flip () {
-  var first = arguments[0], readyFuncs = FlipScope.readyFuncs;
-  if (typeof first === "function") readyFuncs ? arrAdd(FlipScope.readyFuncs, first) : first(Flip);
+function Flip (readyFuncOrAniOpt) {
+  var func, readyFuncs = FlipScope.readyFuncs;
+  if(isObj(readyFuncOrAniOpt)) func=function(){animate(readyFuncOrAniOpt)};
+  else if(isFunc(readyFuncOrAniOpt)) func=readyFuncOrAniOpt;
+  else throw Error('argument should be an animation option or a function');
+  readyFuncs ? arrAdd(FlipScope.readyFuncs, func) : func(Flip);
 }
 Object.defineProperty(Flip, 'instance', {get: function () {
   return FlipScope.global;
@@ -43,8 +56,10 @@ Flip.fallback = function (window) {
     }, Array.prototype)
   }
 };
+
 /**
- * @typedef {Object} Flip.AnimationOptions
+ * @typedef  AnimationOptions
+ * @type {Object}
  * @property {?string} [animationType] a registered animation name
  * @property {?string} [selector='']  css selector to apply animation
  * @property {?boolean}[persistAfterFinished] if set true the css and transform will keep after animation finished
@@ -52,16 +67,20 @@ Flip.fallback = function (window) {
  * @property {?number} [iteration=1] how many times the animation will iterate
  * @property {?number} [delay=0] how many seconds it will begin after it starts
  * @property {?boolean}[infinite=false] if set true the animation will loop forever
- * @property {?boolean}[autoReverse=false] if set true,the animation will replay in reverse order
+ * @property {?boolean}[autoReverse=false] if set true,the animation will replay in reverse order(one iteration including the reversing time if has)
  * @property {?boolean}[autoStart] if set false the animation will starts until Animation#start() is called
  * @property {?Flip.EASE|function}[ease=Flip.EASE.LINEAR] the easing function of the animation
  * @property {?Object} [css] the css rules for the animation
  * @property {?Object} [transform] the transform rules for the animation
  * @property {?Object} [on] register event handler for the animation
  * @property {?Object} [once] register event handler once for the animation
+ * @property {?Object} [variable] variable parameter of the animation(every frame the value update with animation#percent)
+ * @property {?Object} [immutable] immutable parameter of the animation
  */
+
 /**
- * @typedef {Object.<string,function>|function|Object.<string,string>} Flip.AnimationCssOptions
+ * @typedef  AnimationCssOptions
+ * @type {Object}
  * @example
  * // css can pass a function
  * Flip.animate({
@@ -90,7 +109,8 @@ Flip.fallback = function (window) {
  */
 /**
  * @see {@tutorial use-matrix}
- * @typedef {Object.<string,function>|function} Flip.AnimationTransformOptions
+ * @typedef  AnimationTransformOptions
+ * @type {Object}
  * @example
  * //use the css matrix property can do a lot of amazing things,but manually write matrix can be extremely tedious.
  * //just do matrix manipulation don't worry about the calculation
@@ -117,7 +137,18 @@ Flip.fallback = function (window) {
  *  }
  * })
  */
+/**
+ *
+ * @callback transformUpdate
+ * @param {Flip.Mat3} mat the {@link Flip.Mat3}for manipulation
+ * @param {Object} param the calculation param
+ */
 
+/**
+ * @callback cssUpdate
+ * @param {CssProxy} css the {@link CssProxy} for update
+ * @param {Object} param the calculation param
+*/
 Flip.util = {Object: obj, Array: array, inherit: inherit};
 function createProxy(obj) {
   var from, result = {}, func, objType = typeof obj;
@@ -368,6 +399,67 @@ else if(typeof define!=="undefined")define(function(){return Flip});
 else if (window) {
   window.Flip = Flip;
 }
+function CssProxy(obj){
+  if(!(this instanceof CssProxy))return new CssProxy(obj);
+  this.merge(obj);
+}
+(function(){
+  var p=CssProxy.prototype={
+    toString:function(){
+     var rules=[];
+     objForEach(this,function(value,key){
+       rules.push(key.replace(/[A-Z]/g,function(c){return '-'+ c.toLowerCase()})+':'+value);
+     });
+     return rules.join(';')
+   },
+    /**
+     * combine key with prefixes
+     * @param {string} key   css rule name
+     * @param {string} value css value
+     * @param {Array<String>}[prefixes=['-moz-','-ms-','-webkit-','-o-','']] prefixes to combine
+     * @returns {CssProxy} return itself
+     * @example
+     * css.withPrefix('border-radius','50%')
+     * //add css rules: -moz-border-radius,-webkit-border-radius,-ms-border-radius
+     */
+   withPrefix:function(key,value,prefixes){
+     var self=this;
+     (prefixes||['-moz-','-ms-','-webkit-','-o-','']).forEach(function(prefix){
+       self[prefix+key]=value;
+     });
+     return self;
+   },
+    /**
+     * combine another css rules
+     * @param {CssProxy|Object}obj
+     * @returns {CssProxy} return itself
+     */
+   merge:function(obj){
+     if(isObj(obj)&&obj!==this)
+       objForEach(obj,cloneFunc,this);
+     return this;
+   },
+    /**
+     * format string
+     * @param {string} stringTemplate
+     * @returns {string}
+     * @example
+     * function(css,param){
+     *  css.boxShadow=css.template('0 0 ${1} ${2} ${3} inset',param.blurBase+param.blurRange,param.spread,param.blurColor);
+     *  //instead of
+     *  //css.boxShadow='0 0'+param.blurBase+param.blurRange+' '+ param.spread +' '+param.blurColor+' inset';
+     * }
+     */
+   template:function(stringTemplate){
+     var arg=arguments,r;
+     return stringTemplate.replace(/\{(\d+)\}/g,function($i,i){
+       return ((r=arg[i])==undefined)?$i:formatValue(r);
+     })
+   }
+ };
+
+  Flip.stringTemplate=p.t=p.template;
+})();
 function Render(){
 }
 inherit(Flip.Render=Render,Flip.util.Object,{
@@ -460,8 +552,12 @@ inherit(TimeLine, Flip.util.Object, {
 });
 /**
  * @namespace Flip.Animation
- * @param {Flip#AnimationOptions} opt
+ * @param {AnimationOptions} opt
  * @returns {Flip.Animation}
+ * @property {number} percent the percentage of the animation [0-1]
+ * @property {boolean} finished if the animation is finished
+ * @property {Flip.Promise} promise the animation promise for continuation
+ * @property {Flip.Clock} clock animation clock for timing
  * @constructor
  */
 function Animation(opt) {
@@ -480,7 +576,11 @@ function Animation(opt) {
   this.use(opt);
   this.init();
 }
-inherit(Animation,Render, {
+inherit(Animation,Render,
+  /**
+   * @lends Flip.Animation.prototype
+   */
+  {
   get percent(){
     return this.clock.value||0;
   },
@@ -514,11 +614,22 @@ inherit(Animation,Render, {
   get elements() {
     return Flip.$(this.selector);
   },
+    /**
+     * mostly you don't need to call this manually
+     * @alias Flip.Animation#init
+     * @function
+     */
   init:function(){
     this._promise=null;
     this._canceled=this._finished=false;
     this.invalid();
   },
+    /**
+     * reset the animation
+     * @alias Flip.Animation#reset
+     * @function
+     * @return {Flip.Animation} the animation itself
+     */
   reset:function(skipInit){
     var clock;
     if(clock=this.clock)
@@ -531,6 +642,29 @@ inherit(Animation,Render, {
     useAniOption(this,opt);
     return this;
   },
+    /**
+     * set the animation calculate parameter
+     * @alias Flip.Animation#param
+     * @param {string|Object}key
+     * @param {?any}value
+     * @param {?boolean}immutable is it an immutable param
+     * @returns {Flip.Animation}
+     * @example
+     * ani.param('rotation',Math.PI*2);
+     * ani.param({
+     *  translateX:100,
+     *  translateY:200
+     * });
+     * // you can use {@link AnimationOptions} to set param when construct
+     * Flip({
+     *  immutable:{
+     *    width:200
+     *  },
+     *  variable:{
+     *    scaleX:2
+     *  }
+     * })
+     */
   param:function(key,value,immutable){
     if(isObj(key))
       cloneWithPro(key,this[value?'_immutable':'_variable']);
@@ -538,6 +672,26 @@ inherit(Animation,Render, {
       this[immutable?'_immutable':'_variable'][key]=value;
     return this;
   },
+    /**
+     * set the animation transform update function
+     * @see {@link Flip.Mat3} for matrix manipulation
+     * @alias Flip.Animation#transform
+     * @param {string|transformUpdate|AnimationTransformOptions}selector
+     * @param {transformUpdate}matCallback
+     * @returns {Flip.Animation}
+     * @example
+     * ani.transform(function(mat,param){
+     *  mat.translate(param.translateX,param.translateY)
+     * });
+     * ani.transform('.rotate',function(mat,param){
+     *  mat.rotate(param.rotation)
+     * });
+     * //or set with {@link AnimationOptions}
+     * ani.transform({
+     *  '&':function(mat){};
+     *  '& div':function(mat){};
+     * })
+     */
   transform:function(selector,matCallback){
     var map=this._matCallback;
     objForEach(normalizeMapArgs(arguments),function(callback,selector){
@@ -545,7 +699,29 @@ inherit(Animation,Render, {
     });
     return this;
   },
-  css:function(mapOrFunc){
+    /**
+     * set the css update function
+     * @alias Flip.Animation#css
+     * @param {string|cssUpdate|AnimationCssOptions}selector
+     * @param {Object} [mapOrFunc]
+     * @returns {Flip.Animation}
+     * @see {@link Flip.CssProxy}
+     * @example
+     * ani.css('&:hover',{fontSize:'larger'});
+     * ani.css(function(css,param){
+     *  css.withPrefix('border-radius',param.borderRadius);
+     * });
+     * //set multiple rules
+     * ani.css({
+     *  '&.invalid':{
+     *    backgroundColor:'#333'
+     *  },
+     *  '&.invalid >*':function(css){
+     *    css.opacity=1-this.percent
+     *  }
+     * })
+     */
+  css:function(selector,mapOrFunc){
     var map=this._cssCallback;
     objForEach(normalizeMapArgs(arguments),function(callback,selector){
       addMap(selector,map,callback)
@@ -577,16 +753,35 @@ inherit(Animation,Render, {
   getStyleRule:function(){
     return getAnimationStyle(this);
   },
+    /**
+     * start the animation, it won't take effect on started animation
+     * @returns {Flip.Animation} return itself
+     */
   start:function(){
     findTaskToAddOrThrow(this);
     return this._canceled? this.restart():invokeClock(this,'start');
   },
+    /**
+     * @alias Flip.Animation#resume
+     * @param {Object} [evt] trigger event param
+     * @returns {Flip.Animation} returns itself
+     */
   resume:function(evt){
     return invokeClock(this,'resume',ANI_EVT.RESUME,evt);
   },
+    /**
+     * @alias Flip.Animation#pause
+     * @param {Object} [evt] trigger event param
+     * @returns {Flip.Animation} returns itself
+     */
   pause:function(evt){
     return invokeClock(this,'pause',ANI_EVT.PAUSE,evt);
   },
+    /**
+     * @alias Flip.Animation#cancel
+     * @param {Object} [evt] trigger event param
+     * @returns {Flip.Animation} returns itself
+     */
   cancel:function(evt){
     var t;
     if(!this._canceled &&!this._finished){
@@ -597,16 +792,40 @@ inherit(Animation,Render, {
     }
     return this;
   },
+    /**
+     * @alias Flip.Animation#restart
+     * @returns {Flip.Animation} returns itself
+     */
   restart:function(opt){
     findTaskToAddOrThrow(this,opt);
     this.clock.reset();
     this.init();
     return this.start();
   },
+    /**
+     * @alias Flip.Animation#then
+     * @param {function} [onFinished] callback when animation finished
+     * @param {function} [onerror] callback when animation interrupted
+     * @returns {Flip.Promise}
+     */
   then:function(onFinished,onerror){
     return this.promise.then(onFinished,onerror);
   }
 });
+/** triggered when in every frame after animation starts
+ * @event Flip.Animation#update  */
+/** triggered when animation render new frame
+ * @event Flip.Animation#render  */
+/** triggered when animation ends
+ * @event Flip.Animation#finish  */
+/** triggered when animation is finalized
+ * @event Flip.Animation#finilize  */
+/** triggered when animation is canceled
+ * @event Flip.Animation#cancel  */
+/** triggered when animation is paused
+ * @event Flip.Animation#pause   */
+/** triggered when animation is resumed from pause
+ * @event Flip.Animation#resume  */
 var ANI_EVT=Animation.EVENT_NAMES =Object.seal({
   UPDATE: 'update',
   FINALIZE: 'finalize',
@@ -664,12 +883,51 @@ Animation.createOptProxy = function (setter,selector,persist) {
   return setter;
 };
 /**
- * construct an animation instance
- * @function animate
- * @param {Flip#AnimationOptions|Object} opt
+ * construct an animation instance see {@link AnimationOptions}
+ * you can also construct an animation by {@link Flip.Animation}
+ * @function
+ * @param {AnimationOptions} opt
  * @memberof Flip
  * @return {Flip.Animation}
- * @static
+ * @example
+ * //start animation when dom ready
+ * Flip(function(){
+ *  //imitate 3D rotateZ
+ *  Flip.animate({
+ *     selector:'.double-face',
+ *    duration:.8,
+ *    autoReverse:true,
+ *    iteration:2,
+ *    immutable:{
+ *      width:150
+ *    },
+ *    variable:{
+ *      rotation:Math.PI,// every frame,it will refresh the param.rotation from 0 to Math.PI
+ *      showFront:function(percent){
+ *        //if it rotate to back end the front end will not display
+ *        return percent <= 0.5
+ *      }
+ *    },
+ *    css:{
+ *      '&,& div':function(css,param){
+ *        css.width=css.height=param.width+'px';
+ *      },
+ *      '& .front':function(css,param){
+ *        css.display=param.showFront? 'block':'none';
+ *        css.backgroundColor='orange';
+ *      },
+ *      '& .back':function(css,param){
+ *        css.display=!param.showFront? 'block':'none';
+ *        css.backgroundColor='yellow';
+ *      }
+ *    },
+ *    transform:{
+ *     '&':function(mat,param){
+ *        mat.flip(param.rotation);
+ *      }
+ *    }
+ *  })
+ * });
  */
 function animate(opt) {
   if (isObj(opt)) {
@@ -693,6 +951,30 @@ animate.createOptProxy = function (setter, autoStart, taskName, defaultGlobal) {
 };
 
 Flip.animate = animate;
+/**
+ * set css style immediately,you can cancel it later
+ * @param {string|AnimationCssOptions} selector
+ * @param {?Object} rule
+ * @memberof Flip
+ * @returns {function} cancel the css style
+ * @example
+ * var cancel=Flip.css('.content',{
+ *  width:document.documentElement.clientWidth+'px',
+ *  height:document.documentElement.clientHeight+'px'
+ * });
+ *  //cancel the style 2s later
+ *  setTimeout(cancel,2000);
+ *  // you can pass multiple style rules
+ *  Flip.css({
+ *    body:{
+ *      margin:0
+ *    },
+ *    '.danger':{
+ *       color:'red',
+ *       borderColor:'orange'
+ *    }
+ *  })
+ */
 Flip.css=function(selector,rule){
   var literal=[];
   if(arguments.length==2){
@@ -708,6 +990,15 @@ Flip.css=function(selector,rule){
     if(str)literal.push(str);
   }
 };
+/**
+ * set transform style immediately
+ * @param {string|AnimationTransformOptions} selector
+ * @param {?Object|Flip.Mat3} rule
+ * @memberof Flip
+ * @returns {function} cancel the css style
+ * @example
+ * Flip.transform('.scale',Flip.Mat3().scale(0.5))
+ */
 Flip.transform=function(selector,rule){
   var matMap={},literal=[];
   if(arguments.length==2)
@@ -800,7 +1091,18 @@ function Clock(opt) {
   this.reset(1,0,0,0);
 }
 Flip.Clock = Clock;
-
+/**
+ * triggered when animation iterate
+ * @event Flip.Animation#iterate
+ */
+/**
+ * triggered when animation reverse play
+ * @event Flip.Animation#reverse
+ */
+/**
+ * triggered when animation first update(not constructed)
+ * @event Flip.Animation#init
+ */
 var CLOCK_EVT=Clock.EVENT_NAMES =Object.seal({
   UPDATE: 'update',
   INIT:'init',
@@ -981,6 +1283,9 @@ Flip.EASE = Clock.EASE = (function () {
    * from jQuery.easing
    * @lends Clock.EASE
    * @lends Flip.EASE
+   * @memberof Flip
+   * @readonly
+   * @public
    * @enum {function}
    * @property {function} linear
    * @property {function} zeroStep
@@ -1088,40 +1393,6 @@ Flip.EASE = Clock.EASE = (function () {
 
   return Object.freeze(F);
 })();
-function CssContainer(obj){
-  if(!(this instanceof CssContainer))return new CssContainer(obj);
-  this.merge(obj);
-}
-(function(){
-  var p=CssContainer.prototype={
-    toString:function(){
-     var rules=[];
-     objForEach(this,function(value,key){
-       rules.push(key.replace(/[A-Z]/g,function(c){return '-'+ c.toLowerCase()})+':'+value);
-     });
-     return rules.join(';')
-   },
-   withPrefix:function(key,value,prefixes){
-     var self=this;
-     (prefixes||['-moz-','-ms-','-webkit-','-o-','']).forEach(function(prefix){
-       self[prefix+key]=value;
-     });
-     return self;
-   },
-   merge:function(obj){
-     if(isObj(obj)&&obj!==this)
-       objForEach(obj,cloneFunc,this);
-     return this;
-   },
-   template:function(string){
-     var arg=arguments,r;
-     return string.replace(/\{(\d+)\}/g,function($i,i){
-       return ((r=arg[i])==undefined)?$i:formatValue(r);
-     })
-   }
- };
-  Flip.stringTemplate=p.t=p.template;
-})();
 (function (Flip) {
   function $(slt, ele) {
     var r = [], root = ele || document;
@@ -1144,9 +1415,6 @@ function CssContainer(obj){
   });
 })(Flip);
 
-/**
- * Created by 柏然 on 2014/12/12.
- */
 function RenderGlobal(opt) {
   if(!(this instanceof RenderGlobal))return new RenderGlobal(opt);
   opt=opt||{};
@@ -1248,17 +1516,7 @@ inherit(RenderGlobal, Flip.util.Object, {
 FlipScope.global = new RenderGlobal();
 
 
-/**
- * @namespace Flip.Mat3
- * @param arrayOrX1
- * @param y1
- * @param dx
- * @param x2
- * @param y2
- * @param dy
- * @returns {Flip.Mat3}
- * @constructor
- */
+
 function Mat3(arrayOrX1,y1,dx,x2,y2,dy){
   if(!(this instanceof Mat3))return new Mat3(arrayOrX1,y1,dx,x2,y2,dy);
   var eles;
@@ -1282,7 +1540,15 @@ function defaultIfNaN(v,def){
   var ret=+v;
   return isNaN(ret)?def:ret;
 }
+/**
+ * @alias Flip.Mat3.prototype
+ */
 Mat3.prototype={
+  /**
+   * print the matrix elements
+   * @alias Flip.Mat3#print
+   * @returns {string}
+   */
   print:function(){
     var e=this.elements,ret=[];
     for(var i=0;i<3;i++){
@@ -1296,19 +1562,43 @@ Mat3.prototype={
     this.elements=new Float32Array(arr);
     return this;
   },
+  /**
+   * set element value
+   * @param {number}col column index (from 0 to 2)
+   * @param {number}row row index (from 0 to 2)
+   * @param {number}value
+   * @returns {Flip.Mat3} itself
+   */
   set:function(col,row,value){
     this.elements[col*3+row]=value;
     return this;
   },
+  /**
+   * matrix multiplication
+   * @param {Flip.Mat3|Array} matOrArray
+   * @returns {Flip.Mat3} itself
+   */
   concat:function(matOrArray){
     var other=matOrArray instanceof Mat3? matOrArray.elements:matOrArray;
     return multiplyMat(this,other);
   },
+  /**
+   *
+   * @param {number} rotationX
+   * @param {number} rotationY
+   * @returns {Flip.Mat3} itself
+   */
   axonProject:function(rotationX,rotationY){
     rotationX=rotationX||0;rotationY=rotationY||0;
     var cosX=cos(rotationX),sinX=sin(rotationX),cosY=cos(rotationY),sinY=sin(rotationY);
     return multiplyMat(this,[cosY,sinX*sinY,0,0,cosX,0,sinY,-cosY*sinX,0],1)
   },
+  /**
+   *
+   * @param {number} rV
+   * @param {number} rH
+   * @returns {Flip.Mat3} itself
+   */
   obliqueProject:function(rV,rH){
     rH=rH||0;rV=rV||0;
     var s=1/tan(rV),sSin=sin(rH)*s,sCos=cos(rH)*s;
@@ -1317,39 +1607,93 @@ Mat3.prototype={
   toString: function(){
     return 'matrix('+map2DArray(this.elements).join(',')+')'
   },
+  /**
+   * use matrix for canvas2d context
+   * @param {CanvasRenderingContext2D} ctx
+   * @returns {Flip.Mat3} itself
+   */
   applyContext2D:function(ctx){
     ctx.transform.apply(ctx,map2DArray(this.elements));
+    return this
   },
+  /**
+   * construct a matrix with the same elements (deep clone)
+   * @returns {Flip.Mat3}
+   */
   clone:function(){
     return new Mat3(this.elements);
   },
+  /**
+   * @param {number} [x=1]
+   * @param {number} [y=1]
+   * @returns {Flip.Mat3} itself
+   */
   scale:function(x,y){
     return multiplyMat(this,[defaultIfNaN(x,1),0,0,0,defaultIfNaN(y,1),0,0,0,1]);
   },
+  /**
+   *
+   * @param {number} angleX
+   * @param {number} angleY
+   * @returns {Flip.Mat3} itself
+   */
   skew:function(angleX,angleY){
     return multiplyMat(this,[1,tan(angleX),0,tan(angleY),1,0,0,1])
   },
   transform:function(m11,m12,m21,m22,dx,dy){
     return multiplyMat(this,[m11,m21,0,m12,m22,0,dx||0,dy||0,1])
   },
+  /**
+   *
+   * @param {number} [x=0]
+   * @param {number} [y=0]
+   * @param {number} [z=0]
+   * @returns {Flip.Mat3} itself
+   */
   translate:function(x,y,z){
     return multiplyMat(this,[1,0,0,0,1,0,x||0,y||0,z||0])
   },
+  /**
+   *
+   * @param {number} angle
+   * @param {boolean}[horizontal]
+   * @returns {Flip.Mat3} itself
+   */
   flip:function(angle,horizontal){
     var sinA = sin(angle), cosA = cos(angle);
     return multiplyMat(this,horizontal?[1,0,0,-sinA,cosA,0,0,0,1]:[cosA,sinA,0,0,1,0,0,0,1]);
   },
+  /**
+   *
+   * @param {number} angle
+   * @returns {Flip.Mat3} itself
+   */
   rotate:function(angle){
     return this.rotateZ(angle);
   },
+  /**
+   *
+   * @param {number} angle
+   * @returns {Flip.Mat3} itself
+   */
   rotateX:function(angle){
     var sina=sin(angle),cosa=cos(angle);
     return multiplyMat(this,[1,0,0,0,cosa,sina,0,-sina,cosa]);
   },
+  /**
+   *
+   * @param {number} angle
+   * @returns {Flip.Mat3} itself
+   */
   rotateY:function(angle){
     var sina=sin(angle),cosa=cos(angle);
     return multiplyMat(this,[cosa,0,-sina,0,1,0,sina,0,cosa])
   },
+  /**
+   *
+   * @param {number} angle
+   * @returns {Flip.Mat3} itself
+   */
   rotateZ:function(angle){
     var sina=sin(angle),cosa=cos(angle);
     return multiplyMat(this,[cosa,sina,0,-sina,cosa,0,0,0,1])
@@ -1434,6 +1778,13 @@ function multiplyMat(mat,other,reverse){
       }
     })
   }
+
+  /**
+   * @namespace Flip.Promise
+   * @param {function|Flip.Animation|AnimationOptions} resolver
+   * @returns {Thenable}
+   * @constructor
+   */
   function Promise(resolver){
     if(!(this instanceof Promise))return new Promise(resolver);
     var resolvedPromise,pending=[],ahead=[],resolved;
@@ -1544,7 +1895,18 @@ function multiplyMat(mat,other,reverse){
       }
     })
   }
+
+  /**
+   * continue when all promises finished
+   * @memberof Flip.Promise
+   * @param {Array<Flip.Promise|AnimationOptions|function>}
+   * @returns Flip.Promise
+   */
   Promise.all=promiseAll;
+  /**
+   * @memberof Flip.Promise
+   * @returns {{resolve:function,reject:function,promise:Flip.Promise}}
+   */
   Promise.defer=function(){
     var defer={};
     defer.promise=Promise(function(resolver,rejector){
@@ -1654,20 +2016,20 @@ function updateAnimationParam(animation){
 function updateAnimationCss(animation){
   var cssMap=animation._cssMap={},cssRule,cur=animation.current;
   objForEach(animation._cssCallback,function(cbs,selector){
-    cssRule=new CssContainer();
+    cssRule=new CssProxy();
     cbs.forEach(function(cb){resolveCss(cb,animation,cssRule,cur)});
     mergeRule(cssMap,selector,cssRule);
   });
   objForEach(animation._matCallback,function(cbs,selector){
     var mat=new Mat3(),arg=[mat,cur];
-    cssRule=new CssContainer();
+    cssRule=new CssProxy();
     cbs.forEach(function(cb){mat=cb.apply(animation,arg)||mat});
     cssRule.withPrefix('transform',mat.toString());
     mergeRule(cssMap,selector,cssRule);
   });
 }
 function resolveCss(rule,thisObj,cssContainer,e){
-  var ret=cssContainer||new CssContainer(),arg=[ret,e];
+  var ret=cssContainer||new CssProxy(),arg=[ret,e];
   if(isObj(rule))
     objForEach(rule,cloneFunc,ret);
   else if(isFunc(rule))
@@ -1706,6 +2068,107 @@ function mergeRule(map,selector,cssContainer){
   if(oriRule)oriRule.merge(cssContainer);
   else map[selector]=cssContainer;
 }
+Flip.RenderGlobal = RenderGlobal;
+function RenderGlobal(opt) {
+  if(!(this instanceof RenderGlobal))return new RenderGlobal(opt);
+  opt=opt||{};
+  this._tasks = {};
+  this._defaultTaskName=opt.defaultTaskName||'default';
+  this._invalid=true;
+  this._persistStyles={};
+  this._persistElement=document.createElement('style');
+  this._styleElement=document.createElement('style');
+}
+RenderGlobal.EVENT_NAMES = {
+  FRAME_START: 'frameStart',
+  FRAME_END: 'frameEnd',
+  UPDATE: 'update'
+};
+inherit(RenderGlobal, Flip.util.Object, {
+  get defaultTask(){
+    var taskName=this._defaultTaskName,t=this._tasks[taskName];
+    if(!t)this.add(t=new RenderTask(taskName));
+    return t;
+  },
+  getTask:function(name,createIfNot){
+    if(!name)return this.defaultTask;
+    var r=this._tasks[name];
+    if(!r&&createIfNot) {
+      r=new RenderTask(name);
+      this.add(r)
+    }
+    return r;
+  },
+  add: function (obj) {
+    var task, taskName, tasks;
+    if (obj instanceof RenderTask) {
+      if (!(taskName = obj.name))
+        throw Error('task must has a name');
+      else if ((tasks=this._tasks).hasOwnProperty(taskName))
+        throw Error('contains same name task');
+      else if (tasks[taskName]=obj) {
+        obj._global=this;
+        obj.timeline.start();
+        return this.invalid();
+      }
+    }
+    else if (obj instanceof Animation || obj instanceof Clock)
+      return this.defaultTask.add(obj);
+    return false;
+  },
+  immediate:function(style){
+    var styles=this._persistStyles,uid=nextUid('immediateStyle'),self=this,cancel;
+    styles[uid]=style;
+    cancel=function cancelImmediate(){
+      var style=styles[uid];
+      delete styles[uid];
+      self._persistStyle=false;
+      return style;
+    };
+    cancel.id=uid;
+    this._persistStyle=false;
+    return cancel;
+  },
+  refresh:function(){
+    this._foreceRender=true;
+  },
+  init: function () {
+    if(typeof window==="object"){
+      var head=document.head,self=this;
+      if(!this._styleElement.parentNode){
+        head.appendChild(this._styleElement);
+        head.appendChild(this._persistElement);
+      }
+      Flip.fallback(window);
+      window.addEventListener('resize',function(){self.refresh()});
+      this.loop();
+    }
+    this.init = function () {
+      console.warn('The settings have been initiated,do not init twice');
+    };
+  },
+  invalid:function(){
+    return this._invalid=true;
+  },
+  loop: function (element) {
+    loopGlobal(this);
+    window.requestAnimationFrame(this.loop.bind(this), element||window.document.body);
+  },
+  apply:function(){
+    if(!this._persistStyle){
+      var styles=[];
+      objForEach(this._persistStyles,function(style){styles.push(style);});
+      this._persistElement.innerHTML=styles.join('\n');
+      this._persistStyle=true;
+    }
+  },
+  createRenderState: function () {
+    return {global: this, task:null,styleStack:[],forceRender:this._foreceRender}
+  }
+});
+FlipScope.global = new RenderGlobal();
+
+
 var nextUid=(function(map){
   return function (type){
     if(!map[type])map[type]=1;

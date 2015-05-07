@@ -32,17 +32,24 @@ describe('interrupt animation',function(){
   it('cancel -> reset -> start',function(done){
       var oncancel=jasmine.createSpy('canceled'),t1;
       setAni({
-        duration:.1,once:{cancel:oncancel,update:function(){
-          ani.cancel();
-        }}
+        duration:.1,
+        once:{
+          cancel:oncancel,update:function(){
+            ani.cancel();
+          }
+        }
       }).then(function(){
         expect(true).toBe(false);
       },function(){
         setTimeout(function(){ani.start()},300);
+        ani.once('init',function() {
+          clamp(Date.now()-t1,300,330);
+          t1=Date.now();
+        });
         t1=Date.now();
         return ani.reset();
       }).then(function(){
-        clamp(Date.now()-t1,400,430);
+        clamp(Date.now()-t1,100,110);
         expect(oncancel).toHaveBeenCalled();
         done();
       })
@@ -50,16 +57,19 @@ describe('interrupt animation',function(){
   it('cancel -> restart',function(done){
     var oncancel=jasmine.createSpy('canceled'),t1;
     setAni({
-      duration:.1,once:{cancel:oncancel,update:function(){
-        ani.cancel();
-      }}
+      duration:.1,
+      once:{
+        cancel:oncancel,
+        update:function(){
+          ani.cancel();
+        }}
     }).then(function(){
       expect(true).toBe(false);
     },function(){
       t1=Date.now();
       return ani.restart();
     }).then(function(){
-      clamp(Date.now()-t1,100,130);
+      clamp(Date.now()-t1,100,136);
       expect(oncancel).toHaveBeenCalled();
       done();
     })
