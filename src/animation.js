@@ -3,8 +3,12 @@
  */
 /**
  * @namespace Flip.Animation
- * @param {Flip#AnimationOptions} opt
+ * @param {AnimationOptions} opt
  * @returns {Flip.Animation}
+ * @property {number} percent the percentage of the animation [0-1]
+ * @property {boolean} finished if the animation is finished
+ * @property {Flip.Promise} promise the animation promise for continuation
+ * @property {Flip.Clock} clock animation clock for timing
  * @constructor
  */
 function Animation(opt) {
@@ -23,7 +27,11 @@ function Animation(opt) {
   this.use(opt);
   this.init();
 }
-inherit(Animation,Render, {
+inherit(Animation,Render,
+  /**
+   * @lends Flip.Animation.prototype
+   */
+  {
   get percent(){
     return this.clock.value||0;
   },
@@ -57,11 +65,22 @@ inherit(Animation,Render, {
   get elements() {
     return Flip.$(this.selector);
   },
+    /**
+     * mostly you don't need to call this manually
+     * @alias Flip.Animation#init
+     * @function
+     */
   init:function(){
     this._promise=null;
     this._canceled=this._finished=false;
     this.invalid();
   },
+    /**
+     * reset the animation
+     * @alias Flip.Animation#reset
+     * @function
+     * @return {Flip.Animation} the animation itself
+     */
   reset:function(skipInit){
     var clock;
     if(clock=this.clock)
@@ -74,6 +93,29 @@ inherit(Animation,Render, {
     useAniOption(this,opt);
     return this;
   },
+    /**
+     * set the animation calculate parameter
+     * @alias Flip.Animation#param
+     * @param {string|Object}key
+     * @param {?any}value
+     * @param {?boolean}immutable is it an immutable param
+     * @returns {Flip.Animation}
+     * @example
+     * ani.param('rotation',Math.PI*2);
+     * ani.param({
+     *  translateX:100,
+     *  translateY:200
+     * });
+     * // you can use {@link AnimationOptions} to set param when construct
+     * Flip({
+     *  immutable:{
+     *    width:200
+     *  },
+     *  variable:{
+     *    scaleX:2
+     *  }
+     * })
+     */
   param:function(key,value,immutable){
     if(isObj(key))
       cloneWithPro(key,this[value?'_immutable':'_variable']);
@@ -81,6 +123,26 @@ inherit(Animation,Render, {
       this[immutable?'_immutable':'_variable'][key]=value;
     return this;
   },
+    /**
+     * set the animation transform update function
+     * @see {@link Flip.Mat3} for matrix manipulation
+     * @alias Flip.Animation#transform
+     * @param {string|transformUpdate|AnimationTransformOptions}selector
+     * @param {transformUpdate}matCallback
+     * @returns {Flip.Animation}
+     * @example
+     * ani.transform(function(mat,param){
+     *  mat.translate(param.translateX,param.translateY)
+     * });
+     * ani.transform('.rotate',function(mat,param){
+     *  mat.rotate(param.rotation)
+     * });
+     * //or set with {@link AnimationOptions}
+     * ani.transform({
+     *  '&':function(mat){};
+     *  '& div':function(mat){};
+     * })
+     */
   transform:function(selector,matCallback){
     var map=this._matCallback;
     objForEach(normalizeMapArgs(arguments),function(callback,selector){
@@ -88,7 +150,29 @@ inherit(Animation,Render, {
     });
     return this;
   },
-  css:function(mapOrFunc){
+    /**
+     * set the css update function
+     * @alias Flip.Animation#css
+     * @param {string|cssUpdate|AnimationCssOptions}selector
+     * @param {Object} [mapOrFunc]
+     * @returns {Flip.Animation}
+     * @see {@link Flip.CssProxy}
+     * @example
+     * ani.css('&:hover',{fontSize:'larger'});
+     * ani.css(function(css,param){
+     *  css.withPrefix('border-radius',param.borderRadius);
+     * });
+     * //set multiple rules
+     * ani.css({
+     *  '&.invalid':{
+     *    backgroundColor:'#333'
+     *  },
+     *  '&.invalid >*':function(css){
+     *    css.opacity=1-this.percent
+     *  }
+     * })
+     */
+  css:function(selector,mapOrFunc){
     var map=this._cssCallback;
     objForEach(normalizeMapArgs(arguments),function(callback,selector){
       addMap(selector,map,callback)
@@ -120,16 +204,35 @@ inherit(Animation,Render, {
   getStyleRule:function(){
     return getAnimationStyle(this);
   },
+    /**
+     * start the animation, it won't take effect on started animation
+     * @returns {Flip.Animation} return itself
+     */
   start:function(){
     findTaskToAddOrThrow(this);
     return this._canceled? this.restart():invokeClock(this,'start');
   },
+    /**
+     * @alias Flip.Animation#resume
+     * @param {Object} [evt] trigger event param
+     * @returns {Flip.Animation} returns itself
+     */
   resume:function(evt){
     return invokeClock(this,'resume',ANI_EVT.RESUME,evt);
   },
+    /**
+     * @alias Flip.Animation#pause
+     * @param {Object} [evt] trigger event param
+     * @returns {Flip.Animation} returns itself
+     */
   pause:function(evt){
     return invokeClock(this,'pause',ANI_EVT.PAUSE,evt);
   },
+    /**
+     * @alias Flip.Animation#cancel
+     * @param {Object} [evt] trigger event param
+     * @returns {Flip.Animation} returns itself
+     */
   cancel:function(evt){
     var t;
     if(!this._canceled &&!this._finished){
@@ -140,16 +243,40 @@ inherit(Animation,Render, {
     }
     return this;
   },
+    /**
+     * @alias Flip.Animation#restart
+     * @returns {Flip.Animation} returns itself
+     */
   restart:function(opt){
     findTaskToAddOrThrow(this,opt);
     this.clock.reset();
     this.init();
     return this.start();
   },
+    /**
+     * @alias Flip.Animation#then
+     * @param {function} [onFinished] callback when animation finished
+     * @param {function} [onerror] callback when animation interrupted
+     * @returns {Flip.Promise}
+     */
   then:function(onFinished,onerror){
     return this.promise.then(onFinished,onerror);
   }
 });
+/** triggered when in every frame after animation starts
+ * @event Flip.Animation#update  */
+/** triggered when animation render new frame
+ * @event Flip.Animation#render  */
+/** triggered when animation ends
+ * @event Flip.Animation#finish  */
+/** triggered when animation is finalized
+ * @event Flip.Animation#finilize  */
+/** triggered when animation is canceled
+ * @event Flip.Animation#cancel  */
+/** triggered when animation is paused
+ * @event Flip.Animation#pause   */
+/** triggered when animation is resumed from pause
+ * @event Flip.Animation#resume  */
 var ANI_EVT=Animation.EVENT_NAMES =Object.seal({
   UPDATE: 'update',
   FINALIZE: 'finalize',
@@ -207,12 +334,51 @@ Animation.createOptProxy = function (setter,selector,persist) {
   return setter;
 };
 /**
- * construct an animation instance
- * @function animate
- * @param {Flip#AnimationOptions} opt
+ * construct an animation instance see {@link AnimationOptions}
+ * you can also construct an animation by {@link Flip.Animation}
+ * @function
+ * @param {AnimationOptions} opt
  * @memberof Flip
  * @return {Flip.Animation}
- * @static
+ * @example
+ * //start animation when dom ready
+ * Flip(function(){
+ *  //imitate 3D rotateZ
+ *  Flip.animate({
+ *     selector:'.double-face',
+ *    duration:.8,
+ *    autoReverse:true,
+ *    iteration:2,
+ *    immutable:{
+ *      width:150
+ *    },
+ *    variable:{
+ *      rotation:Math.PI,// every frame,it will refresh the param.rotation from 0 to Math.PI
+ *      showFront:function(percent){
+ *        //if it rotate to back end the front end will not display
+ *        return percent <= 0.5
+ *      }
+ *    },
+ *    css:{
+ *      '&,& div':function(css,param){
+ *        css.width=css.height=param.width+'px';
+ *      },
+ *      '& .front':function(css,param){
+ *        css.display=param.showFront? 'block':'none';
+ *        css.backgroundColor='orange';
+ *      },
+ *      '& .back':function(css,param){
+ *        css.display=!param.showFront? 'block':'none';
+ *        css.backgroundColor='yellow';
+ *      }
+ *    },
+ *    transform:{
+ *     '&':function(mat,param){
+ *        mat.flip(param.rotation);
+ *      }
+ *    }
+ *  })
+ * });
  */
 function animate(opt) {
   if (isObj(opt)) {
@@ -236,6 +402,30 @@ animate.createOptProxy = function (setter, autoStart, taskName, defaultGlobal) {
 };
 
 Flip.animate = animate;
+/**
+ * set css style immediately,you can cancel it later
+ * @param {string|AnimationCssOptions} selector
+ * @param {?Object} rule
+ * @memberof Flip
+ * @returns {function} cancel the css style
+ * @example
+ * var cancel=Flip.css('.content',{
+ *  width:document.documentElement.clientWidth+'px',
+ *  height:document.documentElement.clientHeight+'px'
+ * });
+ *  //cancel the style 2s later
+ *  setTimeout(cancel,2000);
+ *  // you can pass multiple style rules
+ *  Flip.css({
+ *    body:{
+ *      margin:0
+ *    },
+ *    '.danger':{
+ *       color:'red',
+ *       borderColor:'orange'
+ *    }
+ *  })
+ */
 Flip.css=function(selector,rule){
   var literal=[];
   if(arguments.length==2){
@@ -251,6 +441,15 @@ Flip.css=function(selector,rule){
     if(str)literal.push(str);
   }
 };
+/**
+ * set transform style immediately
+ * @param {string|AnimationTransformOptions} selector
+ * @param {?Object|Flip.Mat3} rule
+ * @memberof Flip
+ * @returns {function} cancel the css style
+ * @example
+ * Flip.transform('.scale',Flip.Mat3().scale(0.5))
+ */
 Flip.transform=function(selector,rule){
   var matMap={},literal=[];
   if(arguments.length==2)

@@ -36,20 +36,20 @@ function updateAnimationParam(animation){
 function updateAnimationCss(animation){
   var cssMap=animation._cssMap={},cssRule,cur=animation.current;
   objForEach(animation._cssCallback,function(cbs,selector){
-    cssRule=new CssContainer();
+    cssRule=new CssProxy();
     cbs.forEach(function(cb){resolveCss(cb,animation,cssRule,cur)});
     mergeRule(cssMap,selector,cssRule);
   });
   objForEach(animation._matCallback,function(cbs,selector){
     var mat=new Mat3(),arg=[mat,cur];
-    cssRule=new CssContainer();
+    cssRule=new CssProxy();
     cbs.forEach(function(cb){mat=cb.apply(animation,arg)||mat});
     cssRule.withPrefix('transform',mat.toString());
     mergeRule(cssMap,selector,cssRule);
   });
 }
 function resolveCss(rule,thisObj,cssContainer,e){
-  var ret=cssContainer||new CssContainer(),arg=[ret,e];
+  var ret=cssContainer||new CssProxy(),arg=[ret,e];
   if(isObj(rule))
     objForEach(rule,cloneFunc,ret);
   else if(isFunc(rule))

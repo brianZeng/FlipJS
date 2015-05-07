@@ -1,4 +1,14 @@
 (function(){var FlipScope = {readyFuncs: []};
+/**
+ *
+ * @namespace Flip
+ * @global
+ * @function
+ * @example
+ * Flip(function(Flip){
+ *  //this will executed when dom ready
+ * })
+ */
 function Flip () {
   var first = arguments[0], readyFuncs = FlipScope.readyFuncs;
   if (typeof first === "function") readyFuncs ? arrAdd(FlipScope.readyFuncs, first) : first(Flip);
@@ -33,6 +43,80 @@ Flip.fallback = function (window) {
     }, Array.prototype)
   }
 };
+/**
+ * @typedef {Object} Flip.AnimationOptions
+ * @property {?string} [animationType] a registered animation name
+ * @property {?string} [selector='']  css selector to apply animation
+ * @property {?boolean}[persistAfterFinished] if set true the css and transform will keep after animation finished
+ * @property {?number} [duration=.7] animation duration (in second)
+ * @property {?number} [iteration=1] how many times the animation will iterate
+ * @property {?number} [delay=0] how many seconds it will begin after it starts
+ * @property {?boolean}[infinite=false] if set true the animation will loop forever
+ * @property {?boolean}[autoReverse=false] if set true,the animation will replay in reverse order
+ * @property {?boolean}[autoStart] if set false the animation will starts until Animation#start() is called
+ * @property {?Flip.EASE|function}[ease=Flip.EASE.LINEAR] the easing function of the animation
+ * @property {?Object} [css] the css rules for the animation
+ * @property {?Object} [transform] the transform rules for the animation
+ * @property {?Object} [on] register event handler for the animation
+ * @property {?Object} [once] register event handler once for the animation
+ */
+/**
+ * @typedef {Object.<string,function>|function|Object.<string,string>} Flip.AnimationCssOptions
+ * @example
+ * // css can pass a function
+ * Flip.animate({
+ *  selector:'.expand',
+ *  css:function(css){
+ *    //increase css property width from 0 - 500 px, border-width from 0-2 px;
+ *    css.width=this.percent*500+'px';
+ *    css.borderWidth=this.percent*2+'px';
+ *  }
+ * });
+ * //or can be an object with multiple css rule
+ * Flip.animate({
+ *  selector:'.dropText'
+ *  css:{
+ *    '&':{//& replace the animation selector
+ *      overflow:'hidden',
+ *      height:'300px'
+ *     },
+ *     '& p':{// .dropText p
+ *      height:function(css){
+ *        css.height=300*this.percent+'px';
+ *      }
+ *     }
+ *  }
+ * });
+ */
+/**
+ * @see {@tutorial use-matrix}
+ * @typedef {Object.<string,function>|function} Flip.AnimationTransformOptions
+ * @example
+ * //use the css matrix property can do a lot of amazing things,but manually write matrix can be extremely tedious.
+ * //just do matrix manipulation don't worry about the calculation
+ * Flip.animate({
+ *  selector:'div',
+ *  transform:function(mat){
+ *    var p=this.percent;
+ *    mat.translate(p*300,p*120).rotate(Math.PI*2*p);
+ *    //it like a rolling cubic
+ *  }
+ * });
+ * //pass multiple transform rules
+ * Flip.animate({
+ *  selector:'.roll',
+ *  duration:2,//2 seconds
+ *  infinite:true,// infinite loop
+ *  transform{
+ *    '&':function(mat){
+ *      mat.rotate(Math.PI*2*this.percent).translate(200)
+ *    },
+ *    '& .rotate':function(mat){
+ *      mat.rotate(Math.PI*4*this.percent);
+ *    }//two manipulations are irrelevant
+ *  }
+ * })
+ */
 
 Flip.util = {Object: obj, Array: array, inherit: inherit};
 function createProxy(obj) {
@@ -374,6 +458,12 @@ inherit(TimeLine, Flip.util.Object, {
     }
   }
 });
+/**
+ * @namespace Flip.Animation
+ * @param {Flip#AnimationOptions} opt
+ * @returns {Flip.Animation}
+ * @constructor
+ */
 function Animation(opt) {
   if (!(this instanceof Animation))return new Animation(opt);
   var r = Animation.createOptProxy(opt).result;
@@ -573,18 +663,22 @@ Animation.createOptProxy = function (setter,selector,persist) {
   setter('persistAfterFinished',persist);
   return setter;
 };
-function animate() {
-    var firstParam = typeof arguments[0], constructor, opt;
-    if (firstParam === "string") {
-      constructor = Flip.animation[arguments[0]];
-      opt = arguments[1];
-    }
-    else if (firstParam === "object") {
-      constructor = Flip.animation[arguments[0].animationType];
-      opt = arguments[0];
-    }
-    if (!constructor) constructor = Animation;
-    return setAniEnv(animate.createOptProxy(opt).result, new constructor(opt));
+/**
+ * construct an animation instance
+ * @function animate
+ * @param {Flip#AnimationOptions|Object} opt
+ * @memberof Flip
+ * @return {Flip.Animation}
+ * @static
+ */
+function animate(opt) {
+  if (isObj(opt)) {
+    var  constructor = Flip.animation[arguments[0].animationType];
+    opt = arguments[0];
+  }
+  else throw Error('cannot construct an animation');
+  if (!constructor) constructor = Animation;
+  return setAniEnv(animate.createOptProxy(opt).result, new constructor(opt));
   }
 function setAniEnv(aniOpt, animation) {
   (aniOpt.renderGlobal||FlipScope.global).getTask(aniOpt.taskName,true).add(animation);
@@ -597,6 +691,7 @@ animate.createOptProxy = function (setter, autoStart, taskName, defaultGlobal) {
     setter('autoStart', autoStart, 'taskName', taskName, 'renderGlobal', defaultGlobal);
     return setter;
 };
+
 Flip.animate = animate;
 Flip.css=function(selector,rule){
   var literal=[];
@@ -1153,6 +1248,17 @@ inherit(RenderGlobal, Flip.util.Object, {
 FlipScope.global = new RenderGlobal();
 
 
+/**
+ * @namespace Flip.Mat3
+ * @param arrayOrX1
+ * @param y1
+ * @param dx
+ * @param x2
+ * @param y2
+ * @param dy
+ * @returns {Flip.Mat3}
+ * @constructor
+ */
 function Mat3(arrayOrX1,y1,dx,x2,y2,dy){
   if(!(this instanceof Mat3))return new Mat3(arrayOrX1,y1,dx,x2,y2,dy);
   var eles;
@@ -1280,6 +1386,9 @@ function multiplyMat(mat,other,reverse){
   out[8] = a20*b02+a21*b12+a22*b22;
   return mat;
 }
+/**
+ * @tutorial use-matrix
+ */
 (function(Flip){
   var strictRet=true,syncEnqueue;
   function enqueue(callback){

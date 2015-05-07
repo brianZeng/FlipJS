@@ -1,7 +1,4 @@
 /**
- * Created by Administrator on 2015/3/12.
- */
-/**
  * Created by 柏然 on 2014/12/12.
  */
 function RenderGlobal(opt) {
@@ -103,4 +100,5 @@ inherit(RenderGlobal, Flip.util.Object, {
   }
 });
 FlipScope.global = new RenderGlobal();
+
 

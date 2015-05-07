@@ -1,7 +1,15 @@
 /**
- * Created by Administrator on 2015/3/25.
+ * 3*3 matrix in row style,use for manipulate css property transform
+ * @namespace Flip.Mat3
+ * @param {Array|number} [arrayOrX1]
+ * @param {number}[y1]
+ * @param {number}[dx]
+ * @param {number}[x2]
+ * @param {number}[y2]
+ * @param {number}[dy]
+ * @returns {Flip.Mat3}
+ * @constructor
  */
-
 function Mat3(arrayOrX1,y1,dx,x2,y2,dy){
   if(!(this instanceof Mat3))return new Mat3(arrayOrX1,y1,dx,x2,y2,dy);
   var eles;
@@ -25,7 +33,15 @@ function defaultIfNaN(v,def){
   var ret=+v;
   return isNaN(ret)?def:ret;
 }
+/**
+ * @alias Flip.Mat3.prototype
+ */
 Mat3.prototype={
+  /**
+   * print the matrix elements
+   * @alias Flip.Mat3#print
+   * @returns {string}
+   */
   print:function(){
     var e=this.elements,ret=[];
     for(var i=0;i<3;i++){
@@ -39,19 +55,43 @@ Mat3.prototype={
     this.elements=new Float32Array(arr);
     return this;
   },
+  /**
+   * set element value
+   * @param {number}col column index (from 0 to 2)
+   * @param {number}row row index (from 0 to 2)
+   * @param {number}value
+   * @returns {Flip.Mat3} itself
+   */
   set:function(col,row,value){
     this.elements[col*3+row]=value;
     return this;
   },
+  /**
+   * matrix multiplication
+   * @param {Flip.Mat3|Array} matOrArray
+   * @returns {Flip.Mat3} itself
+   */
   concat:function(matOrArray){
     var other=matOrArray instanceof Mat3? matOrArray.elements:matOrArray;
     return multiplyMat(this,other);
   },
+  /**
+   *
+   * @param {number} rotationX
+   * @param {number} rotationY
+   * @returns {Flip.Mat3} itself
+   */
   axonProject:function(rotationX,rotationY){
     rotationX=rotationX||0;rotationY=rotationY||0;
     var cosX=cos(rotationX),sinX=sin(rotationX),cosY=cos(rotationY),sinY=sin(rotationY);
     return multiplyMat(this,[cosY,sinX*sinY,0,0,cosX,0,sinY,-cosY*sinX,0],1)
   },
+  /**
+   *
+   * @param {number} rV
+   * @param {number} rH
+   * @returns {Flip.Mat3} itself
+   */
   obliqueProject:function(rV,rH){
     rH=rH||0;rV=rV||0;
     var s=1/tan(rV),sSin=sin(rH)*s,sCos=cos(rH)*s;
@@ -60,39 +100,93 @@ Mat3.prototype={
   toString: function(){
     return 'matrix('+map2DArray(this.elements).join(',')+')'
   },
+  /**
+   * use matrix for canvas2d context
+   * @param {CanvasRenderingContext2D} ctx
+   * @returns {Flip.Mat3} itself
+   */
   applyContext2D:function(ctx){
     ctx.transform.apply(ctx,map2DArray(this.elements));
+    return this
   },
+  /**
+   * construct a matrix with the same elements (deep clone)
+   * @returns {Flip.Mat3}
+   */
   clone:function(){
     return new Mat3(this.elements);
   },
+  /**
+   * @param {number} [x=1]
+   * @param {number} [y=1]
+   * @returns {Flip.Mat3} itself
+   */
   scale:function(x,y){
     return multiplyMat(this,[defaultIfNaN(x,1),0,0,0,defaultIfNaN(y,1),0,0,0,1]);
   },
+  /**
+   *
+   * @param {number} angleX
+   * @param {number} angleY
+   * @returns {Flip.Mat3} itself
+   */
   skew:function(angleX,angleY){
     return multiplyMat(this,[1,tan(angleX),0,tan(angleY),1,0,0,1])
   },
   transform:function(m11,m12,m21,m22,dx,dy){
     return multiplyMat(this,[m11,m21,0,m12,m22,0,dx||0,dy||0,1])
   },
+  /**
+   *
+   * @param {number} [x=0]
+   * @param {number} [y=0]
+   * @param {number} [z=0]
+   * @returns {Flip.Mat3} itself
+   */
   translate:function(x,y,z){
     return multiplyMat(this,[1,0,0,0,1,0,x||0,y||0,z||0])
   },
+  /**
+   *
+   * @param {number} angle
+   * @param {boolean}[horizontal]
+   * @returns {Flip.Mat3} itself
+   */
   flip:function(angle,horizontal){
     var sinA = sin(angle), cosA = cos(angle);
     return multiplyMat(this,horizontal?[1,0,0,-sinA,cosA,0,0,0,1]:[cosA,sinA,0,0,1,0,0,0,1]);
   },
+  /**
+   *
+   * @param {number} angle
+   * @returns {Flip.Mat3} itself
+   */
   rotate:function(angle){
     return this.rotateZ(angle);
   },
+  /**
+   *
+   * @param {number} angle
+   * @returns {Flip.Mat3} itself
+   */
   rotateX:function(angle){
     var sina=sin(angle),cosa=cos(angle);
     return multiplyMat(this,[1,0,0,0,cosa,sina,0,-sina,cosa]);
   },
+  /**
+   *
+   * @param {number} angle
+   * @returns {Flip.Mat3} itself
+   */
   rotateY:function(angle){
     var sina=sin(angle),cosa=cos(angle);
     return multiplyMat(this,[cosa,0,-sina,0,1,0,sina,0,cosa])
   },
+  /**
+   *
+   * @param {number} angle
+   * @returns {Flip.Mat3} itself
+   */
   rotateZ:function(angle){
     var sina=sin(angle),cosa=cos(angle);
     return multiplyMat(this,[cosa,sina,0,-sina,cosa,0,0,0,1])
@@ -129,3 +223,6 @@ function multiplyMat(mat,other,reverse){
   out[8] = a20*b02+a21*b12+a22*b22;
   return mat;
 }
+/**
+ * @tutorial use-matrix
+ */

@@ -110,10 +110,20 @@ config.changess={
     dest:'plugin/editor/styles/bss.css'
   }
 };
+config.jsdoc={
+  flip:{
+    src:['src/flip.js','src/animation.js','src/mat3.js','src/CssProxy.js'],
+    dest:'jsdoc',
+    options:{
+      access:'public'
+    }
+  }
+};
 module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-contrib-uglify');
+  grunt.loadNpmTasks('grunt-jsdoc');
   grunt.loadNpmTasks('changess-grunt');
   grunt.initConfig(config);
   grunt.registerTask('begin_editor',['concat:editor_test','concat:editor_ng','watch:editor_ng','watch:editor_test']);
