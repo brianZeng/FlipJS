@@ -1,14 +1,29 @@
 /**
- * Created by 柏然 on 2014/12/12.
+ * animation timing clock ,do not operate clock until you know what you are doing
+ * @namespace Clock
+ * @alias Flip.Clock
+ * @param opt
+ * @returns {Clock}
+ * @constructor
  */
-
 function Clock(opt) {
   if (!(this instanceof Clock))return new Clock(opt);
   objForEach(Clock.createOptProxy(opt, 1, Clock.EASE.linear, 0, 1, 0,0).result, cloneFunc, this);
   this.reset(1,0,0,0);
 }
 Flip.Clock = Clock;
-
+/**
+ * triggered when animation iterate
+ * @event Flip.Animation#iterate
+ */
+/**
+ * triggered when animation reverse play
+ * @event Flip.Animation#reverse
+ */
+/**
+ * triggered when animation first update(not constructed)
+ * @event Flip.Animation#init
+ */
 var CLOCK_EVT=Clock.EVENT_NAMES =Object.seal({
   UPDATE: 'update',
   INIT:'init',
@@ -189,6 +204,9 @@ Flip.EASE = Clock.EASE = (function () {
    * from jQuery.easing
    * @lends Clock.EASE
    * @lends Flip.EASE
+   * @memberof Flip
+   * @readonly
+   * @public
    * @enum {function}
    * @property {function} linear
    * @property {function} zeroStep

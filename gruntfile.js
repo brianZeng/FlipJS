@@ -112,7 +112,7 @@ config.changess={
 };
 config.jsdoc={
   flip:{
-    src:['src/flip.js','src/animation.js','src/mat3.js','src/CssProxy.js'],
+    src:['src/flip.js','src/animation.js','src/mat3.js','src/CssProxy.js','src/clock.js','src/promise.js'],
     dest:'jsdoc',
     options:{
       access:'public'

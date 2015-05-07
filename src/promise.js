@@ -46,6 +46,13 @@
       }
     })
   }
+
+  /**
+   * @namespace Flip.Promise
+   * @param {function|Flip.Animation|AnimationOptions} resolver
+   * @returns {Thenable}
+   * @constructor
+   */
   function Promise(resolver){
     if(!(this instanceof Promise))return new Promise(resolver);
     var resolvedPromise,pending=[],ahead=[],resolved;
@@ -156,7 +163,18 @@
       }
     })
   }
+
+  /**
+   * continue when all promises finished
+   * @memberof Flip.Promise
+   * @param {Array<Flip.Promise|AnimationOptions|function>}
+   * @returns Flip.Promise
+   */
   Promise.all=promiseAll;
+  /**
+   * @memberof Flip.Promise
+   * @returns {{resolve:function,reject:function,promise:Flip.Promise}}
+   */
   Promise.defer=function(){
     var defer={};
     defer.promise=Promise(function(resolver,rejector){
