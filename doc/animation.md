@@ -1,4 +1,4 @@
-### construct an animation
+### construct an animation [construct] ###
 Animation Construct Options
 ```` javascript
 //default values
@@ -21,4 +21,5 @@ Animation Construct Options
     immutable:{}            //immutable parameter of the animation
 }
 ````
+### animation events [event] ###
 

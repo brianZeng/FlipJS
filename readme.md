@@ -27,8 +27,7 @@ Flip({
 })
 </script>
 ````
-this animation starts after dom ready you don't need to worry about timing,for more options see
-and see  for animation event
+this animation starts after dom ready you don't need to worry about timing,go [here](doc/animation.md#construct) to see more options for construct animation
 ### calculation parameter
 to translate an element from 20 to 100 in x direction,you can write directly
 ```` javascript
@@ -39,7 +38,7 @@ Flip({
 })
 ````
 but this is not an optimistic way,because the distance may change making the code difficult to maintain
-````
+```` javascript
 Flip({
     immutable:{
         sx:20
