@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <script src="../dist/flip.min.js"></script>
+</head>
+<body>
+<div class='cubic'></div>
+<script>
+    Flip({
+        selector:'.cubic',
+        infinite:true,
+        css:{
+            width:100+'px',
+            height:100+'px',
+            margin:'40px auto',
+            background:'red'
+        },
+        variable:{
+            rotation:Math.PI*2
+        },
+        transform:function(matrix,param){
+            matrix.flip(param.rotation)
+        }
+    })
+</script>
+</body>
+</html>
