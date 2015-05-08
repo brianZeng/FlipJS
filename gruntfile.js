@@ -15,6 +15,7 @@ var config = {
         'temp/flip_extra.js':['temp/flip_core.js','src/animations/*.js','src/extra/*.js','src/interpolation/*.js'],
         'temp/flip_gl.js':['temp/flip_core.js','src/webgl/gl.js','src/webgl/base/GLRender.js','src/webgl/**/*.js'],
         'bin/flip.js':'temp/flip_basic.js',
+        'dist/flip.js':'bin/flip.js',
         'bin/flip_extra.js':'temp/flip_extra.js',
         'bin/flip_gl.js':'temp/flip_gl.js'
       },

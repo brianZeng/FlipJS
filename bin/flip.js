@@ -1054,7 +1054,7 @@ function useAniOption(animation){
         animation[proName](optPro);
       else if(isObj(optPro)){
         hasNestedObj(optPro)? objForEach(optPro,function(rule,slt){animation[proName](slt,rule)})
-          :animation[proName](obj);
+          :animation[proName](optPro);
       }});
     animation.param(opt.param).param(opt.variable).param(opt.immutable,true);
   }
