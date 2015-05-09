@@ -1,4 +1,4 @@
-### construct an animation [construct] ###
+#construct
 Animation Construct Options
 ```` javascript
 //default values
@@ -21,5 +21,13 @@ Animation Construct Options
     immutable:{}            //immutable parameter of the animation
 }
 ````
-### animation events [event] ###
+you can also use `new Flip.Animation(options)` to construct an animation,but you should add it to a specific RenderTask.
 
+if use `Flip(options)` to construct an animation,this animation will be added to default RenderGlobal,mostly you don't need to care about this
+
+#event
+you can see [this example](../demo/rotate-ring.html) for using animations events and css transition to loop animation
+```` js
+
+
+````

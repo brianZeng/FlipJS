@@ -156,7 +156,7 @@ inherit(Animation,Render,
      * @param {string|cssUpdate|AnimationCssOptions}selector
      * @param {Object} [mapOrFunc]
      * @returns {Flip.Animation}
-     * @see {@link Flip.CssProxy}
+     * @see {@link CssProxy}
      * @example
      * ani.css('&:hover',{fontSize:'larger'});
      * ani.css(function(css,param){
