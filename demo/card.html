@@ -44,6 +44,7 @@
     <div class="flip">
         <div class="front">
             <img src="../images/card_front.jpg" class="cover">
+
             <div class="front-content card-title"><p class="hide">友谊の见证！</p></div>
             <div class="card-content hide"><b>柏子</b>和<b>亲</b>成为了朋友,无论他们将来是富有还是贫穷、身体健康或不适,都要一起穿越大半个中国去吃云片糕！
             </div>
@@ -69,8 +70,9 @@
             width: wpx,
             height: hpx
         });
-        var animation = Flip.animate('flip', {selector: '.flip', angle: Math.PI * 6, duration: 4, persistAfterFinished: 1})
-                .css({position: 'relative'})
+        var animation = Flip.animate({
+            selector: '.flip', angle: Math.PI * 6, duration: 4, persistAfterFinished: 1
+        }).css({position: 'relative'})
                 .css('& >.front', function (css) {
                     css.display = this.front ? 'block' : 'none';
                 })

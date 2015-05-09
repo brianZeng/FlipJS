@@ -59,18 +59,7 @@
                     if(++i>=num)i=0;//skip to next child element
                     p.children[i].classList.add(className);
                 }
-            }/*,
-            css:{
-                '.shadow-js':{
-                    boxShadow:'0 0 4px 4px rgba(170, 228, 254,.7)',
-                    borderColor:'rgb(170, 228, 254)'
-                },
-                '.shadow-compute':function(css,cur){
-                    css.boxShadow=css.template('0 0 4px {1}px rgba(170, 228, 254,.7)',cur.r);
-                    css.borderColor='rgb(170, 228, 254)';
-                    css.transition='none';
-                }
-            }*/
+            }
         });
         for(var i= 0,circle,d=360/num;i<num;i++){
             createChild(Flip.stringTemplate('rotate({1}deg) translate({2}px,0)',d*i,radius),'circle');

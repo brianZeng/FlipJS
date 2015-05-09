@@ -1,10 +1,11 @@
-#Quick Start
+#FlipJS
+The only limit is your imagination.
+-----
+##Quick Start
 install flipJS by bower
-
 ````
 bower install flip-js
 ````
-
 include the file in your HTML,and then write your first animation with flip
 ```` HTML
 <div class='cubic'></div>
@@ -28,7 +29,7 @@ Flip({
 </script>
 ````
 this animation starts after dom ready you don't need to worry about timing,for more details check [construct options](doc/animation.md#construct) and [animation events](doc/animation.md#event)
-# Calculation parameter
+## Calculation parameter
 To translate an element from 20 to 100 in x direction,you can write directly
 ```` javascript
 Flip({
@@ -73,7 +74,35 @@ Animation
         -c               -d*percentage
         -d
 ````
-#Animation Components
-
+##Animation Components
+The amazing effects take efforts and many elements.
+Suppose we want a two-sides card and make it rotate, this requires at least 3 elements,
+We should write the code according to the HTML elements to make the animation as a whole component, [see the details](demo/two-sides-card.html)
+```` HTML
+<div class='flip-card'>
+    <img class='front-side'>
+    <img class='back-side'>
+</div>
+<script>
+//details are omitted
+//'&' represents the animation selector
+Flip({
+    selector:'.flip',
+    css:{
+        '&':{},
+        '& img':{},
+        '& .front-side':function(css){}
+        '& .back-side':function(css){}
+    },
+    transform:{
+        '& .back-side':function(mat){},
+        '& .front-side':function(mat){}
+    }
+})
+</script>
+````
+In this way, you can also use the animation for another elements,just change the selector and animation options.
+With your cool imagination you can have your special animation toolkit.
+#Animation continuation
 
 
