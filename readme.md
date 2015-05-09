@@ -1,8 +1,6 @@
-#FlipJS
-The only limit is your imagination.
------
+#FlipJS -The only limit is your imagination.
 ##Quick Start
-install flipJS by bower
+install FlipJS by bower
 ````
 bower install flip-js
 ````
