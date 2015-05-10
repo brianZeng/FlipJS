@@ -28,16 +28,16 @@ If use `Flip(options)` to construct an animation,this animation will be added to
 By default, an animation update itself in forward direction, changing `animation#percent` from 0 to 1.
 If `animation#autoReverse` it will update itself in backward direction, changing `animation#percent` from 1 to 0, after it ends in forward direction.
 Animation events are:
-* init          when it first update its time line
-* finished      when it ends (this will never triggered if `animation#infinite`)
-* reverse       when it begin to update in backward direction
-* iterate       when it ends one iteration (If it auto reverse, one iteration is one forward updating plus by one backward updating)
-* start         when it really begin to play (After delay)
-* update        when it update frame
-* render        when it render
-* cancel        when it is canceled
-* pause         when it is paused
-* resume        when it is recovered from pause
-* finalize      when it is finalized (Do resource clean in this event)
+* **init**          when it first update its time line
+* **finished**      when it ends (this will never triggered if `animation#infinite`)
+* **reverse**       when it begin to update in backward direction
+* **iterate**       when it ends one iteration (If it auto reverse, one iteration is one forward updating plus by one backward updating)
+* **start**         when it really begin to play (After delay)
+* **update**        when it update frame
+* **render**        when it render
+* **cancel**        when it is canceled
+* **pause**         when it is paused
+* **resume**        when it is recovered from pause
+* **finalize**      when it is finalized (Do resource clean in this event)
 you can see [this example](../demo/rotate-ring.html) for using animations events and css transition to loop animation
 
