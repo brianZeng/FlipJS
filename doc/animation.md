@@ -39,5 +39,6 @@ Animation events are:
 * **pause**         when it is paused
 * **resume**        when it is recovered from pause
 * **finalize**      when it is finalized (Do resource clean in this event)
+
 you can see [this example](../demo/rotate-ring.html) for using animations events and css transition to loop animation
 

@@ -2,7 +2,6 @@ node_modules
 .idea
 .git
 lib
-images
 plugin/ng
 plugin/test
 projectFilesBackup
