@@ -131,9 +131,9 @@ Flip.animate(optA).on('finish',function(){
     });
 });
 ````
-The better way is to use Promise to rewrite code like below:
+The better way is to use [Promise](https://github.com/petkaantonov/bluebird#what-are-promises-and-why-should-i-use-them) to rewrite code like below:
 ```` js
 Flip.animate(optA).then(optB).then([optC,optD]).then(optE)
 ````
-Please [see the details](doc/promise.md) and [the example](demo/world-map.html) before try the cool stuff.
+Please check [the differences in promise](doc/promise.md) and [the example](demo/world-map.html) before try the cool stuff.
 
