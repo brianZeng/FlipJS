@@ -1,10 +1,10 @@
 #FlipJS -The only limit is your imagination.
 ##Quick Start
-install FlipJS by bower
+Install FlipJS by bower.
 ````
 bower install flip-js
 ````
-include the file in your HTML,and then write your first animation with flip
+Include the file in your HTML, and write your first animation with flip.
 ```` HTML
 <div class='cubic'></div>
 <script>
@@ -26,9 +26,9 @@ Flip({
 })
 </script>
 ````
-this animation starts after dom ready you don't need to worry about timing,for more details check [construct options](doc/animation.md#construct) and [animation events](doc/animation.md#event)
+This animation starts after dom ready, so you don't need to worry about timing. For more details, please check [construct options](doc/animation.md#construct) and [animation events](doc/animation.md#event)
 ## Calculation parameter
-To translate an element from 20 to 100 in x direction,you can write directly
+To translate an element from 20 to 100 in x direction, you can write directly:
 ```` javascript
 Flip({
     transform:function(mat){
@@ -36,7 +36,7 @@ Flip({
     }
 })
 ````
-But this is not an optimistic way,because the distance may change making the code difficult to maintain.It is recommended to write code like blow
+But this is not an optimistic way, because possible distance changes will make the code difficult to maintain. It is recommended to write code like below:
 ```` javascript
 Flip({
     immutable:{
@@ -59,9 +59,9 @@ Flip({
     }
 });
 ````
-We want the math formula and css rules be decoupled with the data,making it easy to debug and reuse.
-When updating,the animation combines the *immutable* and *variable* values to one object then pass to  `function transform(mat,param)` and `function css(css,param)` .
-As the name suggests,immutable values keep the same in every frame,while every variable value is multiplied by animation percentage.
+We want the math formula and css rules decoupled with the data, making it easy to debug and reuse.
+When updating, the animation combines the *immutable* and *variable* values to one object, then pass this object to  `function transform(mat,param)` and `function css(css,param)`.
+As the name suggests, immutable values keep the same in every frame, while every variable value is multiplied by animation percentage.
 ````
 Animation
     -percentage
@@ -75,7 +75,7 @@ Animation
 ##Animation Components
 The amazing effects take efforts and many elements.
 Suppose we want a two-sides card and make it rotate, this requires at least 3 elements,
-We should write the code according to the HTML elements to make the animation as a whole component, [see the details](demo/two-sides-card.html)
+You may write the code according to the HTML elements to make the animation as a whole component, [see the details](demo/two-sides-card.html)
 ```` HTML
 <div class='flip-card'>
     <img class='front-side'>
@@ -99,8 +99,7 @@ Flip({
 })
 </script>
 ````
-In this way, you can also use the animation for another elements,just change the selector and animation options.
-With your cool imagination you can have your special animation toolkit.
+In this way, you can also use the animation for other elements, just change the selector and animation options.
+With your cool imagination you can have your special animation toolkit!
 #Animation continuation
-
 
