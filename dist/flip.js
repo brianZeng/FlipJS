@@ -523,33 +523,6 @@ function filterIUpdate(item) {
     item.emit(RenderTask.EVENT_NAMES.UPDATE, this);
   return true;
 }
-function TimeLine(task) {
-  this.last = this.now = this._stopTime = 0;
-  this._startTime = this._lastStop = Date.now();
-  this.task = task;
-  this._isStop = true;
-}
-inherit(TimeLine, Flip.util.Object, {
-  ticksPerSecond: 1000,
-  stop: function () {
-    if (!this._isStop) {
-      this._isStop = true;
-      this._lastStop = Date.now();
-    }
-  },
-  start: function () {
-    if (this._isStop) {
-      this._isStop = false;
-      this._stopTime += Date.now() - this._lastStop;
-    }
-  },
-  move: function () {
-    if (!this._isStop) {
-      this.last = this.now;
-      this.now = Date.now() - this._startTime - this._stopTime;
-    }
-  }
-});
 /**
  * @namespace Flip.Animation
  * @param {AnimationOptions} opt
@@ -705,7 +678,7 @@ inherit(Animation,Render,
      * @param {string|cssUpdate|AnimationCssOptions}selector
      * @param {Object} [mapOrFunc]
      * @returns {Flip.Animation}
-     * @see {@link Flip.CssProxy}
+     * @see {@link CssProxy}
      * @example
      * ani.css('&:hover',{fontSize:'larger'});
      * ani.css(function(css,param){
@@ -1144,7 +1117,7 @@ inherit(Clock, obj, {
     },
     start: function () {
       if (this.t == 0) {
-        this.reset(0, 1).emit(CLOCK_EVT.START, this);
+        this.reset(0, 1);//.emit(CLOCK_EVT.START, this);
         return !(this._finished=false);
       }
       return false;
@@ -1240,9 +1213,6 @@ function updateClock(c,state) {
     if (c._startTime == -1) {
       c._startTime = timeline.now;
       emitWithCtrl(c,CLOCK_EVT[c.d?(c.i== c.iteration? 'INIT':'ITERATE'):'REVERSE'],state);
-    //  evtName= ;
-     // c.emit(evtName,state);
-     // controller&&controller.emit(evtName,state);
       return true;
     }
     else if (c._paused) {
@@ -1633,12 +1603,11 @@ Mat3.prototype={
   },
   /**
    *
-   * @param {number} angleX
-   * @param {number} angleY
+   * @param {number} angle
    * @returns {Flip.Mat3} itself
    */
-  skew:function(angleX,angleY){
-    return multiplyMat(this,[1,tan(angleX),0,tan(angleY),1,0,0,1])
+  skew:function(angle){
+    return multiplyMat(this,[1,tan(angle),0,tan(angle),1,0,0,1])
   },
   transform:function(m11,m12,m21,m22,dx,dy){
     return multiplyMat(this,[m11,m21,0,m12,m22,0,dx||0,dy||0,1])
@@ -2169,6 +2138,33 @@ inherit(RenderGlobal, Flip.util.Object, {
 FlipScope.global = new RenderGlobal();
 
 
+function TimeLine(task) {
+  this.last = this.now = this._stopTime = 0;
+  this._startTime = this._lastStop = Date.now();
+  this.task = task;
+  this._isStop = true;
+}
+inherit(TimeLine, Flip.util.Object, {
+  ticksPerSecond: 1000,
+  stop: function () {
+    if (!this._isStop) {
+      this._isStop = true;
+      this._lastStop = Date.now();
+    }
+  },
+  start: function () {
+    if (this._isStop) {
+      this._isStop = false;
+      this._stopTime += Date.now() - this._lastStop;
+    }
+  },
+  move: function () {
+    if (!this._isStop) {
+      this.last = this.now;
+      this.now = Date.now() - this._startTime - this._stopTime;
+    }
+  }
+});
 var nextUid=(function(map){
   return function (type){
     if(!map[type])map[type]=1;
