@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        .map{
+            background: url(../images/world_map.jpg);
+            margin:100px auto;
+            background-size: cover;
+            width: 600px;
+            height: 395px;
+            position: relative;
+        }
+        .map span{
+            display: inline-block;
+            position: absolute;
+            color: #fff;
+        }
+        body{
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        .point{
+            width: 4px;
+            height: 4px;
+            background: lightgreen;
+            border-radius: 50%;
+            position: absolute;
+            display: inline-block;
+        }
+    </style>
+    <script src="../dist/flip.js"></script>
+</head>
+<body>
+ <div class="map">
+
+ </div>
+<script>
+    Flip(function(){
+        var mapEle=document.querySelector('.map'),mapWidth=mapEle.clientWidth,mapHeight=mapEle.clientHeight,points=[];
+        '0.12,0.3,A;.22,.6,B;.45,.5,C;.56,.22,D1;.68,.4,D2;.82,.72,D3;.91,.12,E'.split(';').forEach(function(tem){createPoint.apply(null,tem.split(',')) });
+        function travelBall(from,to){
+            var point=document
+        }
+        function createPoint(x,y,tag){
+            var span=document.createElement('span');
+            span.innerHTML=tag;
+            span.style.left=mapWidth*x+'px';
+            span.style.top=mapHeight*y+'px';
+            mapEle.appendChild(span);
+            points.push([x,y,span]);
+            return span
+        }
+    });
+</script>
+</body>
+</html>
