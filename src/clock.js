@@ -65,7 +65,7 @@ inherit(Clock, obj, {
     },
     start: function () {
       if (this.t == 0) {
-        this.reset(0, 1).emit(CLOCK_EVT.START, this);
+        this.reset(0, 1);//.emit(CLOCK_EVT.START, this);
         return !(this._finished=false);
       }
       return false;
@@ -161,9 +161,6 @@ function updateClock(c,state) {
     if (c._startTime == -1) {
       c._startTime = timeline.now;
       emitWithCtrl(c,CLOCK_EVT[c.d?(c.i== c.iteration? 'INIT':'ITERATE'):'REVERSE'],state);
-    //  evtName= ;
-     // c.emit(evtName,state);
-     // controller&&controller.emit(evtName,state);
       return true;
     }
     else if (c._paused) {
