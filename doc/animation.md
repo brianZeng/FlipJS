@@ -31,7 +31,7 @@ Animation events are:
 * **init**          when it first update its time line
 * **finished**      when it ends (this will never triggered if `animation#infinite`)
 * **reverse**       when it begin to update in backward direction
-* **iterate**       when it ends one iteration (If it auto reverse, one iteration is one forward updating plus one backward updating)
+* **iterate**       when it ends one iteration
 * **start**         when it really begin to play (After delay)
 * **update**        when it update frame
 * **render**        when it render
@@ -39,6 +39,17 @@ Animation events are:
 * **pause**         when it is paused
 * **resume**        when it is recovered from pause
 * **finalize**      when it is finalized (Do resource clean in this event)
+###What is "one iteration"
+With different properties, animations update like below
+* autoReverse = true,infinite = false
+    0(fires **start** once after delay) ---> 1(fires **reverse**) ---> 0 (fires **iterate/end**)
+* autoReverse = false,infinite = false
+    0(fires **start** once after delay) ---> 1(fires **iterate/end**)
+* autoReverse = false,infinite = true
+    0(fires **start** once after delay) ---> 1(fires **iterate**)
+* autoReverse = true,infinite = true
+    0(fires **start** once after delay) ---> 1(fires **reverse**) ---> 0 (fires **iterate**)
 
+----
 you can see [this example](../demo/rotate-ring.html) for using animations events and css transition to loop animation.
 

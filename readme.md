@@ -27,7 +27,7 @@ Flip({
 </script>
 ````
 This animation starts after dom ready, so you don't need to worry about timing. For more details, please check [construct options](doc/animation.md#construct) and [animation events](doc/animation.md#event)
-## Calculation parameter
+## Calculation Parameter
 To translate an element from 20 to 100 in x direction, you can write directly:
 ```` javascript
 Flip({
