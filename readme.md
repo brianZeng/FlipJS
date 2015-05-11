@@ -114,7 +114,7 @@ Flip.animate(optA).on('finish',function(){
     });
 });
 ````
-"The Callbacks Hell" come with the increasing amount of animation. In the callback way, It is tedious to control the orders.
+"The Callbacks Hell" comes with the increasing amount of animation. In the callback way, It is tedious to control the orders.
 Imaging after animation B we need start C,D together and wait both of them to finish before starts animation E, you don't want your code like this
 ```` js
 Flip.animate(optA).on('finish',function(){
