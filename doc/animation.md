@@ -39,15 +39,21 @@ Animation events are:
 * **pause**         when it is paused
 * **resume**        when it is recovered from pause
 * **finalize**      when it is finalized (Do resource clean in this event)
+
 ###What is "one iteration"
 With different properties, animations update like below
+
 * autoReverse = true,infinite = false
+
     0(fires **start** once after delay) ---> 1(fires **reverse**) ---> 0 (fires **iterate/end**)
 * autoReverse = false,infinite = false
+
     0(fires **start** once after delay) ---> 1(fires **iterate/end**)
 * autoReverse = false,infinite = true
+
     0(fires **start** once after delay) ---> 1(fires **iterate**)
 * autoReverse = true,infinite = true
+
     0(fires **start** once after delay) ---> 1(fires **reverse**) ---> 0 (fires **iterate**)
 
 ----
