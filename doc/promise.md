@@ -1,5 +1,15 @@
+#Animation as Promise
+If you are familiar with promise, just read the code examples to see the differences between the standard promise.
+You may think that promises is something will be cast to animations, if you pass a construct option to `animation#then()`, 
+the option will be cast to an animation, you can continue you animation in a simple way without callback.
+what's more `animation#then()` returns another promise can be called `then()` again.
+`animation.then(optA).then(optB).then(optC)` will cast these options when the previous animation ends.
+You can pass another option to the second parameter of `then()`, which will be cast to an animation if the previous animation is cancelled.
+So `animation.then(optS,optF)` will be continued by `optS` if it finishes timing and ends, or by `optF` if `animation.cancel()` is called before normally ends.
+An animation can not be both ends or cancelled ,so if you cancel it after finished, `optF` will not be cast.
+`animation.then(optC,optC)` will make the animation always continued by what optC cast.
 #Thenable
-There are four types of argument can be pass to `animation#then`
+There are four types of argument can be pass to `animation#then()`
 ### Animation Like
 You can pass an animation options or an animation instance
 ```` js

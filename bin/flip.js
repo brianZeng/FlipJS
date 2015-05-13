@@ -523,6 +523,33 @@ function filterIUpdate(item) {
     item.emit(RenderTask.EVENT_NAMES.UPDATE, this);
   return true;
 }
+function TimeLine(task) {
+  this.last = this.now = this._stopTime = 0;
+  this._startTime = this._lastStop = Date.now();
+  this.task = task;
+  this._isStop = true;
+}
+inherit(TimeLine, Flip.util.Object, {
+  ticksPerSecond: 1000,
+  stop: function () {
+    if (!this._isStop) {
+      this._isStop = true;
+      this._lastStop = Date.now();
+    }
+  },
+  start: function () {
+    if (this._isStop) {
+      this._isStop = false;
+      this._stopTime += Date.now() - this._lastStop;
+    }
+  },
+  move: function () {
+    if (!this._isStop) {
+      this.last = this.now;
+      this.now = Date.now() - this._startTime - this._stopTime;
+    }
+  }
+});
 /**
  * @namespace Flip.Animation
  * @param {AnimationOptions} opt
@@ -1364,7 +1391,7 @@ Flip.EASE = Clock.EASE = (function () {
   return Object.freeze(F);
 })();
 (function (Flip) {
-  function $(slt, ele) {
+  function $$(slt, ele) {
     var r = [], root = ele || document;
     if (slt)
       slt.split(',').forEach(function (selector) {
@@ -1372,8 +1399,11 @@ Flip.EASE = Clock.EASE = (function () {
       });
     return r;
   }
-
-  Flip.$ = Flip.$ = $;
+  function $(slt,ele){
+    return (ele||document).querySelector(slt)
+  }
+  Flip.$$ = $$;
+  Flip.$=$;
   document.addEventListener('DOMContentLoaded', function () {
     var funcs=FlipScope.readyFuncs;
     FlipScope.global.init();
@@ -1381,110 +1411,8 @@ Flip.EASE = Clock.EASE = (function () {
     funcs.forEach(function (callback) {
       callback(Flip);
     });
-
   });
 })(Flip);
-
-function RenderGlobal(opt) {
-  if(!(this instanceof RenderGlobal))return new RenderGlobal(opt);
-  opt=opt||{};
-  this._tasks = {};
-  this._defaultTaskName=opt.defaultTaskName||'default';
-  this._invalid=true;
-  this._persistStyles={};
-  this._persistElement=document.createElement('style');
-  this._styleElement=document.createElement('style');
-}
-Flip.RenderGlobal = RenderGlobal;
-RenderGlobal.EVENT_NAMES = {
-  FRAME_START: 'frameStart',
-  FRAME_END: 'frameEnd',
-  UPDATE: 'update'
-};
-inherit(RenderGlobal, Flip.util.Object, {
-  get defaultTask(){
-    var taskName=this._defaultTaskName,t=this._tasks[taskName];
-    if(!t)this.add(t=new RenderTask(taskName));
-    return t;
-  },
-  getTask:function(name,createIfNot){
-    if(!name)return this.defaultTask;
-    var r=this._tasks[name];
-    if(!r&&createIfNot) {
-      r=new RenderTask(name);
-      this.add(r)
-    }
-    return r;
-  },
-  add: function (obj) {
-    var task, taskName, tasks;
-    if (obj instanceof RenderTask) {
-      if (!(taskName = obj.name))
-        throw Error('task must has a name');
-      else if ((tasks=this._tasks).hasOwnProperty(taskName))
-        throw Error('contains same name task');
-      else if (tasks[taskName]=obj) {
-        obj._global=this;
-        obj.timeline.start();
-        return this.invalid();
-      }
-    }
-    else if (obj instanceof Render || obj instanceof Clock)
-      return this.defaultTask.add(obj);
-    return false;
-  },
-  immediate:function(style){
-    var styles=this._persistStyles,uid=nextUid('immediateStyle'),self=this,cancel;
-    styles[uid]=style;
-    cancel=function cancelImmediate(){
-      var style=styles[uid];
-      delete styles[uid];
-      self._persistStyle=false;
-      return style;
-    };
-    cancel.id=uid;
-    this._persistStyle=false;
-    return cancel;
-  },
-  refresh:function(){
-    this._foreceRender=true;
-  },
-  init: function () {
-    if(typeof window==="object"){
-      var head=document.head,self=this;
-      if(!this._styleElement.parentNode){
-        head.appendChild(this._styleElement);
-        head.appendChild(this._persistElement);
-      }
-      Flip.fallback(window);
-      window.addEventListener('resize',function(){self.refresh()});
-      this.loop();
-    }
-    this.init = function () {
-      console.warn('The settings have been initiated,do not init twice');
-    };
-  },
-  invalid:function(){
-    return this._invalid=true;
-  },
-  loop: function (element) {
-    loopGlobal(this);
-    window.requestAnimationFrame(this.loop.bind(this), element||window.document.body);
-  },
-  apply:function(){
-    if(!this._persistStyle){
-      var styles=[];
-      objForEach(this._persistStyles,function(style){styles.push(style);});
-      this._persistElement.innerHTML=styles.join('\n');
-      this._persistStyle=true;
-    }
-  },
-  createRenderState: function () {
-    return {global: this, task:null,styleStack:[],forceRender:this._foreceRender}
-  }
-});
-FlipScope.global = new RenderGlobal();
-
 
 
 function Mat3(arrayOrX1,y1,dx,x2,y2,dy){
@@ -1603,11 +1531,12 @@ Mat3.prototype={
   },
   /**
    *
-   * @param {number} angle
+   * @param {number} angleX
+   * @param {number} angleY
    * @returns {Flip.Mat3} itself
    */
-  skew:function(angle){
-    return multiplyMat(this,[1,tan(angle),0,tan(angle),1,0,0,1])
+  skew:function(angleX,angleY){
+    return multiplyMat(this,[1,tan(angleX),0,tan(angleY||0),1,0,0,0,1])
   },
   transform:function(m11,m12,m21,m22,dx,dy){
     return multiplyMat(this,[m11,m21,0,m12,m22,0,dx||0,dy||0,1])
@@ -2138,189 +2067,9 @@ inherit(RenderGlobal, Flip.util.Object, {
 FlipScope.global = new RenderGlobal();
 
 
-function TimeLine(task) {
-  this.last = this.now = this._stopTime = 0;
-  this._startTime = this._lastStop = Date.now();
-  this.task = task;
-  this._isStop = true;
-}
-inherit(TimeLine, Flip.util.Object, {
-  ticksPerSecond: 1000,
-  stop: function () {
-    if (!this._isStop) {
-      this._isStop = true;
-      this._lastStop = Date.now();
-    }
-  },
-  start: function () {
-    if (this._isStop) {
-      this._isStop = false;
-      this._stopTime += Date.now() - this._lastStop;
-    }
-  },
-  move: function () {
-    if (!this._isStop) {
-      this.last = this.now;
-      this.now = Date.now() - this._startTime - this._stopTime;
-    }
-  }
-});
 var nextUid=(function(map){
   return function (type){
     if(!map[type])map[type]=1;
     return map[type]++;
   }
-})({});
-Flip.animation({
-  name: 'flip',
-  immutable:{
-    vertical:true
-  },
-  variable: {
-    angle: Math.PI
-  },
-  beforeCallBase: function (proxy) {
-    proxy.source('ease', Clock.EASE.sineInOut);
-  },
-  transform:function(mat,param){
-    mat.flip(param.angle,!param.vertical);
-  },
-  css:{
-    '&':{'transform-origin':'center'}
-  }
-});
-(function (register) {
-  function formatMoney(n, c, d, t) {
-    var s = n < 0 ? "-" : "", i = parseInt(n = Math.abs(+n || 0).toFixed(c)) + "", j;
-    j = (j = i.length) > 3 ? j % 3 : 0;
-    c = isNaN(c = Math.abs(c)) ? 2 : c;
-    d = d == undefined ? "." : d;
-    t = t == undefined ? "," : t;
-    return s + (j ? i.substr(0, j) + t : "") + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + t) + (c ? d + Math.abs(n - i).toFixed(c).slice(2) : "");
-  }
-
-  function mapValue(ele) {
-    var v = ele.innerHTML || ele.value, d = v.replace(/\,|[^\d\.]/g, '');
-    ele.unit = v.replace(/.*\d(.*)/, '$1');
-    return parseFloat(d);
-  }
-
-  function applyValue(ele, value, prec) {
-    ele.innerHTML = ele.value = prec == -1 ? value + ele.unit : formatMoney(value, prec).replace(/\.0+$/, '');
-  }
-
-  register(
-    {
-      name: 'increase',
-      beforeCallBase: function (proxy) {
-        var eles = proxy.source('elements', Flip.$(proxy.source('selector')));
-        this.targets = eles.map(mapValue);
-        proxy.source('duration', 1.2);
-      },
-      param: {
-        fracPrecision: 1
-      },
-      prototype: {
-        apply: function () {
-          var v = this.clock.value, targets = this.targets, precition = this.finished ? -1 : this.fracPrecision;
-          this.elements.forEach(function (ele, i) {
-            applyValue(ele, targets[i] * v, precition);
-          });
-        }
-      }
-    }
-  )
-})(Flip.animation);
-Flip.animation({
-  name:'polygon',
-  variable:{
-    rotateY:Math.PI*2,
-    faceTranslate:0
-  },
-  immutable:{
-    projectY:Math.PI/6,
-    projectX:Math.PI/6,
-    faceWidth:100,
-    faceHeight:100,
-    faceCount:4
-  },
-  css:{
-    '&':{
-      position:'relative'
-    }
-  },
-  afterInit:function(proxy){
-    var imm=this._immutable, n=imm.faceCount,self=this,faceClass=proxy('faceClass')||'f';
-    var faceRotate=Math.PI*2/ n,dz=-imm.faceWidth/2/Math.tan(faceRotate/2),rotateY=this._variable.rotateY|| 0,ryFunc,lastAngle,indices;
-    ryFunc=typeof rotateY=="number"?function(p){return rotateY*p}:rotateY;
-    for(var i=0;i<n;i++)
-      registerFace(i);
-    this.param('zIndices',function(p){
-      var ry=ryFunc(p),ret=[],rf=faceRotate,min=1,max=-1;
-      if(lastAngle&&Math.abs(lastAngle-ry)<rf)return indices;
-      for(var i= 0,v;i<n;i++){
-        v=ret[i]=Math.cos(ry+rf*i);
-        if(v<=min)min=v;
-        if(v>=max)max=v;
-      }
-      var range=max-min;
-      return indices= ret.map(function(num){
-        return Math.round((num-min)/range*6);
-      })
-    });
-    Flip.$(proxy('selector')+'> *[class]').forEach(function(ele){
-      ele.className+=' '+faceClass;
-    });
-    this.css('& .'+faceClass,{
-      width:imm.faceWidth+'px',
-      height:imm.faceHeight+'px',
-      position:'absolute',
-      transformOrigin:'center'
-    });
-    function registerFace(index){
-      var selector='& .'+faceClass+index,fR=faceRotate*i;
-      self.css(selector,function(css,param){
-        css.zIndex=param.zIndices[index]});
-      self.transform(selector,function(mat,param){
-        mat.rotateY(fR).translate(0,0,dz-param.faceTranslate).axonProject(param.projectX,param.projectY+param.rotateY)
-      })
-    }
-  }
-});
-Flip.animation({
-  name: 'rotate',
-  variable: {
-    angle: Math.PI * 2
-  },
-  beforeCallBase: function (proxy) {
-    proxy.source('ease', Flip.EASE.circInOut);
-  },
-  transform: function (mat,param) {
-    mat.rotate(param.angle)
-  }
-});
-Flip.animation({
-  name: 'scale',
-  immutable:{
-    sx:0,sy:0
-  },
-  variable: {
-    dx:1,dy:1
-  },
-  beforeCallBase: function (proxy) {
-    proxy.source('ease', Flip.EASE.sineInOut);
-  },
-  transform: function (mat,param) {
-    mat.scale(param.sx+param.dx,param.sy+param.dy)
-  }
-});
-Flip.animation({
-  name: 'translate',
-  immutable:{sx:0,sy:0},
-  variable: {
-    dx: 100, dy: 0
-  },
-  transform:function (mat,param) {
-    mat.translate(param.dx+param.sx,param.dy+param.sy);
-  }
-});})();
+})({});})();
