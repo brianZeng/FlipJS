@@ -3,13 +3,13 @@
  */
 function loopGlobal(global){
   var state = global.createRenderState();
-  global.emit(RenderGlobal.EVENT_NAMES.FRAME_START, [state]);
+  global.emit(EVENT_FRAME_START, [state]);
   updateGlobal(global,state);
   renderGlobal(global,state);
-  global.emit(RenderGlobal.EVENT_NAMES.FRAME_END, [state]);
+  global.emit(EVENT_FRAME_END, [state]);
 }
 function updateGlobal(global,state){
-  state.global.emit(RenderGlobal.EVENT_NAMES.UPDATE, [state,global]);
+  state.global.emit(EVENT_UPDATE, [state,global]);
   objForEach(global._tasks,function(task){updateTask(task,state)});
   global.apply();
 }
@@ -18,7 +18,7 @@ function updateTask(task,state){
     var updateParam = [state, state.task=task];
     (state.timeline = task.timeline).move();
     task.update(state);
-    task.emit(RenderTask.EVENT_NAMES.UPDATE, updateParam);
+    task.emit(EVENT_UPDATE, updateParam);
     task._updateObjs = arrSafeFilter(task._updateObjs, filterIUpdate, state);
   }
 }
@@ -34,11 +34,11 @@ function renderTask(task,state){
   if(!task.disabled){
     var evtParam = [state, state.task=task];
     if (task._invalid||state.forceRender) {
-      task.emit(RenderTask.EVENT_NAMES.RENDER_START, evtParam);
+      task.emit(EVENT_RENDER_START, evtParam);
       task._updateObjs.forEach(function (item) {if(isFunc(item.render)&&!item.disabled)item.render(state);});
       task._invalid = false;
     }
-    task.emit(RenderTask.EVENT_NAMES.RENDER_END, evtParam);
+    task.emit(EVENT_RENDER_END, evtParam);
   }
 }
 function finalizeTask(task,state){

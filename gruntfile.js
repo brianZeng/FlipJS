@@ -102,7 +102,10 @@ config.uglify = {
   },
   bower_flip:{
     files:{
-      'dist/flip.min.js':'dist/flip.js'
+      'dist/flip.min.js':'dist/flip.js',
+      options:{
+        screwIE8:true
+      }
     }
   },
   atrk: {

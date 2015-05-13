@@ -20,14 +20,14 @@ describe('Construct Animation:', function () {
       ani.clock.ease='backInOut';
       expect(ani.clock.ease).toBe(Flip.EASE.backInOut);
     });
-    it('animation clock ticks when change:', function (done) {
+    it('animation clock update when change:', function (done) {
       var tickSpy = jasmine.createSpy('tick'), finishSpy = jasmine.createSpy('finish');
       var ani = Flip.animate({duration: 0.2, range: 1, autoStart: true});
-      ani.clock.once(Flip.Clock.EVENT_NAMES.TICK, function () {
+      ani.clock.once('update', function () {
         tickSpy();
         console.log(arguments);
       });
-      ani.clock.once(Flip.Clock.EVENT_NAMES.FINISH, function () {
+      ani.clock.once('finish', function () {
         finishSpy(this.value);
         expect(tickSpy).toHaveBeenCalled();
         expect(finishSpy).toHaveBeenCalledWith(1);
@@ -117,7 +117,6 @@ describe('Construct Animation:', function () {
       }).then(function(last){
         expect(last).toBe(ani);
         expect(Date.now()-t).toBeGreaterThan(400);
-        debugger;
         done();
       });
     });

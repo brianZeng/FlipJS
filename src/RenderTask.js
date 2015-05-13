@@ -10,13 +10,13 @@ function RenderTask(name) {
   this._global = null;
 }
 Flip.RenderTask = RenderTask;
-RenderTask.EVENT_NAMES = {
+/*RenderTask.EVENT_NAMES = {
   RENDER_START: 'renderStart',
   RENDER_END: 'renderEnd',
   UPDATE: 'update',
   BEFORE_CONSUME_EVENTS: 'beforeConsumeEvents',
   AFTER_CONSUME_EVENTS: 'afterConsumeEvents'
-};
+};*/
 inherit(RenderTask, Flip.util.Object, {
   update:noop,
   invalid: function () {

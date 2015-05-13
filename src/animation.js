@@ -197,7 +197,7 @@ inherit(Animation,Render,
     }
     else if(!this._canceled) {
       this.reset(1);
-      this.emit(ANI_EVT.FINALIZE);
+      this.emit(EVENT_FINALIZE);
     }
     return this;
   },
@@ -218,7 +218,7 @@ inherit(Animation,Render,
      * @returns {Flip.Animation} returns itself
      */
   resume:function(evt){
-    return invokeClock(this,'resume',ANI_EVT.RESUME,evt);
+    return invokeClock(this,'resume',EVENT_RESUME,evt);
   },
     /**
      * @alias Flip.Animation#pause
@@ -226,7 +226,7 @@ inherit(Animation,Render,
      * @returns {Flip.Animation} returns itself
      */
   pause:function(evt){
-    return invokeClock(this,'pause',ANI_EVT.PAUSE,evt);
+    return invokeClock(this,'pause',EVENT_PAUSE,evt);
   },
     /**
      * @alias Flip.Animation#cancel
@@ -238,7 +238,7 @@ inherit(Animation,Render,
     if(!this._canceled &&!this._finished){
       if(t=this._task)this._ltName=t.name;
       this._canceled=true;
-      this.emit(ANI_EVT.CANCEL,evt);
+      this.emit(EVENT_CANCEL,evt);
       this.finalize();
     }
     return this;
@@ -277,15 +277,7 @@ inherit(Animation,Render,
  * @event Flip.Animation#pause   */
 /** triggered when animation is resumed from pause
  * @event Flip.Animation#resume  */
-var ANI_EVT=Animation.EVENT_NAMES =Object.seal({
-  UPDATE: 'update',
-  FINALIZE: 'finalize',
-  RENDER: 'render',
-  FINISH: 'finish',
-  CANCEL:'cancel',
-  PAUSE:'pause',
-  RESUME:'resume'
-});
+var EVENT_FINALIZE='finalize',EVENT_RENDER='render',EVENT_FINISH='finish',EVENT_CANCEL='cancel',EVENT_PAUSE='pause',EVENT_RESUME='resume';
 function findTaskToAddOrThrow(ani,opt){
   var t,global;
   if(!(t=ani._task)){
@@ -307,11 +299,11 @@ function invokeClock(animation,method,evtName,evtArg){
 }
 function getPromiseByAni(ani){
   return FlipScope.Promise(function(resolve,reject){
-    ani.once(ANI_EVT.FINISH,function(state){
+    ani.once(EVENT_FINISH,function(state){
       if(state&&state.global)
-        state.global.once('frameEnd',go);
+        state.global.once(EVENT_FRAME_END,go);
       else go();
-    }).once(ANI_EVT.CANCEL,function(){reject(ani)});
+    }).once(EVENT_CANCEL,function(){reject(ani)});
     function go(){resolve(ani);}
   });
 }

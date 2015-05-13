@@ -61,6 +61,7 @@ Flip.fallback = function (window) {
     }, Array.prototype)
   }
 };
+var EVENT_FRAME_START='frameStart',EVENT_UPDATE='update',EVENT_FRAME_END='frameEnd',EVENT_RENDER_START='renderStart',EVENT_RENDER_END='renderEnd';
 
 /**
  * @typedef  AnimationOptions
