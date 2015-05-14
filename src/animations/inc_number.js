@@ -20,14 +20,12 @@
   function applyValue(ele, value, prec) {
     ele.innerHTML = ele.value = prec == -1 ? value + ele.unit : formatMoney(value, prec).replace(/\.0+$/, '');
   }
-
   register(
     {
       name: 'increase',
       beforeCallBase: function (proxy) {
-        var eles = proxy.source('elements', Flip.$$(proxy.source('selector')));
+        var eles = proxy.elements||Flip.$$(proxy.selector);
         this.targets = eles.map(mapValue);
-        proxy.source('duration', 1.2);
       },
       param: {
         fracPrecision: 1

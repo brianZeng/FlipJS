@@ -15,11 +15,26 @@ function updateGlobal(global,state){
 }
 function updateTask(task,state){
   if(!task.disabled){
-    var updateParam = [state, state.task=task];
+    var components=task._updateObjs;
+    state.task=task;
     (state.timeline = task.timeline).move();
     task.update(state);
-    task.emit(EVENT_UPDATE, updateParam);
-    task._updateObjs = arrSafeFilter(task._updateObjs, filterIUpdate, state);
+    task.emit(EVENT_UPDATE, state);
+    task._updateObjs=arrForEachThenFilter(components,updateComponent,isObj);
+   // task._updateObjs.slice(0).forEach(filterIUpdate);
+   // task._updateObjs=task._updateObjs.filter(isObj);
+   // task._updateObjs = arrSafeFilter(task._updateObjs,filterIUpdate);
+    state.task=null;
+  }
+  function updateComponent(item,index) {
+    if (!isObj(item))
+      components[index]=undefined;
+    else if(!item.disabled){
+      if (isFunc(item.update))
+        item.update(state);
+      else if (isFunc(item.emit))
+        item.emit(EVENT_UPDATE,state);
+    }
   }
 }
 function renderGlobal(global,state){
@@ -32,17 +47,22 @@ function renderGlobal(global,state){
 }
 function renderTask(task,state){
   if(!task.disabled){
-    var evtParam = [state, state.task=task];
+    state.task=task;
     if (task._invalid||state.forceRender) {
-      task.emit(EVENT_RENDER_START, evtParam);
-      task._updateObjs.forEach(function (item) {if(isFunc(item.render)&&!item.disabled)item.render(state);});
+      task.emit(EVENT_RENDER_START, state);
+      task._updateObjs.forEach(function (item) {
+        if(isFunc(item.render)&&!item.disabled)
+          item.render(state);
+      });
       task._invalid = false;
     }
-    task.emit(EVENT_RENDER_END, evtParam);
+    task.emit(EVENT_RENDER_END, state);
+    state.task=null;
   }
 }
 function finalizeTask(task,state){
   var taskItems=(state.task=task)._updateObjs,index,finItems=task._finalizeObjs;
+  task._finalizeObjs=[];
   if(finItems.length){
     task.invalid();
     finItems.forEach(function(item){
@@ -52,11 +72,13 @@ function finalizeTask(task,state){
         item._task=null;
       isObj(item)&&isFunc(item.finalize)&&item.finalize(state);
     });
-    task._finalizeObjs=[];
   }
 }
 function finalizeAnimation(animation){
-  if(!animation.persistAfterFinished){
+  var fillMode=animation.fillMode;
+  if(animation.fillMode!==FILL_MODE.KEEP){
     animation.finalize();
+    if(fillMode===FILL_MODE.SNAPSHOT)
+      animation.cancelStyle=FlipScope.global.immediate(animation.lastStyleRule);
   }
 }

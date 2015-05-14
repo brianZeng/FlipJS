@@ -4,16 +4,14 @@
 Flip.RenderGlobal = RenderGlobal;
 function RenderGlobal(opt) {
   if(!(this instanceof RenderGlobal))return new RenderGlobal(opt);
-  opt=opt||{};
+  opt=makeOptions(opt,{defaultTaskName:'default'});
   this._tasks = {};
-  this._defaultTaskName=opt.defaultTaskName||'default';
+  this._defaultTaskName=opt.defaultTaskName;
   this._invalid=true;
   this._persistStyles={};
   this._persistElement=document.createElement('style');
   this._styleElement=document.createElement('style');
 }
-
-
 inherit(RenderGlobal, Flip.util.Object, {
   get defaultTask(){
     var taskName=this._defaultTaskName,t=this._tasks[taskName];
@@ -47,6 +45,7 @@ inherit(RenderGlobal, Flip.util.Object, {
     return false;
   },
   immediate:function(style){
+    if(!style)return noop;
     var styles=this._persistStyles,uid=nextUid('immediateStyle'),self=this,cancel;
     styles[uid]=style;
     cancel=function cancelImmediate(){

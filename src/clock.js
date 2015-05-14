@@ -8,8 +8,14 @@
  */
 function Clock(opt) {
   if (!(this instanceof Clock))return new Clock(opt);
-  objForEach(Clock.createOptProxy(opt, 1, Clock.EASE.linear, 0, 1, 0,0).result, cloneFunc, this);
-  this.reset(1,0,0,0);
+  useOptions(this,makeOptions(opt,{
+    duration:1,
+    ease:Clock.EASE.linear,
+    infinite:false,
+    iteration:1,
+    autoReverse:false,
+    delay:0
+  })).reset(1,0,0,0);
 }
 Flip.Clock = Clock;
 /**
@@ -24,7 +30,7 @@ Flip.Clock = Clock;
  * triggered when animation first update(not constructed)
  * @event Flip.Animation#init
  */
-  var EVENT_INIT='init',EVENT_ITERATE='iterate',EVENT_REVERSE='reverse',EVENT_START='start',EVENT_CONTROLLER_CHANGE='controllerChange';
+var EVENT_INIT='init',EVENT_ITERATE='iterate',EVENT_REVERSE='reverse',EVENT_START='start',EVENT_CONTROLLER_CHANGE='controllerChange';
 inherit(Clock, obj, {
     get controller() {
       return this._controller || null;
@@ -174,11 +180,6 @@ function updateClock(c,state) {
     state.clock=null;
   }
 }
-Clock.createOptProxy = function (opt, duration, ease, infinite, iteration, autoReverse,delay) {
-  var setter = createProxy(opt);
-  setter('duration', duration, 'ease', ease, 'infinite', infinite, 'iteration', iteration, 'autoReverse', autoReverse,'delay',delay);
-  return setter;
-};
 Flip.EASE = Clock.EASE = (function () {
   /**
    * from jQuery.easing

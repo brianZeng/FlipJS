@@ -13,10 +13,10 @@
  */
 function Animation(opt) {
   if (!(this instanceof Animation))return new Animation(opt);
-  var r = Animation.createOptProxy(opt).result;
-  this.selector= r.selector||Error('Elements selector required');
-  this.clock = r.clock;
-  this.persistAfterFinished= r.persistAfterFinished;
+  useOptions(this,makeOptions(opt,{
+    selector:'',
+    fillMode:FILL_MODE.REMOVE,
+    clock:opt.clock||new Clock(opt)}));
   this._cssMap={};
   this._matCallback={};
   this._cssCallback={};
@@ -27,6 +27,9 @@ function Animation(opt) {
   this.use(opt);
   this.init();
 }
+var FILL_MODE=Animation.FILL_MODE={
+  REMOVE:'remove',SNAPSHOT:'snapshot',KEEP:'keep'
+};
 inherit(Animation,Render,
   /**
    * @lends Flip.Animation.prototype
@@ -317,14 +320,6 @@ function cloneWithPro(from,to){
   });
   return to;
 }
-Animation.createOptProxy = function (setter,selector,persist) {
-  setter = createProxy(setter);
-  if (!setter.proxy.clock)
-    setter('clock', new Clock(setter));
-  setter('selector',selector);
-  setter('persistAfterFinished',persist);
-  return setter;
-};
 /**
  * construct an animation instance see {@link AnimationOptions}
  * you can also construct an animation by {@link Flip.Animation}
@@ -379,7 +374,7 @@ function animate(opt) {
   }
   else throw Error('cannot construct an animation');
   if (!constructor) constructor = Animation;
-  return setAniEnv(animate.createOptProxy(opt).result, new constructor(opt));
+  return setAniEnv(opt,new constructor(opt));
   }
 function setAniEnv(aniOpt, animation) {
   (aniOpt.renderGlobal||FlipScope.global).getTask(aniOpt.taskName,true).add(animation);
@@ -387,11 +382,11 @@ function setAniEnv(aniOpt, animation) {
     animation.start();
   return animation;
 }
-animate.createOptProxy = function (setter, autoStart, taskName, defaultGlobal) {
+/*animate.createOptProxy = function (setter, autoStart, taskName, defaultGlobal) {
     setter = createProxy(setter);
     setter('autoStart', autoStart, 'taskName', taskName, 'renderGlobal', defaultGlobal);
     return setter;
-};
+};*/
 
 Flip.animate = animate;
 /**
@@ -420,12 +415,10 @@ Flip.animate = animate;
  */
 Flip.css=function(selector,rule){
   var literal=[];
-  if(arguments.length==2){
+  if(arguments.length==2)
     resolve(rule,selector);
-  }
-  else if(isObj(selector)){
-    objForEach(selector,resolve)
-  }
+  else if(isObj(selector))
+    objForEach(selector,resolve);
   else throw Error('argument error');
   return FlipScope.global.immediate(literal.join('\n'));
   function resolve(rule,selector){
@@ -463,13 +456,13 @@ Flip.transform=function(selector,rule){
 };
 Flip.animation = (function () {
   function register(definition) {
-    var beforeCallBase, name = definition.name, Constructor,afterCallBase;
+    var beforeCallBase, name = definition.name, Constructor;
     beforeCallBase = definition.beforeCallBase || _beforeCallBase;
     Constructor = function (opt) {
       if (!(this instanceof Constructor))return new Constructor(opt);
-      var proxy = createProxy(opt);
-      beforeCallBase.apply(this, [proxy, opt]);
-      Animation.call(this,opt);
+      var proxy = cloneWithPro(opt,{});
+      beforeCallBase.call(this, proxy,opt);
+      Animation.call(this,proxy);
       (definition.afterInit||noop).call(this,proxy,opt);
     };
     if (name) {

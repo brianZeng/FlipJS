@@ -24,6 +24,7 @@ describe('multi task',function(){
   });
   it('2.when construct a animation set taskName to change the task it belongs',function(){
     var ac=aniCount(anotherTask),dc=aniCount(defaultTask);
+    debugger;
     Flip.animate({
       duration:.3,
       taskName:anotherTask.name

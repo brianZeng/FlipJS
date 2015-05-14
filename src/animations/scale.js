@@ -10,7 +10,7 @@ Flip.animation({
     dx:1,dy:1
   },
   beforeCallBase: function (proxy) {
-    proxy.source('ease', Flip.EASE.sineInOut);
+    proxy.ease=proxy.ease||Flip.EASE.sineInOut;
   },
   transform: function (mat,param) {
     mat.scale(param.sx+param.dx,param.sy+param.dy)

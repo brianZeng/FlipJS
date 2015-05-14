@@ -68,7 +68,7 @@ var EVENT_FRAME_START='frameStart',EVENT_UPDATE='update',EVENT_FRAME_END='frameE
  * @type {Object}
  * @property {?string} [animationType] a registered animation name
  * @property {?string} [selector='']  css selector to apply animation
- * @property {?boolean}[persistAfterFinished] if set true the css and transform will keep after animation finished
+ * @property {?boolean}[fillMode] if set true the css and transform will keep after animation finished
  * @property {?number} [duration=.7] animation duration (in second)
  * @property {?number} [iteration=1] how many times the animation will iterate
  * @property {?number} [delay=0] how many seconds it will begin after it starts

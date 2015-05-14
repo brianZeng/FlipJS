@@ -63,7 +63,7 @@ var EVENT_FRAME_START='frameStart',EVENT_UPDATE='update',EVENT_FRAME_END='frameE
  * @type {Object}
  * @property {?string} [animationType] a registered animation name
  * @property {?string} [selector='']  css selector to apply animation
- * @property {?boolean}[persistAfterFinished] if set true the css and transform will keep after animation finished
+ * @property {?boolean}[fillMode] if set true the css and transform will keep after animation finished
  * @property {?number} [duration=.7] animation duration (in second)
  * @property {?number} [iteration=1] how many times the animation will iterate
  * @property {?number} [delay=0] how many seconds it will begin after it starts
@@ -151,7 +151,7 @@ var EVENT_FRAME_START='frameStart',EVENT_UPDATE='update',EVENT_FRAME_END='frameE
  * @param {Object} param the calculation param
 */
 Flip.util = {Object: obj, Array: array, inherit: inherit};
-function createProxy(obj) {
+/*function createProxy(obj) {
   var from, result = {}, func, objType = typeof obj;
   if (objType == "function")from = obj.proxy;
   else if (objType == "object") from = obj;
@@ -181,6 +181,18 @@ function createProxy(obj) {
   func.result = result;
   func.proxy = from;
   return func;
+}*/
+function makeOptions(opt,defaults){
+  var ret={};
+  opt=opt||{};
+  objForEach(defaults||{},function(value,key){
+    ret[key]=opt.hasOwnProperty(key)? opt[key]:value
+  });
+  return ret;
+}
+function useOptions(target,opt){
+  objForEach(opt,cloneFunc,target);
+  return target;
 }
 function inherit(constructor, baseproto, expando, propertyObj) {
   if (typeof  baseproto == "function")baseproto = new baseproto();
@@ -240,14 +252,6 @@ function arrMapFun(func_ProName) {
     return item
   };
 }
-/*function arrSameSeq(arr, func_ProName, des) {
-  if (arr.length == 1)return true;
-  var compare = arrMapFun(func_ProName);
-  des = !!des;
-  for (var i = 1, len = arr.length; i < len; i++)
-    if (des != (compare(arr[i]) < compare(arr[i - 1])))return false;
-  return true;
-}*/
 array.remove = arrRemove;
 array.add = arrAdd;
 array.first = arrFirst;
@@ -273,16 +277,12 @@ function arrFind(array, proNameOrFun, value, unstrict,index) {
   return undefined;
 }
 array.findBy = arrFind;
-function arrSafeFilter(array, filter, thisObj) {
-  var copy = array.slice();
-  if (thisObj == undefined)thisObj = array;
-  return copy.filter(filter, thisObj).filter(function (item) {
-    return array.indexOf(item) > -1;
-  }).concat(array.filter(function (item) {
-    return copy.indexOf(item) == -1;
-  }));
+function arrForEachThenFilter(arr,forEach,filter,thisObj){
+  var copy=arr.slice();
+  thisObj===undefined && (thisObj=arr);
+  copy.forEach(forEach,thisObj);
+  return arr.filter(filter,thisObj);
 }
-array.safeFilter = arrSafeFilter;
 array.sort = arrSort;
 inherit(array, Array, {
   add: function (item) {
@@ -293,9 +293,6 @@ inherit(array, Array, {
   },
   remove: function (item) {
     return arrRemove(this, item);
-  },
-  safeFilter: function (callback, thisObj) {
-    return arrSafeFilter(this, callback, thisObj);
   },
   first: function (func_proName) {
     return arrFirst(this, func_proName);
@@ -324,14 +321,16 @@ function addEventListener(obj, evtName, handler) {
 }
 obj.on = addEventListener;
 function emitEvent(obj, evtName, argArray, thisObj) {
-  var callbacks , handlers;
+  var callbacks , handlers,toRemove;
   if (!(obj.hasOwnProperty('_callbacks')) || !(handlers = (callbacks = obj._callbacks)[evtName]))return false;
   if (!argArray)argArray = [];
   else if (!(argArray instanceof Array)) argArray = [argArray];
   if (thisObj === undefined) thisObj = obj;
-  return (callbacks[evtName] = arrSafeFilter(handlers, function (call) {
-    return call.apply(thisObj, argArray) != -1;
-  })).length;
+  toRemove=[];
+  return (callbacks[evtName] = arrForEachThenFilter(handlers,evalHandler,function(handler){return toRemove.indexOf(handler)==-1})).length;
+  function evalHandler(handler){
+    handler.apply(thisObj,argArray)==-1 && toRemove.push(handler)
+  }
 }
 obj.emit = emitEvent;
 function removeEventListener(obj, evtName, handler) {
@@ -482,13 +481,6 @@ function RenderTask(name) {
   this._global = null;
 }
 Flip.RenderTask = RenderTask;
-/*RenderTask.EVENT_NAMES = {
-  RENDER_START: 'renderStart',
-  RENDER_END: 'renderEnd',
-  UPDATE: 'update',
-  BEFORE_CONSUME_EVENTS: 'beforeConsumeEvents',
-  AFTER_CONSUME_EVENTS: 'afterConsumeEvents'
-};*/
 inherit(RenderTask, Flip.util.Object, {
   update:noop,
   invalid: function () {
@@ -503,27 +495,19 @@ inherit(RenderTask, Flip.util.Object, {
   add: function (obj, type) {
     if (type == 'update') return arrAdd(this._updateObjs, obj);
     if (obj instanceof Clock || obj instanceof Render)
-      if(arrAdd(this._updateObjs, obj) && (obj._task = this)){
-
-      }
+      if(arrAdd(this._updateObjs, obj))
+        obj._task = this;
     this.invalid();
   },
   remove: function (obj) {
-    if (obj._task == this && arrRemove(this._updateObjs, obj)){
+    if (obj._task == this||this._updateObjs.indexOf(obj)>-1){
       obj._task = null;
       this.toFinalize(obj);
       this.invalid();
     }
   }
 });
-function filterIUpdate(item) {
-  if (!isObj(item)||item.disabled)return false;
-  else if (isFunc(item.update))
-    item.update(this);
-  else if (isFunc(item.emit))
-    item.emit(RenderTask.EVENT_NAMES.UPDATE, this);
-  return true;
-}
+
 function TimeLine(task) {
   this.last = this.now = this._stopTime = 0;
   this._startTime = this._lastStop = Date.now();
@@ -563,10 +547,10 @@ inherit(TimeLine, Flip.util.Object, {
  */
 function Animation(opt) {
   if (!(this instanceof Animation))return new Animation(opt);
-  var r = Animation.createOptProxy(opt).result;
-  this.selector= r.selector||Error('Elements selector required');
-  this.clock = r.clock;
-  this.persistAfterFinished= r.persistAfterFinished;
+  useOptions(this,makeOptions(opt,{
+    selector:'',
+    fillMode:FILL_MODE.REMOVE,
+    clock:opt.clock||new Clock(opt)}));
   this._cssMap={};
   this._matCallback={};
   this._cssCallback={};
@@ -577,6 +561,9 @@ function Animation(opt) {
   this.use(opt);
   this.init();
 }
+var FILL_MODE=Animation.FILL_MODE={
+  REMOVE:'remove',SNAPSHOT:'snapshot',KEEP:'keep'
+};
 inherit(Animation,Render,
   /**
    * @lends Flip.Animation.prototype
@@ -867,14 +854,6 @@ function cloneWithPro(from,to){
   });
   return to;
 }
-Animation.createOptProxy = function (setter,selector,persist) {
-  setter = createProxy(setter);
-  if (!setter.proxy.clock)
-    setter('clock', new Clock(setter));
-  setter('selector',selector);
-  setter('persistAfterFinished',persist);
-  return setter;
-};
 /**
  * construct an animation instance see {@link AnimationOptions}
  * you can also construct an animation by {@link Flip.Animation}
@@ -929,7 +908,7 @@ function animate(opt) {
   }
   else throw Error('cannot construct an animation');
   if (!constructor) constructor = Animation;
-  return setAniEnv(animate.createOptProxy(opt).result, new constructor(opt));
+  return setAniEnv(opt,new constructor(opt));
   }
 function setAniEnv(aniOpt, animation) {
   (aniOpt.renderGlobal||FlipScope.global).getTask(aniOpt.taskName,true).add(animation);
@@ -937,11 +916,11 @@ function setAniEnv(aniOpt, animation) {
     animation.start();
   return animation;
 }
-animate.createOptProxy = function (setter, autoStart, taskName, defaultGlobal) {
+/*animate.createOptProxy = function (setter, autoStart, taskName, defaultGlobal) {
     setter = createProxy(setter);
     setter('autoStart', autoStart, 'taskName', taskName, 'renderGlobal', defaultGlobal);
     return setter;
-};
+};*/
 
 Flip.animate = animate;
 /**
@@ -970,12 +949,10 @@ Flip.animate = animate;
  */
 Flip.css=function(selector,rule){
   var literal=[];
-  if(arguments.length==2){
+  if(arguments.length==2)
     resolve(rule,selector);
-  }
-  else if(isObj(selector)){
-    objForEach(selector,resolve)
-  }
+  else if(isObj(selector))
+    objForEach(selector,resolve);
   else throw Error('argument error');
   return FlipScope.global.immediate(literal.join('\n'));
   function resolve(rule,selector){
@@ -1013,13 +990,13 @@ Flip.transform=function(selector,rule){
 };
 Flip.animation = (function () {
   function register(definition) {
-    var beforeCallBase, name = definition.name, Constructor,afterCallBase;
+    var beforeCallBase, name = definition.name, Constructor;
     beforeCallBase = definition.beforeCallBase || _beforeCallBase;
     Constructor = function (opt) {
       if (!(this instanceof Constructor))return new Constructor(opt);
-      var proxy = createProxy(opt);
-      beforeCallBase.apply(this, [proxy, opt]);
-      Animation.call(this,opt);
+      var proxy = cloneWithPro(opt,{});
+      beforeCallBase.call(this, proxy,opt);
+      Animation.call(this,proxy);
       (definition.afterInit||noop).call(this,proxy,opt);
     };
     if (name) {
@@ -1080,8 +1057,14 @@ Flip.Animation=Animation;
 
 function Clock(opt) {
   if (!(this instanceof Clock))return new Clock(opt);
-  objForEach(Clock.createOptProxy(opt, 1, Clock.EASE.linear, 0, 1, 0,0).result, cloneFunc, this);
-  this.reset(1,0,0,0);
+  useOptions(this,makeOptions(opt,{
+    duration:1,
+    ease:Clock.EASE.linear,
+    infinite:false,
+    iteration:1,
+    autoReverse:false,
+    delay:0
+  })).reset(1,0,0,0);
 }
 Flip.Clock = Clock;
 /**
@@ -1096,7 +1079,7 @@ Flip.Clock = Clock;
  * triggered when animation first update(not constructed)
  * @event Flip.Animation#init
  */
-  var EVENT_INIT='init',EVENT_ITERATE='iterate',EVENT_REVERSE='reverse',EVENT_START='start',EVENT_CONTROLLER_CHANGE='controllerChange';
+var EVENT_INIT='init',EVENT_ITERATE='iterate',EVENT_REVERSE='reverse',EVENT_START='start',EVENT_CONTROLLER_CHANGE='controllerChange';
 inherit(Clock, obj, {
     get controller() {
       return this._controller || null;
@@ -1246,11 +1229,6 @@ function updateClock(c,state) {
     state.clock=null;
   }
 }
-Clock.createOptProxy = function (opt, duration, ease, infinite, iteration, autoReverse,delay) {
-  var setter = createProxy(opt);
-  setter('duration', duration, 'ease', ease, 'infinite', infinite, 'iteration', iteration, 'autoReverse', autoReverse,'delay',delay);
-  return setter;
-};
 Flip.EASE = Clock.EASE = (function () {
   /**
    * from jQuery.easing
@@ -1808,11 +1786,26 @@ function updateGlobal(global,state){
 }
 function updateTask(task,state){
   if(!task.disabled){
-    var updateParam = [state, state.task=task];
+    var components=task._updateObjs;
+    state.task=task;
     (state.timeline = task.timeline).move();
     task.update(state);
-    task.emit(EVENT_UPDATE, updateParam);
-    task._updateObjs = arrSafeFilter(task._updateObjs, filterIUpdate, state);
+    task.emit(EVENT_UPDATE, state);
+    task._updateObjs=arrForEachThenFilter(components,updateComponent,isObj);
+   // task._updateObjs.slice(0).forEach(filterIUpdate);
+   // task._updateObjs=task._updateObjs.filter(isObj);
+   // task._updateObjs = arrSafeFilter(task._updateObjs,filterIUpdate);
+    state.task=null;
+  }
+  function updateComponent(item,index) {
+    if (!isObj(item))
+      components[index]=undefined;
+    else if(!item.disabled){
+      if (isFunc(item.update))
+        item.update(state);
+      else if (isFunc(item.emit))
+        item.emit(EVENT_UPDATE,state);
+    }
   }
 }
 function renderGlobal(global,state){
@@ -1825,17 +1818,22 @@ function renderGlobal(global,state){
 }
 function renderTask(task,state){
   if(!task.disabled){
-    var evtParam = [state, state.task=task];
+    state.task=task;
     if (task._invalid||state.forceRender) {
-      task.emit(EVENT_RENDER_START, evtParam);
-      task._updateObjs.forEach(function (item) {if(isFunc(item.render)&&!item.disabled)item.render(state);});
+      task.emit(EVENT_RENDER_START, state);
+      task._updateObjs.forEach(function (item) {
+        if(isFunc(item.render)&&!item.disabled)
+          item.render(state);
+      });
       task._invalid = false;
     }
-    task.emit(EVENT_RENDER_END, evtParam);
+    task.emit(EVENT_RENDER_END, state);
+    state.task=null;
   }
 }
 function finalizeTask(task,state){
   var taskItems=(state.task=task)._updateObjs,index,finItems=task._finalizeObjs;
+  task._finalizeObjs=[];
   if(finItems.length){
     task.invalid();
     finItems.forEach(function(item){
@@ -1845,12 +1843,14 @@ function finalizeTask(task,state){
         item._task=null;
       isObj(item)&&isFunc(item.finalize)&&item.finalize(state);
     });
-    task._finalizeObjs=[];
   }
 }
 function finalizeAnimation(animation){
-  if(!animation.persistAfterFinished){
+  var fillMode=animation.fillMode;
+  if(animation.fillMode!==FILL_MODE.KEEP){
     animation.finalize();
+    if(fillMode===FILL_MODE.SNAPSHOT)
+      animation.cancelStyle=FlipScope.global.immediate(animation.lastStyleRule);
   }
 }
 
@@ -1943,16 +1943,14 @@ function mergeRule(map,selector,cssContainer){
 Flip.RenderGlobal = RenderGlobal;
 function RenderGlobal(opt) {
   if(!(this instanceof RenderGlobal))return new RenderGlobal(opt);
-  opt=opt||{};
+  opt=makeOptions(opt,{defaultTaskName:'default'});
   this._tasks = {};
-  this._defaultTaskName=opt.defaultTaskName||'default';
+  this._defaultTaskName=opt.defaultTaskName;
   this._invalid=true;
   this._persistStyles={};
   this._persistElement=document.createElement('style');
   this._styleElement=document.createElement('style');
 }
-
-
 inherit(RenderGlobal, Flip.util.Object, {
   get defaultTask(){
     var taskName=this._defaultTaskName,t=this._tasks[taskName];
@@ -1986,6 +1984,7 @@ inherit(RenderGlobal, Flip.util.Object, {
     return false;
   },
   immediate:function(style){
+    if(!style)return noop;
     var styles=this._persistStyles,uid=nextUid('immediateStyle'),self=this,cancel;
     styles[uid]=style;
     cancel=function cancelImmediate(){

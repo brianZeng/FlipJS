@@ -10,7 +10,7 @@ Animation Construct Options
     infinite:false          //ignore iteration and replay forever
     autoReverse:false       //it will replay in reverse order if true
     autoStart:true          //will it start immediately, otherwise you should call Animation#start()
-    persistAfterFinished:false  //will the animation css still apply after it ends
+    fillMode:'remove'       // 'remove','snapshot','keep'
     ease:Flip.EASE.LINEAR   //easing function of the animation
     animationType:''        //search for registered animation type
     css:{}                  //css rules for animation
