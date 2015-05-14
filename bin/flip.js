@@ -1012,7 +1012,7 @@ Flip.animation = (function () {
     return Constructor;
   }
   return register;
-  function _beforeCallBase(proxy, opt, definition) {
+  function _beforeCallBase(proxy, opt) {
     return proxy;
   }
 })();
@@ -1979,7 +1979,7 @@ inherit(RenderGlobal, Flip.util.Object, {
         return this.invalid();
       }
     }
-    else if (obj instanceof Animation || obj instanceof Clock)
+    else if (isObj(obj))
       return this.defaultTask.add(obj);
     return false;
   },

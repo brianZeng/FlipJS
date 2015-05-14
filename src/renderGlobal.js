@@ -40,7 +40,7 @@ inherit(RenderGlobal, Flip.util.Object, {
         return this.invalid();
       }
     }
-    else if (obj instanceof Animation || obj instanceof Clock)
+    else if (isObj(obj))
       return this.defaultTask.add(obj);
     return false;
   },

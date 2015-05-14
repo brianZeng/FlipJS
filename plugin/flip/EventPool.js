@@ -1,13 +1,13 @@
 /**
  * Created by 柏然 on 2015/1/5.
  */
-(function () {
+(function (Flip) {
   var actionType = {
     DOWN: 1, MOVE: 0, UP: 2
   }, eventType = {
     NULL: 0,
     PRESS: 1, CLICK: 2, DRAG: 3, RELEASE: 4, MOVE: 5//point
-  };
+  },util=Flip.util,forEach=util.Object.forEach;
 
   function EventPool(element) {
     this.registerHandlers(element);
@@ -25,13 +25,13 @@
     this._lastKey = null;
   }
 
-  inherit(EventPool, obj, {
+  util.inherit(EventPool,Flip.Render,{
     get shouldSkipFrame() {
       return this._skipped < this.skipFrameNum;
     },
     get lastPointEvents() {
       var r = [], e, ps = this.pEvents, len;
-      objForEach(ps, function (array, name) {
+      forEach(ps, function (array, name) {
         len = array.length;
         if (len == 0) delete ps[name];
         else e = array[len - 1];
@@ -56,7 +56,7 @@
         e.stopPropagation();
         return false;
       };
-      objForEach(handlers, function (f, name) {
+      forEach(handlers, function (f, name) {
         if (typeof f == "function") {
           element.addEventListener(name, f.bind(pool), true);
           element.addEventListener(name, preventFun, true);
@@ -69,20 +69,21 @@
     },
     clear: function () {
       var pes = this.pEvents, keys = Object.getOwnPropertyNames(pes), lps = this._lastPoints;
-      keys.remove('mouse');
+     // keys.remove('mouse');
       keys.forEach(function (name) {
         if (!lps[name] || lps[name].action == actionType.UP) delete lps[name];
       });
       this.pEvents = {};
       this.kEvents = [];
     },
-    update: function (cfg) {
+    update: function (state) {
       if (this.preventAll)return this.clear();
       var evts = this.lastKeyEvents.concat(this.lastPointEvents);
-      if (!this.shouldSkipFrame) {
+      if (!this.shouldSkipFrame&&evts.length) {
         this.shouldClear = true;
-        this.emit('update', [evts, cfg]);
-        if (this.shouldClear)this.clear();
+        this.emit('update', [evts, state]);
+        if (this.shouldClear)
+          this.clear();
         this._skipped = 0;
       }
       else
@@ -343,13 +344,11 @@
         handlers.mouseup.apply(this, [touch]);
     }
 
-  }, exporer = {};
-  exporer.getEventPool = function (element) {
+  };
+  function getEventPool (element) {
     var p = element.eventPool;
     if (!p)p = new EventPool(element);
     return p;
-  };
-
-  Flip.getEventPool = exporer.getEventPool;
-  return exporer;
-})();
+  }
+  Flip.getEventPool = getEventPool;
+})(Flip);

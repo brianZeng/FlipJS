@@ -478,7 +478,7 @@ Flip.animation = (function () {
     return Constructor;
   }
   return register;
-  function _beforeCallBase(proxy, opt, definition) {
+  function _beforeCallBase(proxy, opt) {
     return proxy;
   }
 })();

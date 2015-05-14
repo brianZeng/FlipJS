@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        canvas{
+            display: block;
+            margin: 100px auto;
+        }
+    </style>
+    <script src="../bin/flip.js"></script>
+    <script src="../plugin/flip/EventPool.js"></script>
+</head>
+<body>
+<canvas id="cvs" height="600" width="800"></canvas>
+<script>
+    Flip(function(){
+       var cvs=Flip.$('#cvs'),ctx=cvs.getContext('2d'),eventPool=Flip.getEventPool(cvs),
+               points=[],render=new Flip.Render(),achieve=[];
+        createPoint(5,600,400);
+        eventPool.onupdate= function (events) {
+            events.filter(function(evt){return evt.eventType=='click'}).forEach(function (evt) {
+                if(points.some(function(point,index){
+                            pathCircle(point[0],point[1],ctx,20);
+                            if(ctx.isPointInPath(evt.offsetX,evt.offsetY)){
+                                if(point[4])
+                                {
+                                    points[index]=null;
+                                    achieve.push([point[0],point[1],rank(point[2])])
+                                }
+                                else point[3]=1;
+                                render.invalid();
+                                return true;
+                            }
+                        })){
+                    points=points.filter(function (p) { return p; })
+                }
+            });
+        };
+        Flip.instance.add(eventPool);
+        Flip.instance.add(render);
+        render.render= function () {
+            paint(ctx);
+        };
+        function rank(percent){
+            if(percent >.2) return 'MISS;;';
+            else if(percent >.1) return 'OK~';
+            else if(percent >.05) return 'Great!';
+            else return 'Perfect ^^';
+        }
+        function paint(ctx){
+            ctx.clearRect(0,0,800,600);
+            ctx.save();
+            ctx.fillStyle='red';
+            ctx.lineWidth=2;
+            ctx.font='16px "微软雅黑"';
+            points.forEach(function(point){
+                var dead=point[3],percent=point[2];
+                pathCircle(point[0],point[1],ctx,20);
+                ctx.fillStyle=dead? '#333':'yellow';
+                ctx.fill();
+                if(!dead&& point[4]){
+                    pathCircle(point[0],point[1],ctx,20*(1+percent));
+                    ctx.stroke();
+                }
+            });
+            ctx.fillStyle='black';
+            achieve.forEach(function(point){
+                ctx.fillText(point[2],point[0],point[1]);
+            });
+            ctx.restore();
+        }
+        function pathCircle(x,y,ctx,radius){
+            ctx.beginPath();
+            ctx.arc(x,y,radius,0,Math.PI*2);
+            ctx.closePath();
+        }
+        function createPoint(num,width,height){
+            for(var i= 0,sx= 0,point,dx=width/num;i<num;i++)
+            {
+                points.push(point=[random(sx,sx+dx),random(0,height)]);
+                createCircle((i+Math.random()),.7,point,10);
+                sx+=dx;
+            }
+            function createCircle(delay,dur,point,range){
+                point[2]=0;
+                Flip.animate({
+                    duration:dur,
+                    delay:delay,
+                    once:{
+                      start: function () {
+                          point[4]=1;
+                      }
+                    },
+                    on:{
+                        update: function () {
+                            point[2]=(1-this.percent)
+                        },
+                        finish:function(){
+                            point[3]=1;
+                        }
+                    }
+                })
+            }
+        }
+        function random(min,max){
+            return Math.round(min+Math.random()*(max-min))
+        }
+    });
+</script>
+</body>
+</html>
