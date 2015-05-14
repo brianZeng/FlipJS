@@ -31,6 +31,7 @@ This animation starts after dom ready, so you don't need to worry about timing. 
 To translate an element from 20 to 100 in x direction, you can write directly:
 ```` javascript
 Flip({
+    .... 
     transform:function(mat){
         mat.translate(20+80*this.percent);
     }
