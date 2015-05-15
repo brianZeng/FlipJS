@@ -8,8 +8,14 @@
  */
 function Clock(opt) {
   if (!(this instanceof Clock))return new Clock(opt);
-  objForEach(Clock.createOptProxy(opt, 1, Clock.EASE.linear, 0, 1, 0,0).result, cloneFunc, this);
-  this.reset(1,0,0,0);
+  useOptions(this,makeOptions(opt,{
+    duration:1,
+    ease:Clock.EASE.linear,
+    infinite:false,
+    iteration:1,
+    autoReverse:false,
+    delay:0
+  })).reset(1,0,0,0);
 }
 Flip.Clock = Clock;
 /**
@@ -24,17 +30,7 @@ Flip.Clock = Clock;
  * triggered when animation first update(not constructed)
  * @event Flip.Animation#init
  */
-var CLOCK_EVT=Clock.EVENT_NAMES =Object.seal({
-  UPDATE: 'update',
-  INIT:'init',
-  ITERATE: 'iterate',
-  START: 'start',
-  REVERSE: 'reverse',
-  TICK: 'tick',
-  FINISH: 'finish',
-  FINALIZE: 'finalize',
-  CONTROLLER_CHANGE: 'controllerChange'
-});
+var EVENT_INIT='init',EVENT_ITERATE='iterate',EVENT_REVERSE='reverse',EVENT_START='start',EVENT_CONTROLLER_CHANGE='controllerChange';
 inherit(Clock, obj, {
     get controller() {
       return this._controller || null;
@@ -44,7 +40,7 @@ inherit(Clock, obj, {
       c = c || null;
       if (oc === c)return;
       this._controller = c;
-      this.emit(CLOCK_EVT.CONTROLLER_CHANGE, {before: oc, after: c, clock: this});
+      this.emit(EVENT_CONTROLLER_CHANGE, {before: oc, after: c, clock: this});
     },
     get started(){
       return this._startTime!==-1;
@@ -65,7 +61,7 @@ inherit(Clock, obj, {
     },
     start: function () {
       if (this.t == 0) {
-        this.reset(0, 1).emit(CLOCK_EVT.START, this);
+        this.reset(0, 1);
         return !(this._finished=false);
       }
       return false;
@@ -97,7 +93,7 @@ inherit(Clock, obj, {
       return this;
     },
     finish: function (evtArg) {
-      this.emit(CLOCK_EVT.FINISH, evtArg);
+      this.emit(EVENT_FINISH, evtArg);
       this.reset(1,1,1);
       this._finished=true;
     },
@@ -129,7 +125,7 @@ inherit(Clock, obj, {
         task.toFinalize(this);
       else{
         this.reset(1);
-        this.emit(CLOCK_EVT.FINALIZE);
+        this.emit(EVENT_FINALIZE);
       }
     },
     update:function(state){
@@ -142,13 +138,6 @@ inherit(Clock, obj, {
       }
     }
   });
-objForEach(CLOCK_EVT, function (evtName, key) {
-    Object.defineProperty(this, 'on' + evtName, {
-      set: function (func) {
-        this.on(CLOCK_EVT[key], func);
-      }
-    })
-  }, Clock.prototype);
 function emitWithCtrl(clock,evtName,arg){
   var ctrl=clock.controller;
   clock.emit(evtName,arg);
@@ -160,10 +149,7 @@ function updateClock(c,state) {
     state.clock=c;
     if (c._startTime == -1) {
       c._startTime = timeline.now;
-      emitWithCtrl(c,CLOCK_EVT[c.d?(c.i== c.iteration? 'INIT':'ITERATE'):'REVERSE'],state);
-    //  evtName= ;
-     // c.emit(evtName,state);
-     // controller&&controller.emit(evtName,state);
+      emitWithCtrl(c,c.d?(c.i== c.iteration? EVENT_INIT:EVENT_ITERATE):EVENT_REVERSE,state);
       return true;
     }
     else if (c._paused) {
@@ -179,13 +165,13 @@ function updateClock(c,state) {
       if(!c._delayed){
         c._delayed=1;
         c._startTime+=c.delay*timeline.ticksPerSecond;
-        emitWithCtrl(c,CLOCK_EVT.START,state);
+        emitWithCtrl(c,EVENT_START,state);
       }
       t = c.t = c.d ? dur / c.duration : 1 - dur / c.duration;
       if (t > 1)t = c.t = 1;
       else if (t < 0)t = c.t = 0;
       curValue = c.value = c.ease(t);
-      if (ov != curValue) c.emit(CLOCK_EVT.TICK,state);
+      if (ov != curValue) c.emit(EVENT_UPDATE,state);
       if (t == 1)c.end(state);
       else if (t == 0)c.iterate(state);
       state.task.invalid();
@@ -194,11 +180,6 @@ function updateClock(c,state) {
     state.clock=null;
   }
 }
-Clock.createOptProxy = function (opt, duration, ease, infinite, iteration, autoReverse,delay) {
-  var setter = createProxy(opt);
-  setter('duration', duration, 'ease', ease, 'infinite', infinite, 'iteration', iteration, 'autoReverse', autoReverse,'delay',delay);
-  return setter;
-};
 Flip.EASE = Clock.EASE = (function () {
   /**
    * from jQuery.easing
@@ -311,6 +292,5 @@ Flip.EASE = Clock.EASE = (function () {
       return 1 / pow(4, 3 - bounce) - 7.5625 * pow(( pow2 * 3 - 2 ) / 22 - t, 2);
     }
   });
-
   return Object.freeze(F);
 })();

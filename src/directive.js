@@ -10,8 +10,11 @@
       });
     return r;
   }
-
-  Flip.$$ = Flip.$ = $$;
+  function $(slt,ele){
+    return (ele||document).querySelector(slt)
+  }
+  Flip.$$ = $$;
+  Flip.$=$;
   document.addEventListener('DOMContentLoaded', function () {
     var funcs=FlipScope.readyFuncs;
     FlipScope.global.init();
@@ -19,6 +22,5 @@
     funcs.forEach(function (callback) {
       callback(Flip);
     });
-
   });
 })(Flip);

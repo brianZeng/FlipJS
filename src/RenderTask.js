@@ -10,13 +10,6 @@ function RenderTask(name) {
   this._global = null;
 }
 Flip.RenderTask = RenderTask;
-RenderTask.EVENT_NAMES = {
-  RENDER_START: 'renderStart',
-  RENDER_END: 'renderEnd',
-  UPDATE: 'update',
-  BEFORE_CONSUME_EVENTS: 'beforeConsumeEvents',
-  AFTER_CONSUME_EVENTS: 'afterConsumeEvents'
-};
 inherit(RenderTask, Flip.util.Object, {
   update:noop,
   invalid: function () {
@@ -31,24 +24,15 @@ inherit(RenderTask, Flip.util.Object, {
   add: function (obj, type) {
     if (type == 'update') return arrAdd(this._updateObjs, obj);
     if (obj instanceof Clock || obj instanceof Render)
-      if(arrAdd(this._updateObjs, obj) && (obj._task = this)){
-
-      }
+      if(arrAdd(this._updateObjs, obj))
+        obj._task = this;
     this.invalid();
   },
   remove: function (obj) {
-    if (obj._task == this && arrRemove(this._updateObjs, obj)){
+    if (obj._task == this||this._updateObjs.indexOf(obj)>-1){
       obj._task = null;
       this.toFinalize(obj);
       this.invalid();
     }
   }
 });
-function filterIUpdate(item) {
-  if (!isObj(item)||item.disabled)return false;
-  else if (isFunc(item.update))
-    item.update(this);
-  else if (isFunc(item.emit))
-    item.emit(RenderTask.EVENT_NAMES.UPDATE, this);
-  return true;
-}

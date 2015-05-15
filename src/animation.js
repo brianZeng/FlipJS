@@ -13,10 +13,10 @@
  */
 function Animation(opt) {
   if (!(this instanceof Animation))return new Animation(opt);
-  var r = Animation.createOptProxy(opt).result;
-  this.selector= r.selector||Error('Elements selector required');
-  this.clock = r.clock;
-  this.persistAfterFinished= r.persistAfterFinished;
+  useOptions(this,makeOptions(opt,{
+    selector:'',
+    fillMode:FILL_MODE.REMOVE,
+    clock:opt.clock||new Clock(opt)}));
   this._cssMap={};
   this._matCallback={};
   this._cssCallback={};
@@ -27,6 +27,9 @@ function Animation(opt) {
   this.use(opt);
   this.init();
 }
+var FILL_MODE=Animation.FILL_MODE={
+  REMOVE:'remove',SNAPSHOT:'snapshot',KEEP:'keep'
+};
 inherit(Animation,Render,
   /**
    * @lends Flip.Animation.prototype
@@ -197,7 +200,7 @@ inherit(Animation,Render,
     }
     else if(!this._canceled) {
       this.reset(1);
-      this.emit(ANI_EVT.FINALIZE);
+      this.emit(EVENT_FINALIZE);
     }
     return this;
   },
@@ -218,7 +221,7 @@ inherit(Animation,Render,
      * @returns {Flip.Animation} returns itself
      */
   resume:function(evt){
-    return invokeClock(this,'resume',ANI_EVT.RESUME,evt);
+    return invokeClock(this,'resume',EVENT_RESUME,evt);
   },
     /**
      * @alias Flip.Animation#pause
@@ -226,7 +229,7 @@ inherit(Animation,Render,
      * @returns {Flip.Animation} returns itself
      */
   pause:function(evt){
-    return invokeClock(this,'pause',ANI_EVT.PAUSE,evt);
+    return invokeClock(this,'pause',EVENT_PAUSE,evt);
   },
     /**
      * @alias Flip.Animation#cancel
@@ -238,7 +241,7 @@ inherit(Animation,Render,
     if(!this._canceled &&!this._finished){
       if(t=this._task)this._ltName=t.name;
       this._canceled=true;
-      this.emit(ANI_EVT.CANCEL,evt);
+      this.emit(EVENT_CANCEL,evt);
       this.finalize();
     }
     return this;
@@ -277,15 +280,7 @@ inherit(Animation,Render,
  * @event Flip.Animation#pause   */
 /** triggered when animation is resumed from pause
  * @event Flip.Animation#resume  */
-var ANI_EVT=Animation.EVENT_NAMES =Object.seal({
-  UPDATE: 'update',
-  FINALIZE: 'finalize',
-  RENDER: 'render',
-  FINISH: 'finish',
-  CANCEL:'cancel',
-  PAUSE:'pause',
-  RESUME:'resume'
-});
+var EVENT_FINALIZE='finalize',EVENT_RENDER='render',EVENT_FINISH='finish',EVENT_CANCEL='cancel',EVENT_PAUSE='pause',EVENT_RESUME='resume';
 function findTaskToAddOrThrow(ani,opt){
   var t,global;
   if(!(t=ani._task)){
@@ -307,11 +302,11 @@ function invokeClock(animation,method,evtName,evtArg){
 }
 function getPromiseByAni(ani){
   return FlipScope.Promise(function(resolve,reject){
-    ani.once(ANI_EVT.FINISH,function(state){
+    ani.once(EVENT_FINISH,function(state){
       if(state&&state.global)
-        state.global.once('frameEnd',go);
+        state.global.once(EVENT_FRAME_END,go);
       else go();
-    }).once(ANI_EVT.CANCEL,function(){reject(ani)});
+    }).once(EVENT_CANCEL,function(){reject(ani)});
     function go(){resolve(ani);}
   });
 }
@@ -325,14 +320,6 @@ function cloneWithPro(from,to){
   });
   return to;
 }
-Animation.createOptProxy = function (setter,selector,persist) {
-  setter = createProxy(setter);
-  if (!setter.proxy.clock)
-    setter('clock', new Clock(setter));
-  setter('selector',selector);
-  setter('persistAfterFinished',persist);
-  return setter;
-};
 /**
  * construct an animation instance see {@link AnimationOptions}
  * you can also construct an animation by {@link Flip.Animation}
@@ -387,7 +374,7 @@ function animate(opt) {
   }
   else throw Error('cannot construct an animation');
   if (!constructor) constructor = Animation;
-  return setAniEnv(animate.createOptProxy(opt).result, new constructor(opt));
+  return setAniEnv(opt,new constructor(opt));
   }
 function setAniEnv(aniOpt, animation) {
   (aniOpt.renderGlobal||FlipScope.global).getTask(aniOpt.taskName,true).add(animation);
@@ -395,11 +382,11 @@ function setAniEnv(aniOpt, animation) {
     animation.start();
   return animation;
 }
-animate.createOptProxy = function (setter, autoStart, taskName, defaultGlobal) {
+/*animate.createOptProxy = function (setter, autoStart, taskName, defaultGlobal) {
     setter = createProxy(setter);
     setter('autoStart', autoStart, 'taskName', taskName, 'renderGlobal', defaultGlobal);
     return setter;
-};
+};*/
 
 Flip.animate = animate;
 /**
@@ -428,12 +415,10 @@ Flip.animate = animate;
  */
 Flip.css=function(selector,rule){
   var literal=[];
-  if(arguments.length==2){
+  if(arguments.length==2)
     resolve(rule,selector);
-  }
-  else if(isObj(selector)){
-    objForEach(selector,resolve)
-  }
+  else if(isObj(selector))
+    objForEach(selector,resolve);
   else throw Error('argument error');
   return FlipScope.global.immediate(literal.join('\n'));
   function resolve(rule,selector){
@@ -471,13 +456,13 @@ Flip.transform=function(selector,rule){
 };
 Flip.animation = (function () {
   function register(definition) {
-    var beforeCallBase, name = definition.name, Constructor,afterCallBase;
+    var beforeCallBase, name = definition.name, Constructor;
     beforeCallBase = definition.beforeCallBase || _beforeCallBase;
     Constructor = function (opt) {
       if (!(this instanceof Constructor))return new Constructor(opt);
-      var proxy = createProxy(opt);
-      beforeCallBase.apply(this, [proxy, opt]);
-      Animation.call(this,opt);
+      var proxy = cloneWithPro(opt,{});
+      beforeCallBase.call(this, proxy,opt);
+      Animation.call(this,proxy);
       (definition.afterInit||noop).call(this,proxy,opt);
     };
     if (name) {
@@ -493,7 +478,7 @@ Flip.animation = (function () {
     return Constructor;
   }
   return register;
-  function _beforeCallBase(proxy, opt, definition) {
+  function _beforeCallBase(proxy, opt) {
     return proxy;
   }
 })();

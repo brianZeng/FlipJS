@@ -8,7 +8,7 @@ function updateAnimation(animation,renderState){
   if(updateClock(clock,renderState)){
     animation.invalid();
     updateAnimationParam(animation);
-    animation.emit(ANI_EVT.UPDATE, renderState);
+    animation.emit(EVENT_UPDATE, renderState);
   }
   if(clock.finished){
     //trigger finished event after render
@@ -23,8 +23,8 @@ function renderAnimation(ani,state){
   state.animation = ani;
   updateAnimationCss(ani);
   state.styleStack.push(getAnimationStyle(ani));
-  ani.emit(ANI_EVT.RENDER, state);
-  if(ani._finished)ani.emit(ANI_EVT.FINISH,state);
+  ani.emit(EVENT_RENDER, state);
+  if(ani._finished)ani.emit(EVENT_FINISH,state);
   state.animation = null;
 }
 function updateAnimationParam(animation){

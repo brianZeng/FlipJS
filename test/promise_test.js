@@ -113,8 +113,8 @@ describe('animation promise',function(){
     },ani;
     ani=Flip.animate(opt);
     var d=Date.now();
-    ani.then({selector:'div',duration:0.2,animationType:'translate'}).
-      then({selector:'div',duration:0.2,animationType:'rotate'}).
+    ani.then({selector:'div',duration:0.2}).
+      then({selector:'div',duration:0.2}).
       then(function(){
         expect(Date.now()-d).toBeGreaterThan(400);
         done();
@@ -123,7 +123,7 @@ describe('animation promise',function(){
   });
   it('2 animation::then accept array of animations',function(done){
     var ani=Flip.animate({selector:'div',duration:1}),now=Date.now();
-    ani.then([{selector:'div',duration:0.2,animationType:'flip'},{selector:'div',duration:0.5}]).
+    ani.then([{selector:'div',duration:0.2},{selector:'div',duration:0.5}]).
       then(function(ans){
         expect(ans.length).toBe(2);
         expect(ans.every(function(ani){return ani.finished})).toBe(true);
@@ -133,16 +133,16 @@ describe('animation promise',function(){
     ani.start();
   });
   it('3support continue with a promise',function(done){
-     var ani=Flip.animate({selector:'div',animationType:'rotate',duration:0.2});
+     var ani=Flip.animate({selector:'div',duration:0.2});
     ani.then(function(){
       return Flip.Promise(function(resolve){
         setTimeout(function(){
-          resolve({selector:'div',animationType:'scale',duration:0.3})
+          resolve({selector:'#uni',duration:0.3})
         },500);
       });
     }).then(function(pre){
       expect(pre.finished).toBe(true);
-      expect(pre.type).toBe('scale');
+      expect(pre.selector).toBe('#uni');
       done();
     });
     ani.start();

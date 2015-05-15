@@ -4,19 +4,14 @@
 Flip.RenderGlobal = RenderGlobal;
 function RenderGlobal(opt) {
   if(!(this instanceof RenderGlobal))return new RenderGlobal(opt);
-  opt=opt||{};
+  opt=makeOptions(opt,{defaultTaskName:'default'});
   this._tasks = {};
-  this._defaultTaskName=opt.defaultTaskName||'default';
+  this._defaultTaskName=opt.defaultTaskName;
   this._invalid=true;
   this._persistStyles={};
   this._persistElement=document.createElement('style');
   this._styleElement=document.createElement('style');
 }
-RenderGlobal.EVENT_NAMES = {
-  FRAME_START: 'frameStart',
-  FRAME_END: 'frameEnd',
-  UPDATE: 'update'
-};
 inherit(RenderGlobal, Flip.util.Object, {
   get defaultTask(){
     var taskName=this._defaultTaskName,t=this._tasks[taskName];
@@ -45,11 +40,12 @@ inherit(RenderGlobal, Flip.util.Object, {
         return this.invalid();
       }
     }
-    else if (obj instanceof Animation || obj instanceof Clock)
+    else if (isObj(obj))
       return this.defaultTask.add(obj);
     return false;
   },
   immediate:function(style){
+    if(!style)return noop;
     var styles=this._persistStyles,uid=nextUid('immediateStyle'),self=this,cancel;
     styles[uid]=style;
     cancel=function cancelImmediate(){
@@ -73,7 +69,7 @@ inherit(RenderGlobal, Flip.util.Object, {
         head.appendChild(this._persistElement);
       }
       Flip.fallback(window);
-      window.addEventListener('resize',function(){self.refresh()});
+      //window.addEventListener('resize',function(){self.refresh()});
       this.loop();
     }
     this.init = function () {

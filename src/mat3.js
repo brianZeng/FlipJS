@@ -131,7 +131,7 @@ Mat3.prototype={
    * @returns {Flip.Mat3} itself
    */
   skew:function(angleX,angleY){
-    return multiplyMat(this,[1,tan(angleX),0,tan(angleY),1,0,0,1])
+    return multiplyMat(this,[1,tan(angleX),0,tan(angleY||0),1,0,0,0,1])
   },
   transform:function(m11,m12,m21,m22,dx,dy){
     return multiplyMat(this,[m11,m21,0,m12,m22,0,dx||0,dy||0,1])

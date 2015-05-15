@@ -10,7 +10,7 @@ Flip.animation({
     angle: Math.PI
   },
   beforeCallBase: function (proxy) {
-    proxy.source('ease', Clock.EASE.sineInOut);
+    proxy.ease=proxy.ease|| Clock.EASE.sineInOut;
   },
   transform:function(mat,param){
     mat.flip(param.angle,!param.vertical);

@@ -27,10 +27,11 @@ Flip({
 </script>
 ````
 This animation starts after dom ready, so you don't need to worry about timing. For more details, please check [construct options](doc/animation.md#construct) and [animation events](doc/animation.md#event)
-## Calculation parameter
+## Calculation Parameter
 To translate an element from 20 to 100 in x direction, you can write directly:
 ```` javascript
 Flip({
+    .... 
     transform:function(mat){
         mat.translate(20+80*this.percent);
     }
@@ -65,12 +66,14 @@ As the name suggests, immutable values keep the same in every frame, while every
 ````
 Animation
     -percentage
-    -immutable          param
-        -a               -a
-        -b         --->  -b
-    -variable            -c*percentage
-        -c               -d*percentage
-        -d
+    -immutable:{
+         a:any           param:{
+         b:any              a:immutable.a,
+       }          --->      b:immutable.a,
+    -variable:{             c:variable.c * percent,
+        c:number            d:variable.d(percent)
+        d:function(){}     }
+       }
 ````
 ##Animation Components
 The amazing effects take efforts and many elements.
@@ -101,5 +104,37 @@ Flip({
 ````
 In this way, you can also use the animation for other elements, just change the selector and animation options.
 With your cool imagination you can have your special animation toolkit!
-#Animation continuation
+#Animation Continuation
+Combine animations in sequence is another aspect of "async programming". The easiest way to do this is to use callbacks.
+```` js
+Flip.animate(optA).on('finish',function(){
+    //do something
+    Flip.animate(optB).on('finish',function(){
+        //do something
+        Flip.animate(optC)
+    });
+});
+````
+"The Callbacks Hell" comes with the increasing amount of animation. In the callback way, It is tedious to control the orders.
+Imaging after animation B we need start C,D together and wait both of them to finish before starts animation E, you don't want your code like this
+```` js
+Flip.animate(optA).on('finish',function(){
+    //do something
+    Flip.animate(optB).on('finish',function(){
+        //do something
+        var completed=0;
+        Flip.animate(optC).on('finish',onfinish);
+        Flip.animate(optD).on('finish',onfinish);
+        function onfinish(){
+            if(++completed==2)
+                Flip.animate(optE)
+        }
+    });
+});
+````
+The better way is to use [Promise](https://github.com/petkaantonov/bluebird#what-are-promises-and-why-should-i-use-them) to rewrite code like below:
+```` js
+Flip.animate(optA).then(optB).then([optC,optD]).then(optE)
+````
+Please check [the differences in promise](doc/promise.md) and [the example](demo/world-map.html) before try the cool stuff.
 

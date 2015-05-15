@@ -7,7 +7,7 @@ Flip.animation({
     angle: Math.PI * 2
   },
   beforeCallBase: function (proxy) {
-    proxy.source('ease', Flip.EASE.circInOut);
+    proxy.ease=proxy.ease||Flip.EASE.circInOut;
   },
   transform: function (mat,param) {
     mat.rotate(param.angle)
