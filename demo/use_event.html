@@ -110,27 +110,31 @@
             else return 'Perfect';
         }
         function paint(ctx){
+            var solid=0;
             ctx.clearRect(-dx,-dy,800+dy,600+dy);
             ctx.save();
             ctx.fillStyle='red';
             ctx.lineWidth=2;
             ctx.font='20px "微软雅黑"';
+            achieve.forEach(function(point){
+                ctx.fillText(point[2],point[0],point[1]);
+            });
             points.forEach(function(point){
                 var dead=point[4],percent=point[3];
+                ctx.globalAlpha=solid>5? 0.7:1;
+                if(!dead&& point[5]){
+                    pathCircle(point[0],point[1],ctx,30*(1+Math.max(percent,0)));
+                    solid++;
+                    ctx.stroke();
+                }
                 pathCircle(point[0],point[1],ctx,30);
                 ctx.fillStyle=dead? '#333':'yellow';
                 ctx.fill();
                 ctx.fillStyle='orange';
                 ctx.fillText(point[2],point[0]-5,point[1]+5);
-                if(!dead&& point[5]){
-                    pathCircle(point[0],point[1],ctx,30*(1+Math.max(percent,0)));
-                    ctx.stroke();
-                }
             });
             ctx.fillStyle='black';
-            achieve.forEach(function(point){
-                ctx.fillText(point[2],point[0],point[1]);
-            });
+
             ctx.restore();
         }
         function pathCircle(x,y,ctx,radius){
