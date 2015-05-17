@@ -108,13 +108,6 @@ config.uglify = {
        screwIE8:true
     }
   },
-  atrk: {
-    files: {
-      "bin/atrk.min.js": "bin/atrk.js"
-    }, options: {
-      banner: '/* borian@vip.qq.com */'
-    }
-  },
   editor:{
     files:{
       'min/flip.min.js':'bin/flip.js',
