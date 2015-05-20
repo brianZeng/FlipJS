@@ -26,7 +26,8 @@ Flip({
 })
 </script>
 ````
-This animation starts after dom ready, so you don't need to worry about timing. For more details, please check [construct options](doc/animation.md#construct) and [animation events](doc/animation.md#event)
+This animation starts after dom ready, so you don't need to worry about timing. 
+For more details, please check [construct options](doc/animation.md#construct) and [animation events](doc/animation.md#event)
 ## Calculation Parameter
 To translate an element from 20 to 100 in x direction, you can write directly:
 ```` javascript
@@ -62,6 +63,7 @@ Flip({
 We want the math formula and css rules decoupled with the data, making it easy to debug and reuse.
 When updating, the animation combines the *immutable* and *variable* values to one object, then pass this object to  `function transform(mat,param)` and `function css(css,param)`.
 As the name suggests, immutable values keep the same in every frame, while every variable value is multiplied by animation percentage.
+See [matrix section](doc/matrix.md) for more information about the above animation.
 ````
 Animation
     -percentage
