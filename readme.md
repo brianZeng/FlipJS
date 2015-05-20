@@ -32,6 +32,7 @@ For more details, please check [construct options](doc/animation.md#construct) a
 To translate an element from 20 to 100 in x direction, you can write directly:
 ```` javascript
 Flip({
+    .... 
     transform:function(mat){
         mat.translate(20+80*this.percent);
     }

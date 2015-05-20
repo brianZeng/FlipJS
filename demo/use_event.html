@@ -8,28 +8,47 @@
             display: block;
             margin: 100px auto;
         }
+        video{
+            display: none;
+        }
     </style>
     <script src="../bin/flip.js"></script>
     <script src="../plugin/flip/EventPool.js"></script>
 </head>
 <body>
 <canvas id="cvs" height="600" width="800"></canvas>
+<video preload="metadata" src="../images/bing.wav" id="bing"></video>
+<video preload="metadata" src="../images/alert.wav" id="bi"></video>
 <script>
     Flip(function(){
        var cvs=Flip.$('#cvs'),ctx=cvs.getContext('2d'),eventPool=Flip.getEventPool(cvs),
-               points=[],render=new Flip.Render(),achieve=[];
-        createPoint(5,600,400);
+               points=[],render=new Flip.Render(),achieve=[],levelRender=new Flip.Render(),
+               bing=Flip.$('#bing'),bi=Flip.$('#bi'),dx=50,dy=0;
+
+        ctx.translate(dx,dy);
+        levelRender.render=function(state){
+            var level=this.level;
+            if(level){
+                ctx.font='36px "微软雅黑"';
+                ctx.fillText('level '+level,300,220);
+            }
+        };
         eventPool.onupdate= function (events) {
-            events.filter(function(evt){return evt.eventType=='click'}).forEach(function (evt) {
-                if(points.some(function(point,index){
-                            pathCircle(point[0],point[1],ctx,20);
+            events.filter(function(evt){return evt.action==1||evt.eventType=='click'}).forEach(function (evt) {
+               if(points.some(function(point,index){
+                            var r;
+                            pathCircle(point[0],point[1],ctx,40);
                             if(ctx.isPointInPath(evt.offsetX,evt.offsetY)){
-                                if(point[4])
+                                if(!point[4])
                                 {
                                     points[index]=null;
-                                    achieve.push([point[0],point[1],rank(point[2])])
+                                    achieve.push([point[0],point[1],r=rank(point[3])]);
+                                    playAudio(r!=='Miss');
                                 }
-                                else point[3]=1;
+                                else {
+                                    point[4]=1;
+                                    playAudio(false)
+                                }
                                 render.invalid();
                                 return true;
                             }
@@ -38,37 +57,84 @@
                 }
             });
         };
+        eventPool.skipFrameNum=0;
         Flip.instance.add(eventPool);
         Flip.instance.add(render);
+        Flip.instance.add(levelRender);
         render.render= function () {
             paint(ctx);
         };
+        loopAnimation(1,1,1);
+        function playAudio(success){
+            if(success){
+                bi.pause();
+                bing.currentTime=0;
+                bing.play();
+            }else{
+                bing.pause();
+                bi.currentTime=0;
+                bi.play();
+            }
+        }
+
+        function loopAnimation(level,speed,i){
+          return Flip.animate({
+              duration:1,
+              once:{
+                  init:function(){
+                      levelRender.level=i;
+                  },
+                  finish:function(){
+                      levelRender.level=0;
+                  }
+              }
+          }).then(function(){
+              return createPoint(level,600,500,speed)
+          }).then({
+              duration:1,
+              once:{
+                  finish:function(){
+                      points=[];
+                      achieve=[];
+                      i%2==0? level++:speed+=.2;
+                      loopAnimation(Math.min(level,10),Math.min(speed,3.2),i+1)
+                  }
+              }
+          })
+        }
         function rank(percent){
-            if(percent >.2) return 'MISS;;';
-            else if(percent >.1) return 'OK~';
-            else if(percent >.05) return 'Great!';
-            else return 'Perfect ^^';
+            percent=Math.abs(percent);
+            if(percent >.4) return 'Miss';
+            else if(percent >.2) return 'OK';
+            else if(percent >.1) return 'Great';
+            else return 'Perfect';
         }
         function paint(ctx){
-            ctx.clearRect(0,0,800,600);
+            var solid=0;
+            ctx.clearRect(-dx,-dy,800+dy,600+dy);
             ctx.save();
             ctx.fillStyle='red';
             ctx.lineWidth=2;
-            ctx.font='16px "微软雅黑"';
-            points.forEach(function(point){
-                var dead=point[3],percent=point[2];
-                pathCircle(point[0],point[1],ctx,20);
-                ctx.fillStyle=dead? '#333':'yellow';
-                ctx.fill();
-                if(!dead&& point[4]){
-                    pathCircle(point[0],point[1],ctx,20*(1+percent));
-                    ctx.stroke();
-                }
-            });
-            ctx.fillStyle='black';
+            ctx.font='20px "微软雅黑"';
             achieve.forEach(function(point){
                 ctx.fillText(point[2],point[0],point[1]);
             });
+            points.forEach(function(point){
+                var dead=point[4],percent=point[3];
+                ctx.globalAlpha=solid>5? 0.7:1;
+                if(!dead&& point[5]){
+                    pathCircle(point[0],point[1],ctx,30*(1+Math.max(percent,0)));
+                    solid++;
+                    ctx.stroke();
+                }
+                pathCircle(point[0],point[1],ctx,30);
+                ctx.fillStyle=dead? '#333':'yellow';
+                ctx.fill();
+                ctx.fillStyle='orange';
+                ctx.fillText(point[2],point[0]-5,point[1]+5);
+            });
+            ctx.fillStyle='black';
+
             ctx.restore();
         }
         function pathCircle(x,y,ctx,radius){
@@ -76,32 +142,52 @@
             ctx.arc(x,y,radius,0,Math.PI*2);
             ctx.closePath();
         }
-        function createPoint(num,width,height){
-            for(var i= 0,sx= 0,point,dx=width/num;i<num;i++)
+        function createPoint(num,width,height,speed){
+            var partitions,d=createPartitions();
+            partitions.sort(function(){return Math.random()-0.5});
+            for(var i= 0,point,animations=[],partition;i<num;i++)
             {
-                points.push(point=[random(sx,sx+dx),random(0,height)]);
-                createCircle((i+Math.random()),.7,point,10);
-                sx+=dx;
+                partition=partitions.pop();
+                points.push(point=[random(partition[0],partition[0]+ d.dw),
+                    random(partition[1],partition[1]+ d.dh),i+1]);
+                animations.push(createCircle((i+Math.random())/speed,1/speed,point));
             }
-            function createCircle(delay,dur,point,range){
-                point[2]=0;
-                Flip.animate({
+            return animations;
+            function createPartitions(){
+                var n=Math.ceil(Math.sqrt(num)),dw=Math.round(width/n),dh=Math.round(height/n);
+                partitions=[];
+                for(var i= 0;i<n;i++)
+                 for(var j=0;j<n;j++){
+                     partitions.push([dw*i,dh*j]);
+                 }
+                return {dw:dw,dh:dh}
+            }
+            function createCircle(delay,dur,point){
+               // point[2]=0;
+               return Flip.animate({
                     duration:dur,
                     delay:delay,
                     once:{
                       start: function () {
-                          point[4]=1;
+                          point[5]=1;
                       }
                     },
                     on:{
                         update: function () {
-                            point[2]=(1-this.percent)
-                        },
-                        finish:function(){
-                            point[3]=1;
+                            point[3]=(1-this.percent)
                         }
                     }
-                })
+                }).then({
+                   duration:dur *.5,
+                   on:{
+                       update:function(){
+                         point[3]=-this.percent*.5
+                       },
+                       finish:function(){
+                           point[4]=1;
+                       }
+                   }
+               })
             }
         }
         function random(min,max){
