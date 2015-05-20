@@ -5,7 +5,7 @@
     "bairan.zeng<borian@vip.qq.com>"
   ],
   "description": "javascript animation framework",
-  "main": ["dist/flip.js","dist/flip.min.js"],
+  "main": ["dist/flip.min.js","dist/flip.js"],
   "keywords": [
     "interpolation",
     "animation"
