@@ -1,4 +1,6 @@
 #FlipJS -The only limit is your imagination.
+
+[中文版说明](doc/readme.cn.md)
 ##Quick Start
 Install FlipJS by bower.
 ````
@@ -34,6 +36,7 @@ To translate an element from 20 to 100 in x direction, you can write directly:
 Flip({
     .... 
     transform:function(mat){
+        //this.percent increase from 0 to 1 responding to animation from start to end
         mat.translate(20+80*this.percent);
     }
 })
@@ -88,7 +91,7 @@ You may write the code according to the HTML elements to make the animation as a
 </div>
 <script>
 //details are omitted
-//'&' represents the animation selector
+//'&' represents the animation selector, which means '& img' will be '.flip img' when applied
 Flip({
     selector:'.flip',
     css:{
