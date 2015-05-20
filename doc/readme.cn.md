@@ -8,8 +8,8 @@ bower install flip-js
 当页面中加载了flip.js文件后，就可以写小动画了！
 ```` HTML
 <div class='cubic'></div>
-//这是一个旋转的小方块
 <script>
+//这是一个旋转的小方块
 Flip({
     selector:'.cubic',
     infinite:true,
@@ -28,7 +28,7 @@ Flip({
 })
 </script>
 ````
-当DOM Ready 事件后，动画开始执行，点此查看[动画构建参数](animation.md#construct)和[动画播放时的事件](animation.md#event)。
+当DOM Ready 事件后，动画开始执行，点此查看[动画构建参数](animation.md#construct)和[动画播放事件](animation.md#event)。
 更多有趣的例子在[demo](../demo)文件夹中，有兴趣的话打开看看吧！
 ##简化计算
 如果我们要把一个元素在x方向从 20 移动到 100，你可以这样写代码
@@ -57,8 +57,9 @@ Flip({
 });
 ````
 上面的动画同样表示 从 20 移动到 100，不过这样的写法实现了代码和数据的分离，方便修改和调试。
+
 当动画每帧更新时，`variable`里面的数据会被自动乘以动画进程`animation.percent`,
-而`immutable`中的数据会保持定值，数字按照相同的key被合并到一个新的Object中，作为`function transform(mat,param)`的第二个参数，
+而`immutable`中的数据会保持定值，数据按照相同的key被合并到一个新的Object中，作为`function transform(mat,param)`的第二个参数，
 而第一个参数是一个矩阵，如果想挑战炫酷的动画，[了解矩阵运算](matrix.md)还是很必要的。
 用图来解释`param`是怎么合成的
 ````
@@ -76,7 +77,8 @@ Animation
 ````
 ##动画组件
 三个臭皮匠赛过诸葛亮，一个好的动画也需要很多元素的组合。
-让我们来做一个可以正反面翻转的卡片，我们需要三个元素，卡片的正反面和卡片的容器。
+
+让我们来做一个可以正反面翻转的卡片，动画需要三个元素，卡片的正反面和卡片的容器。
 下面的代码是简化代码，[这里是详细代码](two-sides-card.html)
 ```` HTML
 <div class='flip-card'>
@@ -85,7 +87,7 @@ Animation
 </div>
 <script>
 //省略具体计算细节
-//'&' 代表 animation的selector，也就是说 '& img' 会被转化为 '.flip img'
+//'&' 代表 animation.selector，也就是说 '& img' 会被转化为 '.flip img'
 Flip({
     selector:'.flip',
     css:{
@@ -131,10 +133,11 @@ Flip.animate(optA).on('finish',function(){
     });
 });
 ````
-上面的代码表示A-B-[C,D]-E，当B结束后开始C和D，同C和D都结束时开始E，代码不难懂，就是看着难受。
-所以你需要用Promise模型来改写上面的代码
+上面的代码表示A—B—[C,D]—E，当B结束后开始C和D，最后当C和D都结束时开始E，代码不难懂，就是看着难受。
+
+建议用Promise模型来改写上面的代码，简单明了：
 ```` js
 Flip.animate(optA).then(optB).then([optC,optD]).then(optE)
 ````
 没错，这是真的，这不是梦。掌握了[动画Promise](promise.md)，动画衔接变得超级轻松(so easy),
-建议你看看[使用Promise例子](../demo/world-map.html)
+在使用它之前，建议你看看[使用Promise的例子](../demo/world-map.html)
