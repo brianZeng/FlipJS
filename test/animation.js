@@ -11,7 +11,7 @@ describe('Construct Animation:', function () {
       expect(animation.abc).toBe(undefined);
     });
   });
-  describe('2.use Flip.animation() to construct an animation:', function () {
+  describe('2.use Flip.animate() to construct an animation:', function () {
     it('2.ease function set by name or ease',function(){
       var ani=Flip.animate({
         ease:Flip.EASE.backIn

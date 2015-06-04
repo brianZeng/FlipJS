@@ -40,4 +40,4 @@
       }
     }
   )
-})(Flip.animation);
+})(Flip.register);

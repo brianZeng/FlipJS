@@ -1,7 +1,7 @@
 /**
  * Created by Administrator on 2015/4/15.
  */
-Flip.animation({
+Flip.register({
   name:'polygon',
   variable:{
     rotateY:Math.PI*2,

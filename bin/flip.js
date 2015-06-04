@@ -57,11 +57,10 @@ Flip.fallback = function (window) {
   }
 };
 var EVENT_FRAME_START='frameStart',EVENT_UPDATE='update',EVENT_FRAME_END='frameEnd',EVENT_RENDER_START='renderStart',EVENT_RENDER_END='renderEnd';
-
 /**
  * @typedef  AnimationOptions
  * @type {Object}
- * @property {?string} [animationType] a registered animation name
+ * @property {?string} [type] a registered animation name
  * @property {?string} [selector='']  css selector to apply animation
  * @property {?boolean}[fillMode] if set true the css and transform will keep after animation finished
  * @property {?number} [duration=.7] animation duration (in second)
@@ -854,6 +853,8 @@ function cloneWithPro(from,to){
   });
   return to;
 }
+
+
 /**
  * construct an animation instance see {@link AnimationOptions}
  * you can also construct an animation by {@link Flip.Animation}
@@ -902,11 +903,10 @@ function cloneWithPro(from,to){
  * });
  */
 function animate(opt) {
-  if (isObj(opt)) {
-    var  constructor = Flip.animation[arguments[0].animationType];
-    opt = arguments[0];
-  }
+  if (isObj(opt))
+    var constructor = Flip.register[opt.type];
   else throw Error('cannot construct an animation');
+
   if (!constructor) constructor = Animation;
   return setAniEnv(opt,new constructor(opt));
   }
@@ -988,38 +988,36 @@ Flip.transform=function(selector,rule){
     matMap[selector]=mat;
   }
 };
-Flip.animation = (function () {
+Flip.register = (function () {
   function register(definition) {
     var beforeCallBase, name = definition.name, Constructor;
     beforeCallBase = definition.beforeCallBase || _beforeCallBase;
     Constructor = function (opt) {
       if (!(this instanceof Constructor))return new Constructor(opt);
-      var proxy = cloneWithPro(opt,{});
+      var proxy = cloneWithPro(opt,cloneWithPro(definition,{}));
       beforeCallBase.call(this, proxy,opt);
       Animation.call(this,proxy);
       (definition.afterInit||noop).call(this,proxy,opt);
     };
-    if (name) {
+    if (name)
       register[name] = Constructor;
-      Constructor.name = name;
-    }
     inherit(Constructor, Animation.prototype,{
-      type:definition.name,
-      use:function(opt){
-        return useAniOption(this,definition,opt);
-      }
+      type:name,
+      use:function(opt){ return useAniOption(this,definition,opt)}
     });
     return Constructor;
   }
   return register;
+
   function _beforeCallBase(proxy, opt) {
     return proxy;
   }
 })();
+var _optProperties=['transform','css','on','once'];
 function useAniOption(animation){
   for(var i= 1,opt=arguments[1],optPro;opt;opt=arguments[++i])
   {
-    useAniOption.pros.forEach(function(proName){
+    _optProperties.forEach(function(proName){
       if(isFunc(optPro=opt[proName]))
         animation[proName](optPro);
       else if(isObj(optPro)){
@@ -1030,7 +1028,6 @@ function useAniOption(animation){
   }
   return animation;
 }
-useAniOption.pros=['transform','css','on','once'];
 function normalizeMapArgs(args){
   var ret={},arg;
   if(args.length==2){
@@ -1483,12 +1480,11 @@ Mat3.prototype={
   },
   /**
    *
-   * @param {number} angleX
-   * @param {number} angleY
+   * @param {number} angle
    * @returns {Flip.Mat3} itself
    */
-  skew:function(angleX,angleY){
-    return multiplyMat(this,[1,tan(angleX),0,tan(angleY||0),1,0,0,0,1])
+  skew:function(angle){
+    return multiplyMat(this,[1,tan(angle),0,tan(angle||0),1,0,0,0,1])
   },
   transform:function(m11,m12,m21,m22,dx,dy){
     return multiplyMat(this,[m11,m21,0,m12,m22,0,dx||0,dy||0,1])

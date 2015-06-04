@@ -62,11 +62,10 @@ Flip.fallback = function (window) {
   }
 };
 var EVENT_FRAME_START='frameStart',EVENT_UPDATE='update',EVENT_FRAME_END='frameEnd',EVENT_RENDER_START='renderStart',EVENT_RENDER_END='renderEnd';
-
 /**
  * @typedef  AnimationOptions
  * @type {Object}
- * @property {?string} [animationType] a registered animation name
+ * @property {?string} [type] a registered animation name
  * @property {?string} [selector='']  css selector to apply animation
  * @property {?boolean}[fillMode] if set true the css and transform will keep after animation finished
  * @property {?number} [duration=.7] animation duration (in second)

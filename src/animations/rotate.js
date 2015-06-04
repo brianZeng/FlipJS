@@ -1,7 +1,7 @@
 /**
  * Created by 柏然 on 2014/12/15.
  */
-Flip.animation({
+Flip.register({
   name: 'rotate',
   variable: {
     angle: Math.PI * 2

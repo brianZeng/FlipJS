@@ -1,7 +1,7 @@
 /**
  * Created by 柏然 on 2014/12/14.
  */
-Flip.animation({
+Flip.register({
   name: 'scale',
   immutable:{
     sx:0,sy:0

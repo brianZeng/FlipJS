@@ -320,6 +320,8 @@ function cloneWithPro(from,to){
   });
   return to;
 }
+
+
 /**
  * construct an animation instance see {@link AnimationOptions}
  * you can also construct an animation by {@link Flip.Animation}
@@ -368,11 +370,10 @@ function cloneWithPro(from,to){
  * });
  */
 function animate(opt) {
-  if (isObj(opt)) {
-    var  constructor = Flip.animation[arguments[0].animationType];
-    opt = arguments[0];
-  }
+  if (isObj(opt))
+    var constructor = Flip.register[opt.type];
   else throw Error('cannot construct an animation');
+
   if (!constructor) constructor = Animation;
   return setAniEnv(opt,new constructor(opt));
   }
@@ -454,38 +455,36 @@ Flip.transform=function(selector,rule){
     matMap[selector]=mat;
   }
 };
-Flip.animation = (function () {
+Flip.register = (function () {
   function register(definition) {
     var beforeCallBase, name = definition.name, Constructor;
     beforeCallBase = definition.beforeCallBase || _beforeCallBase;
     Constructor = function (opt) {
       if (!(this instanceof Constructor))return new Constructor(opt);
-      var proxy = cloneWithPro(opt,{});
+      var proxy = cloneWithPro(opt,cloneWithPro(definition,{}));
       beforeCallBase.call(this, proxy,opt);
       Animation.call(this,proxy);
       (definition.afterInit||noop).call(this,proxy,opt);
     };
-    if (name) {
+    if (name)
       register[name] = Constructor;
-      Constructor.name = name;
-    }
     inherit(Constructor, Animation.prototype,{
-      type:definition.name,
-      use:function(opt){
-        return useAniOption(this,definition,opt);
-      }
+      type:name,
+      use:function(opt){ return useAniOption(this,definition,opt)}
     });
     return Constructor;
   }
   return register;
+
   function _beforeCallBase(proxy, opt) {
     return proxy;
   }
 })();
+var _optProperties=['transform','css','on','once'];
 function useAniOption(animation){
   for(var i= 1,opt=arguments[1],optPro;opt;opt=arguments[++i])
   {
-    useAniOption.pros.forEach(function(proName){
+    _optProperties.forEach(function(proName){
       if(isFunc(optPro=opt[proName]))
         animation[proName](optPro);
       else if(isObj(optPro)){
@@ -496,7 +495,6 @@ function useAniOption(animation){
   }
   return animation;
 }
-useAniOption.pros=['transform','css','on','once'];
 function normalizeMapArgs(args){
   var ret={},arg;
   if(args.length==2){
