@@ -9,7 +9,7 @@ describe('register animation:', function () {
       iteration:3
     });
     var ani=Flip.animate({
-      type:'test',
+      animationType:'test',
       selector:'ss',
       duration:2
     });
@@ -25,7 +25,7 @@ describe('register animation:', function () {
       }
     });
     var ani=Flip.animate({
-      type:'test',
+      animationType:'test',
       immutable:{
         s:3,a:2
       },
@@ -47,7 +47,7 @@ describe('register animation:', function () {
       transform:function(mat){}
     });
     var ani=Flip.animate({
-      type:'test',
+      animationType:'test',
       css:{
         '&':{
           fontSize:'32px'

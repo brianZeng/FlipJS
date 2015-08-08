@@ -143,7 +143,7 @@ Mat3.prototype={
    * @returns {Flip.Mat3} itself
    */
   translate:function(x,y,z){
-    return multiplyMat(this,[1,0,0,0,1,0,x||0,y||0,z||0])
+    return multiplyMat(this,[1,0,0,0,1,0,x||0,y||0,defaultIfNaN(z,1)])
   },
   /**
    *
@@ -200,6 +200,7 @@ function multiplyMat(mat,other,reverse){
   else{
     a=other;
     b=out=mat.elements;
+
   }
    var a00 = a[0], a01 = a[1], a02 = a[2],
     a10 = a[3], a11 = a[4], a12 = a[5],

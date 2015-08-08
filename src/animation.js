@@ -371,12 +371,13 @@ function cloneWithPro(from,to){
  */
 function animate(opt) {
   if (isObj(opt))
-    var constructor = Flip.register[opt.type];
-  else throw Error('cannot construct an animation');
-
-  if (!constructor) constructor = Animation;
+    var constructor = Flip.register[opt.animationType];
+  else
+    throw Error('cannot construct an animation');
+  if (!constructor)
+    constructor = Animation;
   return setAniEnv(opt,new constructor(opt));
-  }
+}
 function setAniEnv(aniOpt, animation) {
   (aniOpt.renderGlobal||FlipScope.global).getTask(aniOpt.taskName,true).add(animation);
   if(aniOpt.autoStart!==false)

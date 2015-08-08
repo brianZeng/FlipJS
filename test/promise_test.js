@@ -146,5 +146,19 @@ describe('animation promise',function(){
       done();
     });
     ani.start();
+  });
+  it('4. digest other promise',function(done){
+    expect(typeof window.Promise).toBe('function');
+    expect(window.Promise).not.toBe(Promise);
+    Promise.option({acceptAnimationOnly:1,sync:0});
+    var last=Date.now();
+    Promise.digest(window.Promise.resolve({duration:.1})).then(function(animation){
+      expect(animation instanceof Flip.Animation).toBeTruthy();
+      expect(Date.now()-last).toBeGreaterThan(100);
+      done();
+    },function(){
+      expect(1).toBe(0);
+      done();
+    });
   })
 });

@@ -904,12 +904,13 @@ function cloneWithPro(from,to){
  */
 function animate(opt) {
   if (isObj(opt))
-    var constructor = Flip.register[opt.type];
-  else throw Error('cannot construct an animation');
-
-  if (!constructor) constructor = Animation;
+    var constructor = Flip.register[opt.animationType];
+  else
+    throw Error('cannot construct an animation');
+  if (!constructor)
+    constructor = Animation;
   return setAniEnv(opt,new constructor(opt));
-  }
+}
 function setAniEnv(aniOpt, animation) {
   (aniOpt.renderGlobal||FlipScope.global).getTask(aniOpt.taskName,true).add(animation);
   if(aniOpt.autoStart!==false)
@@ -1497,7 +1498,7 @@ Mat3.prototype={
    * @returns {Flip.Mat3} itself
    */
   translate:function(x,y,z){
-    return multiplyMat(this,[1,0,0,0,1,0,x||0,y||0,z||0])
+    return multiplyMat(this,[1,0,0,0,1,0,x||0,y||0,defaultIfNaN(z,1)])
   },
   /**
    *
@@ -1554,6 +1555,7 @@ function multiplyMat(mat,other,reverse){
   else{
     a=other;
     b=out=mat.elements;
+
   }
    var a00 = a[0], a01 = a[1], a02 = a[2],
     a10 = a[3], a11 = a[4], a12 = a[5],
@@ -1592,7 +1594,7 @@ function multiplyMat(mat,other,reverse){
   function castToPromise(value){
     if(value instanceof Animation)return value.promise;
     else if(value instanceof Array)return Promise.all(value.map(castToPromise));
-    else if(likePromise(value))return value;
+    else if(likePromise(value)) return value;
     throw Error('cannot cast to promise');
   }
   function resolvePromise(future){
@@ -1694,7 +1696,7 @@ function multiplyMat(mat,other,reverse){
     return def;
   }
   function acceptAnimation(obj){
-    var t,ani;
+    var t;
     if(strictRet){
       if(obj instanceof Animation)return obj._finished? obj:obj.promise;
       if((t=typeof obj)=="object"){
@@ -1702,8 +1704,7 @@ function multiplyMat(mat,other,reverse){
         else if(obj instanceof Array)
           return obj.map(acceptAnimation);
         else{
-          ani=Flip.animate(obj);
-          return ani.promise;
+          return Flip.animate(obj).promise;
         }
       }
       else if(typeof t==="function")
@@ -1760,6 +1761,21 @@ function multiplyMat(mat,other,reverse){
        defer.reject=rejector;
     });
     return defer;
+  };
+  Promise.resolve=function(any){
+     return Promise(function(resolve){
+       resolve(any);
+     })
+  };
+  Promise.reject=function(reason){
+    return Promise(function(resolve,reject){
+      reject(reason);
+    })
+  };
+  Promise.digest =function(thenable){
+    return Promise(function(resolve,reject){
+      thenable.then(resolve,reject);
+    })
   };
   Promise.option=function(opt){
     if(!opt)return;
