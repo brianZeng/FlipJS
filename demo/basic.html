@@ -58,6 +58,7 @@
             }
         }).then({
             selector: '#rotate',
+            hold:1,
             transform: function (mat) {
                 mat.rotate(Math.PI * this.percent)
             }
@@ -74,6 +75,7 @@
             {
                 selector: '#flip',
                 autoReverse: true,
+
                 ease: Flip.EASE.elasticInOut,
                 css: function (css) {
                     css.borderRadius = 50 * this.percent + '%';
@@ -92,6 +94,7 @@
                 }
             }]).then({
             selector: '#skew',
+            delay:1,
             transform: function (mat) {
                mat.skew(Math.PI * this.percent, Math.PI/4)
             }

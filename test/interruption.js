@@ -32,9 +32,10 @@ describe('interrupt animation',function(){
   it('cancel -> reset -> start',function(done){
       var oncancel=jasmine.createSpy('canceled'),t1;
       setAni({
-        duration:.1,
+        duration:.5,
         once:{
-          cancel:oncancel,update:function(){
+          cancel:oncancel,
+          update:function(){
             ani.cancel();
           }
         }
@@ -49,7 +50,7 @@ describe('interrupt animation',function(){
         t1=Date.now();
         return ani.reset();
       }).then(function(){
-        clamp(Date.now()-t1,100,110);
+        clamp(Date.now()-t1,500,550);
         expect(oncancel).toHaveBeenCalled();
         done();
       })

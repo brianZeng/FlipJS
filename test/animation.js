@@ -3,6 +3,16 @@
  */
 describe('Construct Animation:', function () {
   var global=Flip.instance,task=global.defaultTask;
+  function now(){return Date.now()}
+  function clamp(v,min,max){
+    expect(v).toBeLessThan(max);
+    expect(v).toBeGreaterThan(min);
+  }
+  function clampTime(millsec,base){
+    console.log( millsec=millsec/1000);
+    expect(millsec).not.toBeLessThan(base);
+    expect(millsec).toBeLessThan(base*1.15+20);
+  }
   describe('1.Animation create', function () {
     it('proxy result contains .clock .elements', function () {
       var opt={selector:'.NO_ELE', duration: 0.5, abc: 3,fillMode:'forever'},animation = new Flip.Animation(opt);
@@ -185,6 +195,34 @@ describe('Construct Animation:', function () {
           done();
         }
       },css:{color:'#ccc'}})
+    })
+  });
+  describe('6.hold',function(){
+    it('1.next animation will be delayed by hold property',function(done){
+      var t;
+      Flip.animate({
+        duration:.5,
+        hold:.5,
+        on:{
+          start:function(){
+            t=now();
+          },
+          hold:function(){
+            clamp(now()-t,500,550);
+            expect(this.finished).toBe(false);
+          }
+        }
+      }).then({
+        duration:.1,
+        on:{
+          start:function(){
+            clamp(now()-t,1000,1100);
+          },
+          finish:function(){
+            done();
+          }
+        }
+      })
     })
   })
 });

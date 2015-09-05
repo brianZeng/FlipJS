@@ -22,7 +22,9 @@ inherit(RenderTask, Flip.util.Object, {
    return this._updateObjs.indexOf(obj)>-1 && arrAdd(this._finalizeObjs,obj);
   },
   add: function (obj, type) {
-    if (type == 'update') return arrAdd(this._updateObjs, obj);
+    if(obj._task) throw Error('_task has been taken');
+    if (type == 'update')
+      return arrAdd(this._updateObjs, obj);
     if (obj instanceof Clock || obj instanceof Render)
       if(arrAdd(this._updateObjs, obj))
         obj._task = this;

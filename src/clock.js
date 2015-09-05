@@ -13,9 +13,11 @@ function Clock(opt) {
     ease:Clock.EASE.linear,
     infinite:false,
     iteration:1,
+    silent:false,
     autoReverse:false,
-    delay:0
-  })).reset(1,0,0,0);
+    delay:0,
+    hold:0
+  })).reset();
 }
 Flip.Clock = Clock;
 /**
@@ -30,7 +32,8 @@ Flip.Clock = Clock;
  * triggered when animation first update(not constructed)
  * @event Flip.Animation#init
  */
-var EVENT_INIT='init',EVENT_ITERATE='iterate',EVENT_REVERSE='reverse',EVENT_START='start',EVENT_CONTROLLER_CHANGE='controllerChange';
+var EVENT_INIT='init',EVENT_ITERATE='iterate',EVENT_REVERSE='reverse',EVENT_START='start',EVENT_CONTROLLER_CHANGE='controllerChange',EVENT_HOLD='hold';
+var CLOCK_STATUS_IDLE= 0,CLOCK_STATUS_PAUSED= 1,CLOCK_STATUS_ACTIVE= 2,CLOCK_STATUS_DELAYING= 3,CLOCK_STATUS_HOLDING= 4,CLOCK_STATUS_ENDED= 5,CLOCK_STATUS_UNKNOWN= 6,CLOCK_STATUS_STARTED= 7,CLOCK_STATUS_CANCELED=8;
 inherit(Clock, obj, {
     get controller() {
       return this._controller || null;
@@ -46,10 +49,10 @@ inherit(Clock, obj, {
       return this._startTime!==-1;
     },
     get finished() {
-      return this._finished;
+      return this._status==CLOCK_STATUS_ENDED;
     },
     get paused() {
-      return this._paused;
+      return this._status==CLOCK_STATUS_PAUSED;
     },
     get ease() {
       return this._tf;
@@ -60,82 +63,55 @@ inherit(Clock, obj, {
         this._tf = tf;
     },
     start: function () {
-      if (this.t == 0) {
-        this.reset(0, 1);
-        return !(this._finished=false);
-      }
-      return false;
-    },
-    reverse: function () {
-      if (this.t == 1) {
-        this.reset(0, 1, 1, 1,1);
-        return true;
+      if (this._status==CLOCK_STATUS_IDLE) {
+        this._status=CLOCK_STATUS_STARTED;
       }
       return false;
     },
     restart: function () {
-      this.t = 0;
-      return this.start();
+      return this.reset().start();
     },
-    reset: function (finished, keepIteration,delayed, atEnd, reverseDir, pause) {
-      if(arguments.length==0)
-      //reset to a new clock
-        return this.reset(0,0,0,0);
-      this._startTime = -1;
-      if (!keepIteration)
-        this.i = this.iteration||1;
-      this._delayed=!!delayed;
-      this.d = !reverseDir;
-      if(atEnd!==undefined)
-        this.t = this.value = atEnd ? 1 : 0;
-      this._paused = !!pause;
-      this._finished=!!finished;
+    reset: function () {
+      this._status=CLOCK_STATUS_IDLE;
+      this.d=1;
+      this.i=this.iteration;
+      this._endTime=this._initTime=this._activeTime=this._startTime=this._holdTime=this._pausedTime=0;
       return this;
     },
-    finish: function (evtArg) {
-      this.emit(EVENT_FINISH, evtArg);
-      this.reset(1,1,1);
-      this._finished=true;
-    },
-    end: function (evtArg) {
-      this.autoReverse ? this.reverse(evtArg) : this.iterate(evtArg);
-    },
-    iterate: function (evtArg) {
-      if (--this.i > 0 ||this.infinite)
-        this.reset(0, 1,1,0);
-      else
-        this.finish(evtArg);
-    },
     pause: function () {
-      if (!this._paused) {
-        this._pausedTime = -1;
-        this._pausedDur = 0;
-        this._paused = true;
+      if(this._status !==CLOCK_STATUS_PAUSED){
+        this._lastStatus=this._status;
+        this._status=CLOCK_STATUS_PAUSED;
+        emitWithCtrl(this,EVENT_PAUSE);
       }
     },
     resume: function () {
-      if (this._paused && this._startTime > 0) {
-        this._startTime += this._pausedDur;
-        this._paused = false;
+      if (this._status==CLOCK_STATUS_PAUSED) {
+        this._status=this._lastStatus;
+        emitWithCtrl(this,EVENT_RESUME);
+      }
+    },
+    cancel:function(){
+      if(this._status!==CLOCK_STATUS_CANCELED){
+        this._status=CLOCK_STATUS_CANCELED;
+        this.finalize();
+        if(this.controller)
+          this.controller.cancel();
+        this.emit(EVENT_CANCEL);
       }
     },
     finalize:function(){
-      var task;
-      if(task=this._task)
+      var task=this._task;
+      if(task instanceof RenderTask)
         task.toFinalize(this);
-      else{
-        this.reset(1);
+      else
         this.emit(EVENT_FINALIZE);
-      }
     },
     update:function(state){
-      var task;
-      if(this.finished&&(task=this._task)){
-        task.toFinalize(this);
-      }else{
-        updateClock(state.clock=this,state);
-        state.clock=null;
-      }
+      if(this.finished)
+        this.finalize();
+      else
+        updateClock(this,state);
     }
   });
 function emitWithCtrl(clock,evtName,arg){
@@ -143,42 +119,92 @@ function emitWithCtrl(clock,evtName,arg){
   clock.emit(evtName,arg);
   if(ctrl&&isFunc(ctrl.emit))ctrl.emit(evtName,arg);
 }
-function updateClock(c,state) {
-  if (c&&!c.finished) {
-    var timeline = state.timeline;
-    state.clock=c;
-    if (c._startTime == -1) {
-      c._startTime = timeline.now;
-      emitWithCtrl(c,c.d?(c.i== c.iteration? EVENT_INIT:EVENT_ITERATE):EVENT_REVERSE,state);
-      return true;
-    }
-    else if (c._paused) {
-      var pt = c._pausedTime;
-      pt == -1 ? c._pausedTime = timeline.now : c._pausedDur = timeline.now - pt;
-      return false;
-    }
-    var dur = (timeline.now - c._startTime) / timeline.ticksPerSecond - (c._delayed? 0:c.delay),
-      curValue;
-    if (dur > 0) {
-      var ov = c.value, t;
-      //only delay once
-      if(!c._delayed){
-        c._delayed=1;
-        c._startTime+=c.delay*timeline.ticksPerSecond;
-        emitWithCtrl(c,EVENT_START,state);
+function _updateClock(clock,state){
+  var timeline=state.timeline,now=timeline.now,ot;
+  switch (clock._status){
+    case CLOCK_STATUS_STARTED:
+      clock._initTime=now;
+      emitWithCtrl(clock,EVENT_INIT,state);
+      clock._status= CLOCK_STATUS_DELAYING;
+      return _updateClock(clock,state)||true;
+    case CLOCK_STATUS_DELAYING:
+      if(now >=clock._initTime+ clock.delay*timeline.ticksPerSecond)
+      {
+        clock._status=CLOCK_STATUS_ACTIVE;
+        clock._activeTime=clock._startTime=now;
+        emitWithCtrl(clock,EVENT_START,state);
+        return _updateClock(clock,state)||true;
       }
-      t = c.t = c.d ? dur / c.duration : 1 - dur / c.duration;
-      if (t > 1)t = c.t = 1;
-      else if (t < 0)t = c.t = 0;
-      curValue = c.value = c.ease(t);
-      if (ov != curValue) c.emit(EVENT_UPDATE,state);
-      if (t == 1)c.end(state);
-      else if (t == 0)c.iterate(state);
-      state.task.invalid();
+      return false;
+    case CLOCK_STATUS_ACTIVE:
+      var dur=(now-clock._activeTime)/timeline.ticksPerSecond,t = clock.d ? dur / clock.duration : 1 - dur / clock.duration;
+      ot=clock.t;
+      if(ot===t) return false;
+      if(t>1)clock.t=1;
+      else if(t<0)clock.t=0;
+      else clock.t=t;
+      clock.value=clock.ease(clock.t);
+      emitWithCtrl(clock,EVENT_UPDATE,state);
+      if(!clock.silent)
+        state.task.invalid();
+      if(t>1|| t<0){
+        clock._status=CLOCK_STATUS_UNKNOWN;
+        _updateClock(clock,state);
+      }
       return true;
+    case CLOCK_STATUS_UNKNOWN:
+      ot=clock.t;
+      if(ot>=1){
+        if(clock.autoReverse){
+          clock.d=0;
+          reactiveClock(clock,now);
+          emitWithCtrl(clock,EVENT_REVERSE,state);
+        }
+        else
+          return iterateClock();
+      }
+      else if(clock.autoReverse)
+        return iterateClock(clock.d=1);
+      else
+        throw Error('impossible state t=0,autoReverse=false');
+      return false;
+    case CLOCK_STATUS_HOLDING:
+      if(now >= clock._holdTime+clock.hold*timeline.ticksPerSecond){
+        clock._status=CLOCK_STATUS_ENDED;
+        clock._endTime=now;
+        clock.emit(EVENT_FINISH,state);
+        clock.finalize(state.task);
+        return true;
+      }
+      return false;
+  }
+  function iterateClock(){
+    if(clock.i>1 ||clock.infinite)
+    {
+      clock.i--;
+      reactiveClock(clock,now);
+      emitWithCtrl(clock,EVENT_ITERATE,state);
     }
+    else {
+      clock.i=0;
+      clock._holdTime=now;
+      clock._status=CLOCK_STATUS_HOLDING;
+      emitWithCtrl(clock,EVENT_HOLD,state);
+      return _updateClock(clock,state)||true;
+    }
+  }
+}
+function reactiveClock(clock,now){
+  clock._status=CLOCK_STATUS_ACTIVE;
+  clock._activeTime=now;
+}
+function updateClock(c,state) {
+  if(c){
+    state.clock=c;
+    var ret=_updateClock(c,state);
     state.clock=null;
   }
+  return ret;
 }
 Flip.EASE = Clock.EASE = (function () {
   /**

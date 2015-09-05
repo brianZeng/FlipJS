@@ -7,6 +7,7 @@ Animation Construct Options
     selector:''            //css selector to apply animation
     iteration:1            //how many times it will iterate, an animation will not delay since the second iteration
     delay:0                //how many seconds it will delay after started
+    hold:0                 //how many seconds it will hold on before fire finish event
     infinite:false          //ignore iteration and replay forever
     autoReverse:false       //it will replay in reverse order if true
     autoStart:true          //will it start immediately, otherwise you should call Animation#start()

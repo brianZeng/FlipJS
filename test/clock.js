@@ -55,6 +55,16 @@ describe('clock test',function(){
     }).on('iterate',function(){clampTime(now()-t1,.2)})
       .on('finish',function(){ clampTime(now()-t1,.4);done()})
   });
+  it('6.support hold time',function(done){
+    setClock({duration:.2,hold:.3}).on('start',function(){
+      t1=now();
+    }).once('hold',function(){
+      clampTime(now()-t1,.2)
+    }).once('finish',function(){
+      clampTime(now()-t1,.5);
+      done();
+    })
+  });
   it('4.when infinite,emits iterate event',function(done){
     var i=5;
     setClock({duration:.2,infinite:true}).on('start',function(){
@@ -78,5 +88,6 @@ describe('clock test',function(){
         done();
       }
     })
-  })
+  });
+
 });
