@@ -21,9 +21,6 @@ function updateTask(task,state){
     task.update(state);
     task.emit(EVENT_UPDATE, state);
     task._updateObjs=arrForEachThenFilter(components,updateComponent,isObj);
-   // task._updateObjs.slice(0).forEach(filterIUpdate);
-   // task._updateObjs=task._updateObjs.filter(isObj);
-   // task._updateObjs = arrSafeFilter(task._updateObjs,filterIUpdate);
     state.task=null;
   }
   function updateComponent(item,index) {
@@ -40,7 +37,7 @@ function updateTask(task,state){
 function renderGlobal(global,state){
   if(global._invalid||state.forceRender){
     objForEach(global._tasks,function(task){renderTask(task,state);});
-    global._styleElement.innerHTML=state.styleStack.join('\n');
+    styleEleUseRules(global._styleElement,state.styleStack);
     FlipScope.forceRender=global._invalid=false;
   }
   objForEach(global._tasks,function(task){finalizeTask(task,state)});
@@ -81,4 +78,12 @@ function finalizeAnimation(animation){
     if(fillMode===FILL_MODE.SNAPSHOT)
       animation.cancelStyle=FlipScope.global.immediate(animation.lastStyleRule);
   }
+}
+function styleEleUseRules(style,rules,notClearRules){
+  var sheet=style.sheet,len=sheet.cssRules.length,i;
+  if(!notClearRules)
+    while(len--)
+      sheet.deleteRule(0);
+  for(i=0,len=rules.length;i<len;i++)
+    sheet.insertRule(rules[i],i);
 }

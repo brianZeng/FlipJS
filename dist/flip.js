@@ -403,6 +403,7 @@ function CssProxy(obj){
   this.merge(obj);
 }
 (function(){
+  var defaultPrefixes= ['-moz-','-ms-','-webkit-','-o-',''];
   var p=CssProxy.prototype={
     toString:function(){
      var rules=[];
@@ -423,7 +424,7 @@ function CssProxy(obj){
      */
    withPrefix:function(key,value,prefixes){
      var self=this;
-     (prefixes||['-moz-','-ms-','-webkit-','-o-','']).forEach(function(prefix){
+     (prefixes||defaultPrefixes).forEach(function(prefix){
        self[prefix+key]=value;
      });
      return self;
@@ -456,8 +457,8 @@ function CssProxy(obj){
      })
    }
  };
-
   Flip.stringTemplate=p.t=p.template;
+
 })();
 function Render(){
 }
@@ -1383,6 +1384,15 @@ Flip.EASE = Clock.EASE = (function () {
   }
   Flip.$$ = $$;
   Flip.$=$;
+  Flip.ele=createElement;
+  function createElement(tagNameOrOption){
+    var tagName=isObj(tagNameOrOption)? tagNameOrOption.tagName:tagNameOrOption;
+    var options=makeOptions(tagNameOrOption,{
+      attributes:{}
+    }),ele=document.createElement(tagName);
+    objForEach(options.attributes,function(val,name){ele.setAttribute(name,val)});
+    return ele;
+  }
   document.addEventListener('DOMContentLoaded', function () {
     var funcs=FlipScope.readyFuncs;
     FlipScope.global.init();
@@ -1832,9 +1842,6 @@ function updateTask(task,state){
     task.update(state);
     task.emit(EVENT_UPDATE, state);
     task._updateObjs=arrForEachThenFilter(components,updateComponent,isObj);
-   // task._updateObjs.slice(0).forEach(filterIUpdate);
-   // task._updateObjs=task._updateObjs.filter(isObj);
-   // task._updateObjs = arrSafeFilter(task._updateObjs,filterIUpdate);
     state.task=null;
   }
   function updateComponent(item,index) {
@@ -1851,7 +1858,7 @@ function updateTask(task,state){
 function renderGlobal(global,state){
   if(global._invalid||state.forceRender){
     objForEach(global._tasks,function(task){renderTask(task,state);});
-    global._styleElement.innerHTML=state.styleStack.join('\n');
+    styleEleUseRules(global._styleElement,state.styleStack);
     FlipScope.forceRender=global._invalid=false;
   }
   objForEach(global._tasks,function(task){finalizeTask(task,state)});
@@ -1892,6 +1899,14 @@ function finalizeAnimation(animation){
     if(fillMode===FILL_MODE.SNAPSHOT)
       animation.cancelStyle=FlipScope.global.immediate(animation.lastStyleRule);
   }
+}
+function styleEleUseRules(style,rules,notClearRules){
+  var sheet=style.sheet,len=sheet.cssRules.length,i;
+  if(!notClearRules)
+    while(len--)
+      sheet.deleteRule(0);
+  for(i=0,len=rules.length;i<len;i++)
+    sheet.insertRule(rules[i],i);
 }
 
 function updateAnimation(animation,renderState){
@@ -1940,8 +1955,8 @@ function updateAnimationCss(animation){
     mergeRule(cssMap,selector,cssRule);
   });
 }
-function resolveCss(rule,thisObj,cssContainer,e){
-  var ret=cssContainer||new CssProxy(),arg=[ret,e];
+function resolveCss(rule,thisObj,cssProxy,e){
+  var ret=cssProxy||new CssProxy(),arg=[ret,e];
   if(isObj(rule))
     objForEach(rule,cloneFunc,ret);
   else if(isFunc(rule))
@@ -1975,10 +1990,11 @@ function getAnimationStyle(ani){
   });
   return ani.lastStyleRule=styles.join('\n');
 }
-function mergeRule(map,selector,cssContainer){
+function mergeRule(map,selector,cssProxy){
   var oriRule=map[selector];
-  if(oriRule)oriRule.merge(cssContainer);
-  else map[selector]=cssContainer;
+  if(oriRule)
+    oriRule.merge(cssProxy);
+  else map[selector]=cssProxy;
 }
 Flip.RenderGlobal = RenderGlobal;
 function RenderGlobal(opt) {
@@ -1988,8 +2004,8 @@ function RenderGlobal(opt) {
   this._defaultTaskName=opt.defaultTaskName;
   this._invalid=true;
   this._persistStyles={};
-  this._persistElement=document.createElement('style');
-  this._styleElement=document.createElement('style');
+  this._persistElement=Flip.ele({tagName:'style',attributes:{'data-flip':'frame'}});
+  this._styleElement=Flip.ele({tagName:'style',attributes:{'data-flip':'persist'}});
 }
 inherit(RenderGlobal, Flip.util.Object, {
   get defaultTask(){
@@ -2042,7 +2058,7 @@ inherit(RenderGlobal, Flip.util.Object, {
   },
   init: function () {
     if(typeof window==="object"){
-      var head=document.head,self=this;
+      var head=document.head;
       if(!this._styleElement.parentNode){
         head.appendChild(this._styleElement);
         head.appendChild(this._persistElement);
@@ -2064,9 +2080,8 @@ inherit(RenderGlobal, Flip.util.Object, {
   },
   apply:function(){
     if(!this._persistStyle){
-      var styles=[];
-      objForEach(this._persistStyles,function(style){styles.push(style);});
-      this._persistElement.innerHTML=styles.join('\n');
+      var styles=this._persistStyles;
+      styleEleUseRules(this._persistElement,Object.getOwnPropertyNames(styles).map(function(key){return styles[key]}));
       this._persistStyle=true;
     }
   },

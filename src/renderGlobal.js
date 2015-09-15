@@ -9,8 +9,8 @@ function RenderGlobal(opt) {
   this._defaultTaskName=opt.defaultTaskName;
   this._invalid=true;
   this._persistStyles={};
-  this._persistElement=document.createElement('style');
-  this._styleElement=document.createElement('style');
+  this._persistElement=Flip.ele({tagName:'style',attributes:{'data-flip':'frame'}});
+  this._styleElement=Flip.ele({tagName:'style',attributes:{'data-flip':'persist'}});
 }
 inherit(RenderGlobal, Flip.util.Object, {
   get defaultTask(){
@@ -63,7 +63,7 @@ inherit(RenderGlobal, Flip.util.Object, {
   },
   init: function () {
     if(typeof window==="object"){
-      var head=document.head,self=this;
+      var head=document.head;
       if(!this._styleElement.parentNode){
         head.appendChild(this._styleElement);
         head.appendChild(this._persistElement);
@@ -85,9 +85,8 @@ inherit(RenderGlobal, Flip.util.Object, {
   },
   apply:function(){
     if(!this._persistStyle){
-      var styles=[];
-      objForEach(this._persistStyles,function(style){styles.push(style);});
-      this._persistElement.innerHTML=styles.join('\n');
+      var styles=this._persistStyles;
+      styleEleUseRules(this._persistElement,Object.getOwnPropertyNames(styles).map(function(key){return styles[key]}));
       this._persistStyle=true;
     }
   },

@@ -48,8 +48,8 @@ function updateAnimationCss(animation){
     mergeRule(cssMap,selector,cssRule);
   });
 }
-function resolveCss(rule,thisObj,cssContainer,e){
-  var ret=cssContainer||new CssProxy(),arg=[ret,e];
+function resolveCss(rule,thisObj,cssProxy,e){
+  var ret=cssProxy||new CssProxy(),arg=[ret,e];
   if(isObj(rule))
     objForEach(rule,cloneFunc,ret);
   else if(isFunc(rule))
@@ -83,8 +83,9 @@ function getAnimationStyle(ani){
   });
   return ani.lastStyleRule=styles.join('\n');
 }
-function mergeRule(map,selector,cssContainer){
+function mergeRule(map,selector,cssProxy){
   var oriRule=map[selector];
-  if(oriRule)oriRule.merge(cssContainer);
-  else map[selector]=cssContainer;
+  if(oriRule)
+    oriRule.merge(cssProxy);
+  else map[selector]=cssProxy;
 }

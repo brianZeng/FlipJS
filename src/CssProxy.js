@@ -10,6 +10,7 @@ function CssProxy(obj){
   this.merge(obj);
 }
 (function(){
+  var defaultPrefixes= ['-moz-','-ms-','-webkit-','-o-',''];
   var p=CssProxy.prototype={
     toString:function(){
      var rules=[];
@@ -30,7 +31,7 @@ function CssProxy(obj){
      */
    withPrefix:function(key,value,prefixes){
      var self=this;
-     (prefixes||['-moz-','-ms-','-webkit-','-o-','']).forEach(function(prefix){
+     (prefixes||defaultPrefixes).forEach(function(prefix){
        self[prefix+key]=value;
      });
      return self;
@@ -63,6 +64,6 @@ function CssProxy(obj){
      })
    }
  };
-
   Flip.stringTemplate=p.t=p.template;
+
 })();

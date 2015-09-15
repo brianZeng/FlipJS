@@ -15,6 +15,12 @@
   }
   Flip.$$ = $$;
   Flip.$=$;
+  Flip.ele=createElement;
+  function createElement(tagNameOrOption){
+    var tagName=isObj(tagNameOrOption)? tagNameOrOption.tagName:tagNameOrOption,options=makeOptions(tagNameOrOption,{attributes:{}}),ele=document.createElement(tagName);
+    objForEach(options.attributes,function(val,name){ele.setAttribute(name,val)});
+    return ele;
+  }
   document.addEventListener('DOMContentLoaded', function () {
     var funcs=FlipScope.readyFuncs;
     FlipScope.global.init();
