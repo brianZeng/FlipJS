@@ -205,7 +205,7 @@ inherit(Animation,Render,
     return this;
   },
   getStyleRule:function(){
-    return getAnimationStyle(this);
+    return getAnimationStyles(this);
   },
     /**
      * start the animation, it won't take effect on started animation

@@ -76,14 +76,14 @@ function finalizeAnimation(animation){
   if(animation.fillMode!==FILL_MODE.KEEP){
     animation.finalize();
     if(fillMode===FILL_MODE.SNAPSHOT)
-      animation.cancelStyle=FlipScope.global.immediate(animation.lastStyleRule);
+      animation.cancelStyle=FlipScope.global.immediate(animation.lastStyleRules.join('\n'));
   }
 }
 function styleEleUseRules(style,rules,notClearRules){
-  var sheet=style.sheet,len=sheet.cssRules.length,i;
+  var sheet=style.sheet,len=sheet.cssRules.length, i,rule;
   if(!notClearRules)
     while(len--)
       sheet.deleteRule(0);
   for(i=0,len=rules.length;i<len;i++)
-    sheet.insertRule(rules[i],i);
+    (rule=rules[i])&&sheet.insertRule(rule,i);
 }

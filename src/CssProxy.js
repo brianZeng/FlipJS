@@ -9,14 +9,32 @@ function CssProxy(obj){
   if(!(this instanceof CssProxy))return new CssProxy(obj);
   this.merge(obj);
 }
+CssProxy.toSafeCssString=(function(){
+ var cssPropertyKeys=Object.getOwnPropertyNames(document.documentElement.style);
+  function toCssPropertyKey(key){
+    return key.replace(/[A-Z]/g,function(c){return '-'+ c.toLowerCase()})
+  }
+  function formatNum(value){
+    return isNaN(value)? value:Number(value).toFixed(5).replace(/\.0+$/,'')
+  }
+  return function(target,separator){
+    var rules=[];
+    objForEach(target,function(value,key){
+      if(cssPropertyKeys.indexOf(key)>-1 || 1)
+        rules.push(toCssPropertyKey(key)+':'+formatNum(value));
+    });
+    return rules.join(separator||';');
+  }
+})();
 (function(){
-  var defaultPrefixes= ['-moz-','-ms-','-webkit-','-o-',''];
+  var defaultPrefixes= ['-moz-','-ms-','-webkit-','-o-',''],toSafeCssString=CssProxy.toSafeCssString;
   var p=CssProxy.prototype={
+    toSafeCssString:function(separator){
+      return toSafeCssString(this,separator)
+    },
     toString:function(){
      var rules=[];
-     objForEach(this,function(value,key){
-       rules.push(key.replace(/[A-Z]/g,function(c){return '-'+ c.toLowerCase()})+':'+value);
-     });
+     objForEach(this,function(value,key){rules.push(toCssPropertyKey(key)+':'+value);});
      return rules.join(';')
    },
     /**

@@ -402,14 +402,32 @@ function CssProxy(obj){
   if(!(this instanceof CssProxy))return new CssProxy(obj);
   this.merge(obj);
 }
+CssProxy.toSafeCssString=(function(){
+ var cssPropertyKeys=Object.getOwnPropertyNames(document.documentElement.style);
+  function toCssPropertyKey(key){
+    return key.replace(/[A-Z]/g,function(c){return '-'+ c.toLowerCase()})
+  }
+  function formatNum(value){
+    return isNaN(value)? value:Number(value).toFixed(5).replace(/\.0+$/,'')
+  }
+  return function(target,separator){
+    var rules=[];
+    objForEach(target,function(value,key){
+      if(cssPropertyKeys.indexOf(key)>-1 || 1)
+        rules.push(toCssPropertyKey(key)+':'+formatNum(value));
+    });
+    return rules.join(separator||';');
+  }
+})();
 (function(){
-  var defaultPrefixes= ['-moz-','-ms-','-webkit-','-o-',''];
+  var defaultPrefixes= ['-moz-','-ms-','-webkit-','-o-',''],toSafeCssString=CssProxy.toSafeCssString;
   var p=CssProxy.prototype={
+    toSafeCssString:function(separator){
+      return toSafeCssString(this,separator)
+    },
     toString:function(){
      var rules=[];
-     objForEach(this,function(value,key){
-       rules.push(key.replace(/[A-Z]/g,function(c){return '-'+ c.toLowerCase()})+':'+value);
-     });
+     objForEach(this,function(value,key){rules.push(toCssPropertyKey(key)+':'+value);});
      return rules.join(';')
    },
     /**
@@ -741,7 +759,7 @@ inherit(Animation,Render,
     return this;
   },
   getStyleRule:function(){
-    return getAnimationStyle(this);
+    return getAnimationStyles(this);
   },
     /**
      * start the animation, it won't take effect on started animation
@@ -1386,10 +1404,7 @@ Flip.EASE = Clock.EASE = (function () {
   Flip.$=$;
   Flip.ele=createElement;
   function createElement(tagNameOrOption){
-    var tagName=isObj(tagNameOrOption)? tagNameOrOption.tagName:tagNameOrOption;
-    var options=makeOptions(tagNameOrOption,{
-      attributes:{}
-    }),ele=document.createElement(tagName);
+    var tagName=isObj(tagNameOrOption)? tagNameOrOption.tagName:tagNameOrOption,options=makeOptions(tagNameOrOption,{attributes:{}}),ele=document.createElement(tagName);
     objForEach(options.attributes,function(val,name){ele.setAttribute(name,val)});
     return ele;
   }
@@ -1897,16 +1912,16 @@ function finalizeAnimation(animation){
   if(animation.fillMode!==FILL_MODE.KEEP){
     animation.finalize();
     if(fillMode===FILL_MODE.SNAPSHOT)
-      animation.cancelStyle=FlipScope.global.immediate(animation.lastStyleRule);
+      animation.cancelStyle=FlipScope.global.immediate(animation.lastStyleRules.join('\n'));
   }
 }
 function styleEleUseRules(style,rules,notClearRules){
-  var sheet=style.sheet,len=sheet.cssRules.length,i;
+  var sheet=style.sheet,len=sheet.cssRules.length, i,rule;
   if(!notClearRules)
     while(len--)
       sheet.deleteRule(0);
   for(i=0,len=rules.length;i<len;i++)
-    sheet.insertRule(rules[i],i);
+    (rule=rules[i])&&sheet.insertRule(rule,i);
 }
 
 function updateAnimation(animation,renderState){
@@ -1929,7 +1944,7 @@ function updateAnimation(animation,renderState){
 function renderAnimation(ani,state){
   state.animation = ani;
   updateAnimationCss(ani);
-  state.styleStack.push(getAnimationStyle(ani));
+  state.styleStack.push.apply(state.styleStack,getAnimationStyles(ani));
   ani.emit(EVENT_RENDER, state);
   if(ani._finished)ani.emit(EVENT_FINISH,state);
   state.animation = null;
@@ -1963,32 +1978,23 @@ function resolveCss(rule,thisObj,cssProxy,e){
      ret=rule.apply(thisObj,arg)||ret;
   return ret;
 }
-function formatValue(value){
-  return isNaN(value)? value:Number(value).toFixed(5).replace(/\.0+$/,'')
-}
-function formatKey(key){
-  return key.replace(/[A-Z]/g,function(c){return '-'+ c.toLowerCase()})
-}
 function getStyleRuleStr(ruleObj,selector,separator,ignoreEmpty){
-  var rules=[];
-  objForEach(ruleObj,function(value,key){
-    rules.push(formatKey(key)+':'+formatValue(value)+';');
-  });
-  if(!rules.length&&ignoreEmpty)return '';
-  separator=separator||'\n';
-  return selector +'{'+separator+rules.join(separator)+separator+'}';
+  separator=separator||';';
+  var cssText=CssProxy.toSafeCssString(ruleObj,separator);
+  if(!cssText)return '';
+  return selector +'{'+separator+cssText+separator+'}';
 }
 function addMap(key,Map,cb){
   var cbs=Map[key];
   if(!cbs)Map[key]=[cb];
   else arrAdd(cbs,cb);
 }
-function getAnimationStyle(ani){
+function getAnimationStyles(ani){
   var styles=[],slt=ani.selector||'';
   objForEach(ani._cssMap,function(ruleObj,selector){
     styles.push(getStyleRuleStr(ruleObj,selector.replace(/&/g,slt)));
   });
-  return ani.lastStyleRule=styles.join('\n');
+  return ani.lastStyleRules=styles;
 }
 function mergeRule(map,selector,cssProxy){
   var oriRule=map[selector];

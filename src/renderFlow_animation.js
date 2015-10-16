@@ -22,7 +22,7 @@ function updateAnimation(animation,renderState){
 function renderAnimation(ani,state){
   state.animation = ani;
   updateAnimationCss(ani);
-  state.styleStack.push(getAnimationStyle(ani));
+  state.styleStack.push.apply(state.styleStack,getAnimationStyles(ani));
   ani.emit(EVENT_RENDER, state);
   if(ani._finished)ani.emit(EVENT_FINISH,state);
   state.animation = null;
@@ -56,32 +56,23 @@ function resolveCss(rule,thisObj,cssProxy,e){
      ret=rule.apply(thisObj,arg)||ret;
   return ret;
 }
-function formatValue(value){
-  return isNaN(value)? value:Number(value).toFixed(5).replace(/\.0+$/,'')
-}
-function formatKey(key){
-  return key.replace(/[A-Z]/g,function(c){return '-'+ c.toLowerCase()})
-}
 function getStyleRuleStr(ruleObj,selector,separator,ignoreEmpty){
-  var rules=[];
-  objForEach(ruleObj,function(value,key){
-    rules.push(formatKey(key)+':'+formatValue(value)+';');
-  });
-  if(!rules.length&&ignoreEmpty)return '';
-  separator=separator||'\n';
-  return selector +'{'+separator+rules.join(separator)+separator+'}';
+  separator=separator||';';
+  var cssText=CssProxy.toSafeCssString(ruleObj,separator);
+  if(!cssText)return '';
+  return selector +'{'+separator+cssText+separator+'}';
 }
 function addMap(key,Map,cb){
   var cbs=Map[key];
   if(!cbs)Map[key]=[cb];
   else arrAdd(cbs,cb);
 }
-function getAnimationStyle(ani){
+function getAnimationStyles(ani){
   var styles=[],slt=ani.selector||'';
   objForEach(ani._cssMap,function(ruleObj,selector){
     styles.push(getStyleRuleStr(ruleObj,selector.replace(/&/g,slt)));
   });
-  return ani.lastStyleRule=styles.join('\n');
+  return ani.lastStyleRules=styles;
 }
 function mergeRule(map,selector,cssProxy){
   var oriRule=map[selector];

@@ -62,7 +62,7 @@ describe('Construct Animation:', function () {
     }
     beforeEach(construct);
     function isNewAnimation(animation){
-      expect(animation.lastStyleRule).toBeFalsy();
+      expect(animation.lastStyleRules).toBeFalsy();
       expect(animation._promise).toBeFalsy();
       expect(animation.finished).toBeFalsy();
       expect(animation.percent).toBe(0);
@@ -90,7 +90,7 @@ describe('Construct Animation:', function () {
       });
       ani.once('finish',function(){
         expect(ani.percent).toBe(1);
-        expect(ani.lastStyleRule.indexOf('width:100')).toBeGreaterThan(-1);
+        expect(ani.lastStyleRules.indexOf('width:100')).toBeGreaterThan(-1);
         notCall=jasmine.createSpy();
         ani.once('finish',notCall);
       });
@@ -243,8 +243,8 @@ describe('css function',function(){
        },
        once:{
          render:function(){
-           expect(this.lastStyleRule).toContain('background:#fff');
-           expect(this.lastStyleRule).toContain('border:none');
+           expect(this.lastStyleRules).toContain('background:#fff');
+           expect(this.lastStyleRules).toContain('border:none');
            expect(this._cssMap['&'].color).toBe('red');
            done();
          }
