@@ -68,9 +68,10 @@ function addMap(key,Map,cb){
   else arrAdd(cbs,cb);
 }
 function getAnimationStyles(ani){
-  var styles=[],slt=ani.selector||'';
+  var styles=[],slt=ani.selector||'',cssText;
   objForEach(ani._cssMap,function(ruleObj,selector){
-    styles.push(getStyleRuleStr(ruleObj,selector.replace(/&/g,slt)));
+    cssText=getStyleRuleStr(ruleObj,selector.replace(/&/g,slt));
+    cssText&&styles.push(cssText);
   });
   return ani.lastStyleRules=styles;
 }
