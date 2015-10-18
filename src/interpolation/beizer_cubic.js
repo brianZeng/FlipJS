@@ -21,11 +21,11 @@ Flip.interpolation({
       var xs = [], ys = [];
         if (arguments.length == 3) {
           if (cp0) {
-            xs[0] = GLVec.get(cp0, 'x');
-            ys[0] = GLVec.get(cp0, 'y');
+            xs[0] = Vec.get(cp0, 'x');
+            ys[0] = Vec.get(cp0, 'y');
             if (cp1) {
-              xs[1] = GLVec.get(cp1, 'x');
-              ys[1] = GLVec.get(cp1, 'y')
+              xs[1] = Vec.get(cp1, 'x');
+              ys[1] = Vec.get(cp1, 'y')
             }
           }
         }
@@ -58,7 +58,7 @@ Flip.interpolation({
         xs = this.axis.x, ys = this.axis.y, segCount = xs.length - 1;
       if (isNaN(cox[0]) || isNaN(cox[1])) {
         vec = opt.startVec || [0, 0];
-        r = this.calCP(xs[0], ys[0], xs[1], ys[1], xs[0] + GLVec.get(vec, 'x'), ys[0] + GLVec.get(vec, 'y'));
+        r = this.calCP(xs[0], ys[0], xs[1], ys[1], xs[0] + Vec.get(vec, 'x'), ys[0] + Vec.get(vec, 'y'));
         setCPWhenNaN(0, r);
       }
       for (var i = 1, ci = 2, r; i < segCount; ci = 2 * (++i)) {
