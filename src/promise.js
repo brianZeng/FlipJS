@@ -16,10 +16,7 @@
     if(value instanceof Animation)return value.promise;
     if(value instanceof Array)return Promise.all(value.map(castToPromise));
     if(likePromise(value)) return value;
-    if(!strictRet){
-      var directRet=function(){return value};
-      return Thenable({then:directRet,get:directRet});
-    }
+    if(!strictRet)return Promise.resolve(value);
     throw Error('cannot cast to promise');
   }
   function resolvePromise(future){
