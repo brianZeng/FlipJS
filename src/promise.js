@@ -11,10 +11,15 @@
     this.then=opt.then;
     this.get=opt.get;
   }
+
   function castToPromise(value){
     if(value instanceof Animation)return value.promise;
-    else if(value instanceof Array)return Promise.all(value.map(castToPromise));
-    else if(likePromise(value)) return value;
+    if(value instanceof Array)return Promise.all(value.map(castToPromise));
+    if(likePromise(value)) return value;
+    if(!strictRet){
+      var directRet=function(){return value};
+      return Thenable({then:directRet,get:directRet});
+    }
     throw Error('cannot cast to promise');
   }
   function resolvePromise(future){
