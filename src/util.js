@@ -1,35 +1,4 @@
 Flip.util = {Object: obj, Array: array, inherit: inherit};
-/*function createProxy(obj) {
-  var from, result = {}, func, objType = typeof obj;
-  if (objType == "function")from = obj.proxy;
-  else if (objType == "object") from = obj;
-  else from = {};
-  func = function () {
-    for (var i = 0, v, prop, value, len = arguments.length; i < len; i += 2) {
-      prop = arguments[i];
-      value = arguments[i + 1];
-      if (!from.hasOwnProperty(prop)) {
-        v = value;
-        delete from[prop];
-      }
-      else v = from[prop];
-      result[prop] = v;
-    }
-    if(len==1)
-      return v;
-  };
-  func.source = function () {
-    if (arguments.length == 1)return from[arguments[0]];
-    for (var i = 0, prop, len = arguments.length; i < len; i += 2) {
-      prop = arguments[i];
-      if (!from.hasOwnProperty(prop))from[prop] = arguments[i + 1];
-    }
-    return from[arguments[0]];
-  };
-  func.result = result;
-  func.proxy = from;
-  return func;
-}*/
 function makeOptions(opt,defaults){
   var ret={};
   opt=opt||{};
@@ -83,6 +52,7 @@ function arrSort(array, func_ProName, des) {
 function arrFirst(array, func_ProName) {
   for (var i = 0, item, len = array.length, compare = arrMapFun(func_ProName); i < len; i++)
     if (compare(item = array[i]))return item;
+  return void 0;
 }
 function arrRemove(array, item) {
   var i = array.indexOf(item);

@@ -16,7 +16,7 @@
     if(value instanceof Animation)return value.promise;
     if(value instanceof Array)return Promise.all(value.map(castToPromise));
     if(likePromise(value)) return value;
-    if(!strictRet)return Promise.resolve(value);
+    if(!strictRet)return warpPromiseValue(value);
     throw Error('cannot cast to promise');
   }
   function resolvePromise(future){
@@ -184,11 +184,12 @@
     });
     return defer;
   };
-  Promise.resolve=function(any){
+  Promise.resolve=warpPromiseValue;
+  function warpPromiseValue(any){
      return Promise(function(resolve){
        resolve(any);
      })
-  };
+  }
   Promise.reject=function(reason){
     return Promise(function(resolve,reject){
       reject(reason);
