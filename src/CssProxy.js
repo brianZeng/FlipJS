@@ -7,39 +7,31 @@
  */
 function CssProxy(obj){
   if(!(this instanceof CssProxy))return new CssProxy(obj);
-  this.merge(obj);
+  this.$merge(obj);
+  this.$invaild=true;
 }
-
-
+Flip.CssProxy=CssProxy;
 (function(){
-  var defaultPrefixes= ['-moz-','-ms-','-webkit-','-o-',''],toSafeCssString=CssProxy.toSafeCssString;
+  var defaultPrefixes= ['-moz-','-ms-','-webkit-','-o-',''],cssPrivateKeyPrefix='$$';
+  var cssPropertyKeys=Object.getOwnPropertyNames(document.documentElement.style), cssPrivateKeys=[];
   function formatNum(value){
     return isNaN(value)? value:Number(value).toFixed(5).replace(/\.0+$/,'')
   }
-  CssProxy.toSafeCssString=(function(){
-    var cssPropertyKeys=Object.getOwnPropertyNames(document.documentElement.style);
-    function toCssPropertyKey(key){
-      return key.replace(/[A-Z]/g,function(c){return '-'+ c.toLowerCase()})
-    }
-
-    return function(target,separator){
-      var rules=[];
-      objForEach(target,function(value,key){
-        if(cssPropertyKeys.indexOf(key)>-1 || 1)
-          rules.push(toCssPropertyKey(key)+':'+formatNum(value));
-      });
-      return rules.join(separator||';');
-    }
-  })();
   var p=CssProxy.prototype={
-    toSafeCssString:function(separator){
-      return toSafeCssString(this,separator)
+    $cssText:function(selector){
+      return this.$invaild? (this.$lastStyle=selector +'{'+this+'}'):this.$lastStyle;
+    },
+    $toSafeCssString:function(separator){
+      var rules=[];
+      objForEach(this,function(val,key){
+        var i=cssPrivateKeys.indexOf(key);
+        if(i>-1 && val!==void 0)rules.push(cssPropertyKeys[i]+':'+formatNum(val))
+      });
+      return rules.join(separator||';')
     },
     toString:function(){
-     var rules=[];
-     objForEach(this,function(value,key){rules.push(toCssPropertyKey(key)+':'+value);});
-     return rules.join(';')
-   },
+      return this.$toSafeCssString();
+    },
     /**
      * combine key with prefixes
      * @param {string} key   css rule name
@@ -47,10 +39,10 @@ function CssProxy(obj){
      * @param {Array<String>}[prefixes=['-moz-','-ms-','-webkit-','-o-','']] prefixes to combine
      * @returns {CssProxy} return itself
      * @example
-     * css.withPrefix('border-radius','50%')
+     * css.$withPrefix('border-radius','50%')
      * //add css rules: -moz-border-radius,-webkit-border-radius,-ms-border-radius
      */
-   withPrefix:function(key,value,prefixes){
+   $withPrefix:function(key,value,prefixes){
      var self=this;
      (prefixes||defaultPrefixes).forEach(function(prefix){
        self[prefix+key]=value;
@@ -62,7 +54,7 @@ function CssProxy(obj){
      * @param {CssProxy|Object}obj
      * @returns {CssProxy} return itself
      */
-   merge:function(obj){
+   $merge:function(obj){
      if(isObj(obj)&&obj!==this)
        objForEach(obj,cloneFunc,this);
      return this;
@@ -78,13 +70,37 @@ function CssProxy(obj){
      *  //css.boxShadow='0 0'+param.blurBase+param.blurRange+' '+ param.spread +' '+param.blurColor+' inset';
      * }
      */
-   template:function(stringTemplate){
-     var arg=arguments,r;
-     return stringTemplate.replace(/\$\{(\d+)\}/g,function($i,i){
-       return ((r=arg[i])==undefined)?$i:formatNum(r);
-     })
-   }
+   $template:stringTemplate
  };
-  Flip.stringTemplate=p.t=p.template;
-
+  cssPropertyKeys.forEach(function(key){
+    var privateKey=cssPrivateKeyPrefix+key,lowerCaseKey=toLowerCssKey(key);
+    cssPrivateKeys.push(privateKey);
+    registerProperty(p,[key,/^(webkit|moz|o|ms)[A-Z]/.test(key)?('-'+lowerCaseKey):lowerCaseKey],{get:getter,set:setter});
+    function getter(){
+      return this[privateKey]
+    }
+    function setter(val){
+      this.$invalid=true;
+      this[privateKey]=castInvalidValue(val);
+    }
+  });
+  Flip.stringTemplate=p.$t=stringTemplate;
+  function stringTemplate(stringTemplate){
+    var arg=arguments,r;
+    return stringTemplate.replace(/\$\{(\d+)\}/g,function($i,i){
+      return ((r=arg[i])==undefined)?$i:formatNum(r);
+    })
+  }
+  function castInvalidValue(val){
+    var type=typeof val;
+    return type=='string' || type=='number'? val :void  0;
+  }
+  function toLowerCssKey(key){
+    return key.replace(/[A-Z]/g,function(str){return '-'+str.toLowerCase()})
+  }
+  function registerProperty(target,keys,define){
+    keys.forEach(function(key){
+      Object.defineProperty(target,key,define);
+    })
+  }
 })();

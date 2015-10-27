@@ -37,7 +37,12 @@ function updateTask(task,state){
 function renderGlobal(global,state){
   if(global._invalid||state.forceRender){
     objForEach(global._tasks,function(task){renderTask(task,state);});
-    styleEleUseRules(global._styleElement,state.styleStack);
+    var styleSheet=global._styleElement.sheet;
+    state.styleStack.forEach(function(map){
+      objForEach(map,function(proxies,selector){
+        proxies.forEach(function(proxy){styleSheet.insertRule(proxy.$cssText(selector),styleSheet.length)})
+      })
+    });
     FlipScope.forceRender=global._invalid=false;
   }
   objForEach(global._tasks,function(task){finalizeTask(task,state)});
@@ -78,12 +83,4 @@ function finalizeAnimation(animation){
     if(fillMode===FILL_MODE.SNAPSHOT)
       animation.cancelStyle=FlipScope.global.immediate(animation.lastStyleRules.join('\n'));
   }
-}
-function styleEleUseRules(style,rules,notClearRules){
-  var sheet=style.sheet,len=sheet.cssRules.length, i,rule;
-  if(!notClearRules)
-    while(len--)
-      sheet.deleteRule(0);
-  for(i=0,len=rules.length;i<len;i++)
-    (rule=rules[i])&&sheet.insertRule(rule,i);
 }

@@ -18,7 +18,6 @@ function Animation(opt) {
     fillMode:FILL_MODE.REMOVE,
     clock:opt.clock||new Clock(opt)}));
   this._cssMap={};
-  this._matCallback={};
   this._cssCallback={};
   this._immutable={};
   this._variable={};
@@ -147,12 +146,22 @@ inherit(Animation,Render,
      * })
      */
   transform:function(selector,matCallback){
-    var map=this._matCallback;
-    objForEach(normalizeMapArgs(arguments),function(callback,selector){
-      addMap(selector,map,callback)
-    });
-    return this;
-  },
+      objForEach(normalizeMapArgs(arguments),function(callback,selector){
+        self.css(selector,wrapTransformCallback);
+        function wrapTransformCallback(cssProxy,param){
+          var transformMat;
+          if(callback instanceof Mat3)
+            transformMat=callback;
+          else if(isFunc(callback)){
+            transformMat=new Mat3();
+            transformMat= callback.apply(this,[transformMat,param])||transformMat;
+          }
+          else throw Error('argument Error for transform');
+          cssProxy.$withPrefix('transform',transformMat+'');
+        }
+      });
+      return this;
+    },
     /**
      * set the css update function
      * @alias Flip.Animation#css
@@ -163,7 +172,7 @@ inherit(Animation,Render,
      * @example
      * ani.css('&:hover',{fontSize:'larger'});
      * ani.css(function(css,param){
-     *  css.withPrefix('border-radius',param.borderRadius);
+     *  css.$withPrefix('border-radius',param.borderRadius);
      * });
      * //set multiple rules
      * ani.css({
@@ -176,9 +185,10 @@ inherit(Animation,Render,
      * })
      */
   css:function(selector,mapOrFunc){
-    var map=this._cssCallback;
+    var callbackMap=this._cssCallback,cssProxyMap=this._cssMap;
     objForEach(normalizeMapArgs(arguments),function(callback,selector){
-      addMap(selector,map,callback)
+      addMap(selector,callbackMap,callback);
+      addMap(selector,cssProxyMap,new CssProxy());
     });
     return this;
   },
@@ -203,9 +213,6 @@ inherit(Animation,Render,
       this.emit(EVENT_FINALIZE);
     }
     return this;
-  },
-  getStyleRule:function(){
-    return getAnimationStyles(this);
   },
     /**
      * start the animation, it won't take effect on started animation

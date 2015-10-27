@@ -13,7 +13,7 @@ function updateAnimation(animation,renderState){
   if(clock.finished){
     //trigger finished event after render
     animation._finished=true;
-    finalizeAnimation(animation);
+    finalizeAnimation(animation,renderState);
   }
   renderState.animatetion=null;
   return true;
@@ -21,10 +21,10 @@ function updateAnimation(animation,renderState){
 
 function renderAnimation(ani,state){
   state.animation = ani;
-  updateAnimationCss(ani);
-  state.styleStack.push.apply(state.styleStack,getAnimationStyles(ani));
+  state.styleStack.push(updateAnimationCssProxies(ani));
   ani.emit(EVENT_RENDER, state);
-  if(ani._finished)ani.emit(EVENT_FINISH,state);
+  if(ani._finished)
+    ani.emit(EVENT_FINISH,state);
   state.animation = null;
 }
 function updateAnimationParam(animation){
@@ -33,51 +33,25 @@ function updateAnimationParam(animation){
     cur[key]=isFunc(value)? value(p,cur):(isNaN(value)?value:p*value);
   });
 }
-function updateAnimationCss(animation){
-  var cssMap=animation._cssMap={},cssRule,cur=animation.current;
+function updateAnimationCssProxies(animation){
+  var cssProxyMap=animation._cssMap,param=animation.current,proxies,results,retMap={},animationSelector=animation.selector;
   objForEach(animation._cssCallback,function(cbs,selector){
-    cssRule=new CssProxy();
-    cbs.forEach(function(cb){resolveCss(cb,animation,cssRule,cur)});
-    mergeRule(cssMap,selector,cssRule);
+    proxies=cssProxyMap[selector];
+    retMap[selector.replace(/&/g,animationSelector)]=results=[];
+    cbs.forEach(function(cb,i){results.push(resolveCss(cb,animation,proxies[i],param)); });
   });
-  objForEach(animation._matCallback,function(cbs,selector){
-    var mat=new Mat3(),arg=[mat,cur];
-    cssRule=new CssProxy();
-    cbs.forEach(function(cb){mat=cb.apply(animation,arg)||mat});
-    cssRule.withPrefix('transform',mat.toString());
-    mergeRule(cssMap,selector,cssRule);
-  });
+  return retMap;
 }
 function resolveCss(rule,thisObj,cssProxy,e){
-  var ret=cssProxy||new CssProxy(),arg=[ret,e];
+  var ret=cssProxy;
   if(isObj(rule))
-    objForEach(rule,cloneFunc,ret);
+    ret.$merge(rule);
   else if(isFunc(rule))
-     ret=rule.apply(thisObj,arg)||ret;
+    ret=rule.apply(thisObj,[ret,e])||ret;
   return ret;
-}
-function getStyleRuleStr(ruleObj,selector,separator,ignoreEmpty){
-  separator=separator||';';
-  var cssText=CssProxy.toSafeCssString(ruleObj,separator);
-  if(!cssText)return '';
-  return selector +'{'+separator+cssText+separator+'}';
 }
 function addMap(key,Map,cb){
   var cbs=Map[key];
   if(!cbs)Map[key]=[cb];
   else arrAdd(cbs,cb);
-}
-function getAnimationStyles(ani){
-  var styles=[],slt=ani.selector||'',cssText;
-  objForEach(ani._cssMap,function(ruleObj,selector){
-    cssText=getStyleRuleStr(ruleObj,selector.replace(/&/g,slt));
-    cssText&&styles.push(cssText);
-  });
-  return ani.lastStyleRules=styles;
-}
-function mergeRule(map,selector,cssProxy){
-  var oriRule=map[selector];
-  if(oriRule)
-    oriRule.merge(cssProxy);
-  else map[selector]=cssProxy;
 }

@@ -150,37 +150,6 @@ var EVENT_FRAME_START='frameStart',EVENT_UPDATE='update',EVENT_FRAME_END='frameE
  * @param {Object} param the calculation param
 */
 Flip.util = {Object: obj, Array: array, inherit: inherit};
-/*function createProxy(obj) {
-  var from, result = {}, func, objType = typeof obj;
-  if (objType == "function")from = obj.proxy;
-  else if (objType == "object") from = obj;
-  else from = {};
-  func = function () {
-    for (var i = 0, v, prop, value, len = arguments.length; i < len; i += 2) {
-      prop = arguments[i];
-      value = arguments[i + 1];
-      if (!from.hasOwnProperty(prop)) {
-        v = value;
-        delete from[prop];
-      }
-      else v = from[prop];
-      result[prop] = v;
-    }
-    if(len==1)
-      return v;
-  };
-  func.source = function () {
-    if (arguments.length == 1)return from[arguments[0]];
-    for (var i = 0, prop, len = arguments.length; i < len; i += 2) {
-      prop = arguments[i];
-      if (!from.hasOwnProperty(prop))from[prop] = arguments[i + 1];
-    }
-    return from[arguments[0]];
-  };
-  func.result = result;
-  func.proxy = from;
-  return func;
-}*/
 function makeOptions(opt,defaults){
   var ret={};
   opt=opt||{};
@@ -234,6 +203,7 @@ function arrSort(array, func_ProName, des) {
 function arrFirst(array, func_ProName) {
   for (var i = 0, item, len = array.length, compare = arrMapFun(func_ProName); i < len; i++)
     if (compare(item = array[i]))return item;
+  return void 0;
 }
 function arrRemove(array, item) {
   var i = array.indexOf(item);
@@ -400,36 +370,31 @@ else if (window) {
 }
 function CssProxy(obj){
   if(!(this instanceof CssProxy))return new CssProxy(obj);
-  this.merge(obj);
+  this.$merge(obj);
+  this.$invaild=true;
 }
-CssProxy.toSafeCssString=(function(){
- var cssPropertyKeys=Object.getOwnPropertyNames(document.documentElement.style);
-  function toCssPropertyKey(key){
-    return key.replace(/[A-Z]/g,function(c){return '-'+ c.toLowerCase()})
-  }
+Flip.CssProxy=CssProxy;
+(function(){
+  var defaultPrefixes= ['-moz-','-ms-','-webkit-','-o-',''],cssPrivateKeyPrefix='$$';
+  var cssPropertyKeys=Object.getOwnPropertyNames(document.documentElement.style), cssPrivateKeys=[];
   function formatNum(value){
     return isNaN(value)? value:Number(value).toFixed(5).replace(/\.0+$/,'')
   }
-  return function(target,separator){
-    var rules=[];
-    objForEach(target,function(value,key){
-      if(cssPropertyKeys.indexOf(key)>-1 || 1)
-        rules.push(toCssPropertyKey(key)+':'+formatNum(value));
-    });
-    return rules.join(separator||';');
-  }
-})();
-(function(){
-  var defaultPrefixes= ['-moz-','-ms-','-webkit-','-o-',''],toSafeCssString=CssProxy.toSafeCssString;
   var p=CssProxy.prototype={
-    toSafeCssString:function(separator){
-      return toSafeCssString(this,separator)
+    $cssText:function(selector){
+      return this.$invaild? (this.$lastStyle=selector +'{'+this+'}'):this.$lastStyle;
+    },
+    $toSafeCssString:function(separator){
+      var rules=[];
+      objForEach(this,function(val,key){
+        var i=cssPrivateKeys.indexOf(key);
+        if(i>-1 && val!==void 0)rules.push(cssPropertyKeys[i]+':'+formatNum(val))
+      });
+      return rules.join(separator||';')
     },
     toString:function(){
-     var rules=[];
-     objForEach(this,function(value,key){rules.push(toCssPropertyKey(key)+':'+value);});
-     return rules.join(';')
-   },
+      return this.$toSafeCssString();
+    },
     /**
      * combine key with prefixes
      * @param {string} key   css rule name
@@ -437,10 +402,10 @@ CssProxy.toSafeCssString=(function(){
      * @param {Array<String>}[prefixes=['-moz-','-ms-','-webkit-','-o-','']] prefixes to combine
      * @returns {CssProxy} return itself
      * @example
-     * css.withPrefix('border-radius','50%')
+     * css.$withPrefix('border-radius','50%')
      * //add css rules: -moz-border-radius,-webkit-border-radius,-ms-border-radius
      */
-   withPrefix:function(key,value,prefixes){
+   $withPrefix:function(key,value,prefixes){
      var self=this;
      (prefixes||defaultPrefixes).forEach(function(prefix){
        self[prefix+key]=value;
@@ -452,7 +417,7 @@ CssProxy.toSafeCssString=(function(){
      * @param {CssProxy|Object}obj
      * @returns {CssProxy} return itself
      */
-   merge:function(obj){
+   $merge:function(obj){
      if(isObj(obj)&&obj!==this)
        objForEach(obj,cloneFunc,this);
      return this;
@@ -468,15 +433,39 @@ CssProxy.toSafeCssString=(function(){
      *  //css.boxShadow='0 0'+param.blurBase+param.blurRange+' '+ param.spread +' '+param.blurColor+' inset';
      * }
      */
-   template:function(stringTemplate){
-     var arg=arguments,r;
-     return stringTemplate.replace(/\{(\d+)\}/g,function($i,i){
-       return ((r=arg[i])==undefined)?$i:formatValue(r);
-     })
-   }
+   $template:stringTemplate
  };
-  Flip.stringTemplate=p.t=p.template;
-
+  cssPropertyKeys.forEach(function(key){
+    var privateKey=cssPrivateKeyPrefix+key,lowerCaseKey=toLowerCssKey(key);
+    cssPrivateKeys.push(privateKey);
+    registerProperty(p,[key,/^(webkit|moz|o|ms)[A-Z]/.test(key)?('-'+lowerCaseKey):lowerCaseKey],{get:getter,set:setter});
+    function getter(){
+      return this[privateKey]
+    }
+    function setter(val){
+      this.$invalid=true;
+      this[privateKey]=castInvalidValue(val);
+    }
+  });
+  Flip.stringTemplate=p.$t=stringTemplate;
+  function stringTemplate(stringTemplate){
+    var arg=arguments,r;
+    return stringTemplate.replace(/\$\{(\d+)\}/g,function($i,i){
+      return ((r=arg[i])==undefined)?$i:formatNum(r);
+    })
+  }
+  function castInvalidValue(val){
+    var type=typeof val;
+    return type=='string' || type=='number'? val :void  0;
+  }
+  function toLowerCssKey(key){
+    return key.replace(/[A-Z]/g,function(str){return '-'+str.toLowerCase()})
+  }
+  function registerProperty(target,keys,define){
+    keys.forEach(function(key){
+      Object.defineProperty(target,key,define);
+    })
+  }
 })();
 function Render(){
 }
@@ -572,7 +561,6 @@ function Animation(opt) {
     fillMode:FILL_MODE.REMOVE,
     clock:opt.clock||new Clock(opt)}));
   this._cssMap={};
-  this._matCallback={};
   this._cssCallback={};
   this._immutable={};
   this._variable={};
@@ -701,12 +689,22 @@ inherit(Animation,Render,
      * })
      */
   transform:function(selector,matCallback){
-    var map=this._matCallback;
-    objForEach(normalizeMapArgs(arguments),function(callback,selector){
-      addMap(selector,map,callback)
-    });
-    return this;
-  },
+      objForEach(normalizeMapArgs(arguments),function(callback,selector){
+        self.css(selector,wrapTransformCallback);
+        function wrapTransformCallback(cssProxy,param){
+          var transformMat;
+          if(callback instanceof Mat3)
+            transformMat=callback;
+          else if(isFunc(callback)){
+            transformMat=new Mat3();
+            transformMat= callback.apply(this,[transformMat,param])||transformMat;
+          }
+          else throw Error('argument Error for transform');
+          cssProxy.$withPrefix('transform',transformMat+'');
+        }
+      });
+      return this;
+    },
     /**
      * set the css update function
      * @alias Flip.Animation#css
@@ -717,7 +715,7 @@ inherit(Animation,Render,
      * @example
      * ani.css('&:hover',{fontSize:'larger'});
      * ani.css(function(css,param){
-     *  css.withPrefix('border-radius',param.borderRadius);
+     *  css.$withPrefix('border-radius',param.borderRadius);
      * });
      * //set multiple rules
      * ani.css({
@@ -730,9 +728,10 @@ inherit(Animation,Render,
      * })
      */
   css:function(selector,mapOrFunc){
-    var map=this._cssCallback;
+    var callbackMap=this._cssCallback,cssProxyMap=this._cssMap;
     objForEach(normalizeMapArgs(arguments),function(callback,selector){
-      addMap(selector,map,callback)
+      addMap(selector,callbackMap,callback);
+      addMap(selector,cssProxyMap,new CssProxy());
     });
     return this;
   },
@@ -757,9 +756,6 @@ inherit(Animation,Render,
       this.emit(EVENT_FINALIZE);
     }
     return this;
-  },
-  getStyleRule:function(){
-    return getAnimationStyles(this);
   },
     /**
      * start the animation, it won't take effect on started animation
@@ -1644,10 +1640,12 @@ function multiplyMat(mat,other,reverse){
     this.then=opt.then;
     this.get=opt.get;
   }
+
   function castToPromise(value){
     if(value instanceof Animation)return value.promise;
-    else if(value instanceof Array)return Promise.all(value.map(castToPromise));
-    else if(likePromise(value)) return value;
+    if(value instanceof Array)return Promise.all(value.map(castToPromise));
+    if(likePromise(value)) return value;
+    if(!strictRet)return warpPromiseValue(value);
     throw Error('cannot cast to promise');
   }
   function resolvePromise(future){
@@ -1815,11 +1813,12 @@ function multiplyMat(mat,other,reverse){
     });
     return defer;
   };
-  Promise.resolve=function(any){
+  Promise.resolve=warpPromiseValue;
+  function warpPromiseValue(any){
      return Promise(function(resolve){
        resolve(any);
      })
-  };
+  }
   Promise.reject=function(reason){
     return Promise(function(resolve,reject){
       reject(reason);
@@ -1873,7 +1872,12 @@ function updateTask(task,state){
 function renderGlobal(global,state){
   if(global._invalid||state.forceRender){
     objForEach(global._tasks,function(task){renderTask(task,state);});
-    styleEleUseRules(global._styleElement,state.styleStack);
+    var sheet=global._styleElement.sheet;
+    state.styleStack.forEach(function(map){
+      objForEach(map,function(proxies,selector){
+        renderCssProxies(sheet,proxies,selector);
+      })
+    });
     FlipScope.forceRender=global._invalid=false;
   }
   objForEach(global._tasks,function(task){finalizeTask(task,state)});
@@ -1915,13 +1919,8 @@ function finalizeAnimation(animation){
       animation.cancelStyle=FlipScope.global.immediate(animation.lastStyleRules.join('\n'));
   }
 }
-function styleEleUseRules(style,rules,notClearRules){
-  var sheet=style.sheet,len=sheet.cssRules.length, i,rule;
-  if(!notClearRules)
-    while(len--)
-      sheet.deleteRule(0);
-  for(i=0,len=rules.length;i<len;i++)
-    (rule=rules[i])&&sheet.insertRule(rule,i);
+function renderCssProxies(styleSheet,proxies,selector){
+ proxies.forEach(function(proxy){styleSheet.insertRule(proxy.$cssText(selector),styleSheet.length)})
 }
 
 function updateAnimation(animation,renderState){
@@ -1935,7 +1934,7 @@ function updateAnimation(animation,renderState){
   if(clock.finished){
     //trigger finished event after render
     animation._finished=true;
-    finalizeAnimation(animation);
+    finalizeAnimation(animation,renderState);
   }
   renderState.animatetion=null;
   return true;
@@ -1943,10 +1942,10 @@ function updateAnimation(animation,renderState){
 
 function renderAnimation(ani,state){
   state.animation = ani;
-  updateAnimationCss(ani);
-  state.styleStack.push.apply(state.styleStack,getAnimationStyles(ani));
+  state.styleStack.push(updateAnimationCssProxies(ani));
   ani.emit(EVENT_RENDER, state);
-  if(ani._finished)ani.emit(EVENT_FINISH,state);
+  if(ani._finished)
+    ani.emit(EVENT_FINISH,state);
   state.animation = null;
 }
 function updateAnimationParam(animation){
@@ -1955,53 +1954,27 @@ function updateAnimationParam(animation){
     cur[key]=isFunc(value)? value(p,cur):(isNaN(value)?value:p*value);
   });
 }
-function updateAnimationCss(animation){
-  var cssMap=animation._cssMap={},cssRule,cur=animation.current;
+function updateAnimationCssProxies(animation){
+  var cssProxyMap=animation._cssMap,param=animation.current,proxies,results,retMap={},animationSelector=animation.selector;
   objForEach(animation._cssCallback,function(cbs,selector){
-    cssRule=new CssProxy();
-    cbs.forEach(function(cb){resolveCss(cb,animation,cssRule,cur)});
-    mergeRule(cssMap,selector,cssRule);
+    proxies=cssProxyMap[selector];
+    retMap[selector.replace(/&/g,animationSelector)]=results=[];
+    cbs.forEach(function(cb,i){results.push(resolveCss(cb,animation,proxies[i],param)); });
   });
-  objForEach(animation._matCallback,function(cbs,selector){
-    var mat=new Mat3(),arg=[mat,cur];
-    cssRule=new CssProxy();
-    cbs.forEach(function(cb){mat=cb.apply(animation,arg)||mat});
-    cssRule.withPrefix('transform',mat.toString());
-    mergeRule(cssMap,selector,cssRule);
-  });
+  return retMap;
 }
 function resolveCss(rule,thisObj,cssProxy,e){
-  var ret=cssProxy||new CssProxy(),arg=[ret,e];
+  var ret=cssProxy;
   if(isObj(rule))
-    objForEach(rule,cloneFunc,ret);
+    ret.$merge(rule);
   else if(isFunc(rule))
-     ret=rule.apply(thisObj,arg)||ret;
+    ret=rule.apply(thisObj,[ret,e])||ret;
   return ret;
-}
-function getStyleRuleStr(ruleObj,selector,separator,ignoreEmpty){
-  separator=separator||';';
-  var cssText=CssProxy.toSafeCssString(ruleObj,separator);
-  if(!cssText)return '';
-  return selector +'{'+separator+cssText+separator+'}';
 }
 function addMap(key,Map,cb){
   var cbs=Map[key];
   if(!cbs)Map[key]=[cb];
   else arrAdd(cbs,cb);
-}
-function getAnimationStyles(ani){
-  var styles=[],slt=ani.selector||'',cssText;
-  objForEach(ani._cssMap,function(ruleObj,selector){
-    cssText=getStyleRuleStr(ruleObj,selector.replace(/&/g,slt));
-    cssText&&styles.push(cssText);
-  });
-  return ani.lastStyleRules=styles;
-}
-function mergeRule(map,selector,cssProxy){
-  var oriRule=map[selector];
-  if(oriRule)
-    oriRule.merge(cssProxy);
-  else map[selector]=cssProxy;
 }
 Flip.RenderGlobal = RenderGlobal;
 function RenderGlobal(opt) {
@@ -2087,8 +2060,8 @@ inherit(RenderGlobal, Flip.util.Object, {
   },
   apply:function(){
     if(!this._persistStyle){
-      var styles=this._persistStyles;
-      styleEleUseRules(this._persistElement,Object.getOwnPropertyNames(styles).map(function(key){return styles[key]}));
+      var i= 0,sheet=this._persistElement.sheet;
+      objForEach(this._persistStyles,function(cssText){sheet.insertRule(cssText,i++)});
       this._persistStyle=true;
     }
   },

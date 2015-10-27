@@ -85,8 +85,8 @@ inherit(RenderGlobal, Flip.util.Object, {
   },
   apply:function(){
     if(!this._persistStyle){
-      var styles=this._persistStyles;
-      styleEleUseRules(this._persistElement,Object.getOwnPropertyNames(styles).map(function(key){return styles[key]}));
+      var i= 0,sheet=this._persistElement.sheet;
+      objForEach(this._persistStyles,function(cssText){sheet.insertRule(cssText,i++)});
       this._persistStyle=true;
     }
   },
