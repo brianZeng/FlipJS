@@ -1872,10 +1872,10 @@ function updateTask(task,state){
 function renderGlobal(global,state){
   if(global._invalid||state.forceRender){
     objForEach(global._tasks,function(task){renderTask(task,state);});
-    var sheet=global._styleElement.sheet;
+    var styleSheet=global._styleElement.sheet;
     state.styleStack.forEach(function(map){
       objForEach(map,function(proxies,selector){
-        renderCssProxies(sheet,proxies,selector);
+        proxies.forEach(function(proxy){styleSheet.insertRule(proxy.$cssText(selector),styleSheet.length)})
       })
     });
     FlipScope.forceRender=global._invalid=false;
@@ -1918,9 +1918,6 @@ function finalizeAnimation(animation){
     if(fillMode===FILL_MODE.SNAPSHOT)
       animation.cancelStyle=FlipScope.global.immediate(animation.lastStyleRules.join('\n'));
   }
-}
-function renderCssProxies(styleSheet,proxies,selector){
- proxies.forEach(function(proxy){styleSheet.insertRule(proxy.$cssText(selector),styleSheet.length)})
 }
 
 function updateAnimation(animation,renderState){
