@@ -7,11 +7,26 @@ fdescribe('Css Proxy test',function(){
     proxy.width='2px';
     expect(proxy.width).toBe(proxy.$$width);
     expect(proxy.$invalid).toBeTruthy();
-    expect(proxy.toSafeCssString('')).toBe('width:2px');
+    expect(proxy.$toSafeCssString('')).toBe('width:2px');
   });
   it('2.ignore invalid value',function(){
     var proxy=new Flip.CssProxy();
     proxy.width=[];
     expect(proxy.width).toBe(void 0);
+  });
+  it('3.support dash property', function () {
+    var proxy=new Flip.CssProxy();
+    proxy['background-color']='red';
+    expect(proxy.backgroundColor).toBe('red');
+    expect(proxy.$toSafeCssString('')).toBe('background-color:red');
+    if(window.chrome){
+      proxy['-webkit-appearance']='none';
+      expect(proxy.webkitAppearance).toBe('none')
+    }
+  });
+  it('4.string template test', function () {
+    var proxy=new Flip.CssProxy();
+    expect(proxy.$template('${1}px solid ${2}',3,'red')).toBe('3px solid red');
+    expect(proxy.$template('${1}px ${2}px ${1}px ${3}px',2,3,4)).toBe('2px 3px 2px 4px')
   })
 });

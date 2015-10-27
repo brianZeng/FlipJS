@@ -25,7 +25,8 @@ Flip.CssProxy=CssProxy;
       var rules=[];
       objForEach(this,function(val,key){
         var i=cssPrivateKeys.indexOf(key);
-        if(i>-1 && val!==void 0)rules.push(cssPropertyKeys[i]+':'+formatNum(val))
+        if(i>-1 && val!==void 0)
+            rules.push(cssPropertyKeys[i]+':'+formatNum(val))
       });
       return rules.join(separator||';')
     },
@@ -72,7 +73,7 @@ Flip.CssProxy=CssProxy;
      */
    $template:stringTemplate
  };
-  cssPropertyKeys.forEach(function(key){
+  cssPropertyKeys=cssPropertyKeys.map(function(key){
     var privateKey=cssPrivateKeyPrefix+key,lowerCaseKey=toLowerCssKey(key);
     cssPrivateKeys.push(privateKey);
     registerProperty(p,[key,/^(webkit|moz|o|ms)[A-Z]/.test(key)?('-'+lowerCaseKey):lowerCaseKey],{get:getter,set:setter});
@@ -83,11 +84,13 @@ Flip.CssProxy=CssProxy;
       this.$invalid=true;
       this[privateKey]=castInvalidValue(val);
     }
+
+      return toLowerCssKey(key);
   });
   Flip.stringTemplate=p.$t=stringTemplate;
   function stringTemplate(stringTemplate){
     var arg=arguments,r;
-    return stringTemplate.replace(/\$\{(\d+)\}/g,function($i,i){
+    return stringTemplate.replace(/\$\{(\d+)}/g,function($i,i){
       return ((r=arg[i])==undefined)?$i:formatNum(r);
     })
   }
