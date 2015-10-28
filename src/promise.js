@@ -45,7 +45,8 @@
         catch (ex){
           return rejectPromise(ex);
         }
-      }
+      },
+      get: function (pro) {return pro ? reason[pro]:reason;}
     })
   }
 
@@ -94,14 +95,11 @@
     }
     return new Thenable({
       then:function(thenable,errorBack){
-        var _success=ensureThenable(thenable,function(v){return v}),
-          _fail=ensureThenable(errorBack,function(e){throw e});
-        if(resolvedPromise){
-          enqueue(function(){resolvedPromise.then(_success,_fail); });
-          return new Promise(function(resolver){resolvedPromise.then(resolver); })
-        }
+        var handler=[ensureThenable(thenable,function(v){return v}),ensureThenable(errorBack,function(e){throw e})];
+        if(resolvedPromise)
+          return warpPromiseValue(resolvedPromise.then.apply(resolvedPromise,handler))
         else{
-          pending.push([_success,_fail]);
+          pending.push(handler);
           return new Promise(function(resolve,reject){next(resolve,reject);})
         }
       },

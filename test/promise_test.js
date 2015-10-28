@@ -1,7 +1,7 @@
 /**
  * Created by 柏子 on 2015/1/29.
  */
-xdescribe('promise test',function(){
+fdescribe('promise test',function(){
   var Promise=Flip.Promise;
   beforeEach(function(){
     Promise.option({acceptAnimationOnly:false});
@@ -103,11 +103,44 @@ xdescribe('promise test',function(){
       expect(d).toBe('d');
       done();
     })
+  });
+  it('Promise.resolve', function (done) {
+    Promise.option({acceptAnimationOnly:false});
+    var promise=Promise.resolve('a').then(function(a){
+      expect(a).toBe('a');
+      return 'b';
+    });
+    promise.then(function (b) {
+      expect(b).toBe('b');
+      return 'c'
+    }).then(Promise.resolve('c')).then(function (c) {
+      expect(c).toBe('c');
+      done();
+    });
+  });
+  it('Promise.reject', function (done) {
+    Promise.option({acceptAnimationOnly:false});
+    var notCalled=jasmine.createSpy('not call');
+    var promise=Promise.reject('a').then(notCalled);
+    promise.then(notCalled,function (a) {
+      expect(a).toBe('a');
+      return 'b'
+    }).then(function (b) {
+      expect('b').toBe(b);
+      throw 'c';
+    }).then(notCalled, function (c) {
+      expect(c).toBe('c');
+      return 'd'
+    }).then(function (d) {
+      expect(d).toBe('d');
+      expect(notCalled).not.toHaveBeenCalled();
+      done();
+    });
   })
 });
 describe('animation promise',function(){
   var Promise=Flip.Promise;
-  it('1accept animation',function(done){
+  it('1.accept animation',function(done){
     var opt={
       selector:'*',duration:0.1
     },ani;
@@ -121,7 +154,7 @@ describe('animation promise',function(){
       });
     ani.start();
   });
-  it('2 animation::then accept array of animations',function(done){
+  it('2.animation::then accept array of animations',function(done){
     var ani=Flip.animate({selector:'div',duration:1}),now=Date.now();
     ani.then([{selector:'div',duration:0.2},{selector:'div',duration:0.5}]).
       then(function(ans){
@@ -132,7 +165,7 @@ describe('animation promise',function(){
       });
     ani.start();
   });
-  it('3support continue with a promise',function(done){
+  it('3.support continue with a promise',function(done){
      var ani=Flip.animate({selector:'div',duration:0.2});
     ani.then(function(){
       return Flip.Promise(function(resolve){
@@ -147,7 +180,7 @@ describe('animation promise',function(){
     });
     ani.start();
   });
-  it('4. digest other promise',function(done){
+  it('4.digest other promise',function(done){
     expect(typeof window.Promise).toBe('function');
     expect(window.Promise).not.toBe(Promise);
     Promise.option({acceptAnimationOnly:1,sync:0});
