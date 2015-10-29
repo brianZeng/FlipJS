@@ -18,10 +18,18 @@ function updateAnimation(animation,renderState){
   renderState.animatetion=null;
   return true;
 }
-
+function finalizeAnimation(animation){
+  var fillMode=animation.fillMode;
+  if(animation.fillMode!==FILL_MODE.KEEP){
+    animation.finalize();
+    if(fillMode===FILL_MODE.SNAPSHOT)
+      animation.cancelStyle=FlipScope.global.immediate(animation.lastStyleText());
+  }
+}
 function renderAnimation(ani,state){
+  var styleStack=state.styleStack;
   state.animation = ani;
-  state.styleStack.push(updateAnimationCssProxies(ani));
+  styleStack.push.apply(styleStack,renderAnimationCssProxies(ani));
   ani.emit(EVENT_RENDER, state);
   if(ani._finished)
     ani.emit(EVENT_FINISH,state);
@@ -33,25 +41,20 @@ function updateAnimationParam(animation){
     cur[key]=isFunc(value)? value(p,cur):(isNaN(value)?value:p*value);
   });
 }
-function updateAnimationCssProxies(animation){
-  var cssProxyMap=animation._cssMap,param=animation.current,proxies,results,retMap={},animationSelector=animation.selector;
-  objForEach(animation._cssCallback,function(cbs,selector){
-    proxies=cssProxyMap[selector];
-    retMap[selector.replace(/&/g,animationSelector)]=results=[];
-    cbs.forEach(function(cb,i){results.push(resolveCss(cb,animation,proxies[i],param)); });
+function renderAnimationCssProxies(animation,noUpdate){
+  var param=animation.current,results=[],body,animationSelector=animation.selector;
+  objForEach(animation._cssHandlerMap,function(cbs,selector){
+    body=cbs.map(function(handler){return resolveCss(handler.cb,handler.proxy,animation,param,noUpdate).$toCachedCssString(true)});
+    results.push(combineStyleText(selector.replace(/&/g,animationSelector),body.join(';')));
   });
-  return retMap;
+  return results;
 }
-function resolveCss(rule,thisObj,cssProxy,e){
-  var ret=cssProxy;
-  if(isObj(rule))
-    ret.$merge(rule);
-  else if(isFunc(rule))
-    ret=rule.apply(thisObj,[ret,e])||ret;
-  return ret;
-}
-function addMap(key,Map,cb){
-  var cbs=Map[key];
-  if(!cbs)Map[key]=[cb];
-  else arrAdd(cbs,cb);
+function resolveCss(callbackOrRuleObj,cssProxy,thisObj,e,noUpdate){
+  if(!noUpdate){
+    if(isObj(callbackOrRuleObj))
+      cssProxy.$merge(callbackOrRuleObj);
+    else if(isFunc(callbackOrRuleObj))
+      callbackOrRuleObj.apply(thisObj||cssProxy,[cssProxy,e]);
+  }
+  return cssProxy;
 }

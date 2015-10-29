@@ -1,4 +1,5 @@
 Flip.util = {Object: obj, Array: array, inherit: inherit};
+var CALLBACK_PROPERTY_NAME='_callbacks';
 function makeOptions(opt,defaults){
   var ret={};
   opt=opt||{};
@@ -12,7 +13,7 @@ function useOptions(target,opt){
   return target;
 }
 function inherit(constructor, baseproto, expando, propertyObj) {
-  if (typeof  baseproto == "function")baseproto = new baseproto();
+  if (isFunc(baseproto))baseproto = new baseproto();
   baseproto = baseproto || {};
   var proto = constructor.prototype = Object.create(baseproto), proDes;
   if (expando)
@@ -74,7 +75,7 @@ array.remove = arrRemove;
 array.add = arrAdd;
 array.first = arrFirst;
 function mapProName(proNameOrFun) {
-  if (typeof proNameOrFun == "function")return proNameOrFun;
+  if (isFunc(proNameOrFun))return proNameOrFun;
   else if (proNameOrFun && typeof proNameOrFun == "string")
     return function (item) {
       return item ? item[proNameOrFun] : undefined;
@@ -97,7 +98,7 @@ function arrFind(array, proNameOrFun, value, unstrict,index) {
 array.findBy = arrFind;
 function arrForEachThenFilter(arr,forEach,filter,thisObj){
   var copy=arr.slice();
-  thisObj===undefined && (thisObj=arr);
+  thisObj===void 0 && (thisObj=arr);
   copy.forEach(forEach,thisObj);
   return arr.filter(filter,thisObj);
 }
@@ -116,7 +117,13 @@ inherit(array, Array, {
     return arrFirst(this, func_proName);
   }
 });
-
+function addMapArray(map, key, cb){
+  if(!map.hasOwnProperty(key))
+    map[key]=[cb];
+  else
+    arrAdd(map[key],cb);
+  return map;
+}
 function obj(from) {
   if (!(this instanceof obj))return new obj(from);
   if (typeof from === "object")
@@ -128,19 +135,17 @@ function obj(from) {
     }, this);
 }
 function addEventListener(obj, evtName, handler) {
-  if (typeof evtName == "string" && evtName && typeof handler == "function") {
-    var cbs, hs;
-    if (!obj.hasOwnProperty('_callbacks'))obj._callbacks = {};
-    cbs = obj._callbacks;
-    if (!(hs = cbs[evtName]))hs = cbs[evtName] = [];
-    arrAdd(hs, handler);
+  if (typeof evtName == "string" && evtName && isFunc(handler)) {
+    if (!obj.hasOwnProperty(CALLBACK_PROPERTY_NAME))
+      obj[CALLBACK_PROPERTY_NAME] = {};
+    addMapArray(obj[CALLBACK_PROPERTY_NAME], evtName, handler);
   }
   return obj;
 }
 obj.on = addEventListener;
 function emitEvent(obj, evtName, argArray, thisObj) {
   var callbacks , handlers,toRemove;
-  if (!(obj.hasOwnProperty('_callbacks')) || !(handlers = (callbacks = obj._callbacks)[evtName]))return false;
+  if (!(obj.hasOwnProperty(CALLBACK_PROPERTY_NAME)) || !(handlers = (callbacks = obj[CALLBACK_PROPERTY_NAME])[evtName]))return false;
   if (!argArray)argArray = [];
   else if (!(argArray instanceof Array)) argArray = [argArray];
   if (thisObj === undefined) thisObj = obj;
@@ -153,8 +158,8 @@ function emitEvent(obj, evtName, argArray, thisObj) {
 obj.emit = emitEvent;
 function removeEventListener(obj, evtName, handler) {
   var cbs, hs;
-  if (evtName === undefined)delete obj._callbacks;
-  else if ((cbs = obj._callbacks) && (hs = cbs[evtName]) && hs) {
+  if (evtName === undefined)delete obj[CALLBACK_PROPERTY_NAME];
+  else if ((cbs = obj[CALLBACK_PROPERTY_NAME]) && (hs = cbs[evtName]) && hs) {
     if (handler) array.remove(hs, handler);
     else delete cbs[evtName];
   }
@@ -162,7 +167,7 @@ function removeEventListener(obj, evtName, handler) {
 }
 obj.off = removeEventListener;
 function addEventListenerOnce(obj, evtName, handler) {
-  if (typeof handler == "function")
+  if (isFunc(handler))
     obj.on(evtName, function () {
       handler.apply(obj, arguments);
       return -1;

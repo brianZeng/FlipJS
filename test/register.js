@@ -57,7 +57,7 @@ describe('register animation:', function () {
         '&':function(mat){}
       }
     });
-    expect(ani._cssCallback['&'].length).toBe(2);
+    expect(ani._cssHandlerMap['&'].length).toBe(2);
     expect(ani._matCallback['&'].length).toBe(2);
   })
 });

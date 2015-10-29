@@ -8,7 +8,7 @@ function RenderGlobal(opt) {
   this._tasks = {};
   this._defaultTaskName=opt.defaultTaskName;
   this._invalid=true;
-  this._persistStyles={};
+  this._persistIndies=[];
   this._persistElement=Flip.ele({tagName:'style',attributes:{'data-flip':'frame'}});
   this._styleElement=Flip.ele({tagName:'style',attributes:{'data-flip':'persist'}});
 }
@@ -46,7 +46,20 @@ inherit(RenderGlobal, Flip.util.Object, {
   },
   immediate:function(style){
     if(!style)return noop;
-    var styles=this._persistStyles,uid=nextUid('immediateStyle'),self=this,cancel;
+    var styleSheet=this._persistElement.sheet,indies=this._persistIndies,index;
+    if(indies.length){
+      index=indies.pop();
+      styleSheet.deleteRule(index);
+    }
+    else
+      index=styleSheet.rules.length;
+    styleSheet.insertRule(style,index);
+    return cancel;
+    function cancel(){
+      styleSheet.deleteRule(index);
+      styleSheet.insertRule('*{}',index)
+    }
+    /*var styles=this._persistStyles,uid=nextUid('immediateStyle'),self=this,cancel;
     styles[uid]=style;
     cancel=function cancelImmediate(){
       var style=styles[uid];
@@ -56,7 +69,7 @@ inherit(RenderGlobal, Flip.util.Object, {
     };
     cancel.id=uid;
     this._persistStyle=false;
-    return cancel;
+    return cancel;*/
   },
   refresh:function(){
     this._foreceRender=true;
@@ -82,13 +95,6 @@ inherit(RenderGlobal, Flip.util.Object, {
   loop: function (element) {
     loopGlobal(this);
     window.requestAnimationFrame(this.loop.bind(this), element||window.document.body);
-  },
-  apply:function(){
-    if(!this._persistStyle){
-      var i= 0,sheet=this._persistElement.sheet;
-      objForEach(this._persistStyles,function(cssText){sheet.insertRule(cssText,i++)});
-      this._persistStyle=true;
-    }
   },
   createRenderState: function () {
     return {global: this, task:null,styleStack:[],forceRender:this._foreceRender}

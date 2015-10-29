@@ -17,8 +17,7 @@ function Animation(opt) {
     selector:'',
     fillMode:FILL_MODE.REMOVE,
     clock:opt.clock||new Clock(opt)}));
-  this._cssMap={};
-  this._cssCallback={};
+  this._cssHandlerMap={};
   this._immutable={};
   this._variable={};
   this._param={};
@@ -147,7 +146,7 @@ inherit(Animation,Render,
      */
   transform:function(selector,matCallback){
       objForEach(normalizeMapArgs(arguments),function(callback,selector){
-        self.css(selector,wrapTransformCallback);
+        this.css(selector,wrapTransformCallback);
         function wrapTransformCallback(cssProxy,param){
           var transformMat;
           if(callback instanceof Mat3)
@@ -159,7 +158,7 @@ inherit(Animation,Render,
           else throw Error('argument Error for transform');
           cssProxy.$withPrefix('transform',transformMat+'');
         }
-      });
+      },this);
       return this;
     },
     /**
@@ -185,10 +184,9 @@ inherit(Animation,Render,
      * })
      */
   css:function(selector,mapOrFunc){
-    var callbackMap=this._cssCallback,cssProxyMap=this._cssMap;
+    var callbackMap=this._cssHandlerMap;
     objForEach(normalizeMapArgs(arguments),function(callback,selector){
-      addMap(selector,callbackMap,callback);
-      addMap(selector,cssProxyMap,new CssProxy());
+      addMapArray(callbackMap, selector, {cb: callback, proxy: new CssProxy()});
     });
     return this;
   },
@@ -271,7 +269,10 @@ inherit(Animation,Render,
      */
   then:function(onFinished,onerror){
     return this.promise.then(onFinished,onerror);
-  }
+  },
+    lastStyleText:function(separator){
+      return renderAnimationCssProxies(this,true).join(separator)
+    }
 });
 /** triggered when in every frame after animation starts
  * @event Flip.Animation#update  */
@@ -297,7 +298,8 @@ function findTaskToAddOrThrow(ani,opt){
       t.add(ani);
     else
       throw Error('please specify the render task for animation to restart');
-  }return t;
+  }
+  return t;
 }
 function invokeClock(animation,method,evtName,evtArg){
   var clock=animation.clock;
@@ -431,8 +433,7 @@ Flip.css=function(selector,rule){
   else throw Error('argument error');
   return FlipScope.global.immediate(literal.join('\n'));
   function resolve(rule,selector){
-    var str=getStyleRuleStr(resolveCss(rule),selector,'\n',1);
-    if(str)literal.push(str);
+    literal.push(combineStyleText(selector, resolveCss(rule,new CssProxy())));
   }
 };
 /**

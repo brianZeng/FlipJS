@@ -11,7 +11,6 @@ function loopGlobal(global){
 function updateGlobal(global,state){
   state.global.emit(EVENT_UPDATE, [state,global]);
   objForEach(global._tasks,function(task){updateTask(task,state)});
-  global.apply();
 }
 function updateTask(task,state){
   if(!task.disabled){
@@ -34,18 +33,20 @@ function updateTask(task,state){
     }
   }
 }
+function resetStyleElement(styleElement){
+  var replaceNode=styleElement.cloneNode(false);
+  styleElement.parentNode.replaceChild(replaceNode,styleElement);
+  return replaceNode;
+}
 function renderGlobal(global,state){
   if(global._invalid||state.forceRender){
     objForEach(global._tasks,function(task){renderTask(task,state);});
-    var styleSheet=global._styleElement.sheet;
-    state.styleStack.forEach(function(map){
-      objForEach(map,function(proxies,selector){
-        proxies.forEach(function(proxy){styleSheet.insertRule(proxy.$cssText(selector),styleSheet.length)})
-      })
-    });
-    FlipScope.forceRender=global._invalid=false;
+    var styleEle=global._styleElement=resetStyleElement(global._styleElement),styleSheet=styleEle.sheet;
+    state.styleStack.forEach(function(cssText,i){styleSheet.insertRule(cssText,i);});
+    global._invalid=false;
   }
   objForEach(global._tasks,function(task){finalizeTask(task,state)});
+  global._forceRender=false;
 }
 function renderTask(task,state){
   if(!task.disabled){
@@ -76,11 +77,4 @@ function finalizeTask(task,state){
     });
   }
 }
-function finalizeAnimation(animation){
-  var fillMode=animation.fillMode;
-  if(animation.fillMode!==FILL_MODE.KEEP){
-    animation.finalize();
-    if(fillMode===FILL_MODE.SNAPSHOT)
-      animation.cancelStyle=FlipScope.global.immediate(animation.lastStyleRules.join('\n'));
-  }
-}
+
