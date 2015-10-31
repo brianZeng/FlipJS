@@ -56,20 +56,14 @@ inherit(RenderGlobal, Flip.util.Object, {
     styleSheet.insertRule(style,index);
     return cancel;
     function cancel(){
-      styleSheet.deleteRule(index);
-      styleSheet.insertRule('*{}',index)
+      if(styleSheet){
+        styleSheet.deleteRule(index);
+        styleSheet.insertRule('*{}',index);
+        styleSheet=null;
+        indies.push(index);
+        return !(index=-1)+1;
+      }
     }
-    /*var styles=this._persistStyles,uid=nextUid('immediateStyle'),self=this,cancel;
-    styles[uid]=style;
-    cancel=function cancelImmediate(){
-      var style=styles[uid];
-      delete styles[uid];
-      self._persistStyle=false;
-      return style;
-    };
-    cancel.id=uid;
-    this._persistStyle=false;
-    return cancel;*/
   },
   refresh:function(){
     this._foreceRender=true;

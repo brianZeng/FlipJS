@@ -55,6 +55,8 @@ function resolveCss(callbackOrRuleObj,cssProxy,thisObj,e,noUpdate){
       cssProxy.$merge(callbackOrRuleObj);
     else if(isFunc(callbackOrRuleObj))
       callbackOrRuleObj.apply(thisObj||cssProxy,[cssProxy,e]);
+    else if(isStr(callbackOrRuleObj))
+      parseCssText(callbackOrRuleObj,cssProxy);
   }
   return cssProxy;
 }

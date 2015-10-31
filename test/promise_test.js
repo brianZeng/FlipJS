@@ -1,7 +1,7 @@
 /**
  * Created by 柏子 on 2015/1/29.
  */
-fdescribe('promise test',function(){
+describe('promise test',function(){
   var Promise=Flip.Promise;
   beforeEach(function(){
     Promise.option({acceptAnimationOnly:false});

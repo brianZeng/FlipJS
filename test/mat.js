@@ -11,8 +11,7 @@ describe('Matrix test',function(){
     return ret;
   }
    it('1.translate test',function(){
-     debugger;
      var mat=Flip.Mat3().translate(10,10).scale(0.5,1).translate(10,10);
      expect(getElement(mat,'dx','dy')).toEqual([15,20]);
-   })
+   });
 });

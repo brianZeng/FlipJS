@@ -20,8 +20,8 @@ Flip.CssProxy = CssProxy;
   }
 
   var p = CssProxy.prototype = {
-    $cssText: function (selector,separator) {
-      return selector + '{' + this.$toSafeCssString(separator) + '}';
+    $styleText: function (selector,separator) {
+      return combineStyleText(selector,this.$toSafeCssString(separator));
     },
     $toCachedCssString:function(reset){
       if(this.$invalid)
@@ -36,9 +36,9 @@ Flip.CssProxy = CssProxy;
       objForEach(this, function (val, key) {
         var i = cssPrivateKeys.indexOf(key);
         if (i > -1 && val !== void 0)
-          rules.push(cssPropertyKeys[i] + ':' + formatNum(val)+';')
+          rules.push(cssPropertyKeys[i] + ':' + formatNum(val))
       });
-      return rules.join(separator || '')
+      return rules.join(';'+(separator || ''));
     },
     toString: function () {
       return this.$toSafeCssString();

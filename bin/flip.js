@@ -56,11 +56,63 @@ Flip.fallback = function (window) {
     }, Array.prototype)
   }
 };
+/**
+ * set css style immediately,you can cancel it later
+ * @memberof Flip
+ * @returns {function} cancel the css style
+ * @example
+ * var cancel=Flip.css('.content',{
+ *  width:document.documentElement.clientWidth+'px',
+ *  height:document.documentElement.clientHeight+'px'
+ * });
+ *  //cancel the style 2s later
+ *  setTimeout(cancel,2000);
+ *  // you can pass multiple style rules
+ *  Flip.css({
+ *    body:{
+ *      margin:0
+ *    },
+ *    '.danger':{
+ *       color:'red',
+ *       borderColor:'orange'
+ *    }
+ *  })
+ */
+Flip.css=function(selector,rule){
+  return setDefaultImmediateStyle('css',selector,rule);
+};
+Flip.parseCssText=parseCssText;
+Flip.parseStyleText=parseStyleText;
+function setDefaultImmediateStyle(property,selector,rule){
+  var _cancel,ani={_cssHandlerMap:{},selector:isStr(selector)?selector:''};
+  Animation.prototype[property].apply(ani,[selector,rule]);
+  Flip(function () {
+    var style=renderAnimationCssProxies(ani);
+    _cancel=Flip.instance.immediate(style);
+  });
+  return cancel;
+  function cancel(){
+    if(_cancel){
+      ani=null;
+      return _cancel();
+    }
+  }
+}
+/**
+ * set transform style immediately
+ * @memberof Flip
+ * @returns {function} cancel the css style
+ * @example
+ * Flip.transform('.scale',Flip.Mat3().scale(0.5))
+ */
+Flip.transform=function(selector,rule){
+  return setDefaultImmediateStyle('transform',selector,rule);
+};
 var EVENT_FRAME_START='frameStart',EVENT_UPDATE='update',EVENT_FRAME_END='frameEnd',EVENT_RENDER_START='renderStart',EVENT_RENDER_END='renderEnd';
 /**
  * @typedef  AnimationOptions
  * @type {Object}
- * @property {?string} [type] a registered animation name
+ * @property {?string} [animationName] a registered animation name
  * @property {?string} [selector='']  css selector to apply animation
  * @property {?boolean}[fillMode] if set true the css and transform will keep after animation finished
  * @property {?number} [duration=.7] animation duration (in second)
@@ -150,6 +202,7 @@ var EVENT_FRAME_START='frameStart',EVENT_UPDATE='update',EVENT_FRAME_END='frameE
  * @param {Object} param the calculation param
 */
 Flip.util = {Object: obj, Array: array, inherit: inherit};
+var CALLBACK_PROPERTY_NAME='_callbacks';
 function makeOptions(opt,defaults){
   var ret={};
   opt=opt||{};
@@ -163,7 +216,7 @@ function useOptions(target,opt){
   return target;
 }
 function inherit(constructor, baseproto, expando, propertyObj) {
-  if (typeof  baseproto == "function")baseproto = new baseproto();
+  if (isFunc(baseproto))baseproto = new baseproto();
   baseproto = baseproto || {};
   var proto = constructor.prototype = Object.create(baseproto), proDes;
   if (expando)
@@ -212,11 +265,10 @@ function arrRemove(array, item) {
   return false;
 }
 function arrMapFun(func_ProName) {
-  var ct = typeof func_ProName;
-  if (ct === "string")return function (item) {
+  if (isStr(func_ProName))return function (item) {
     return item[func_ProName]
   };
-  else if (ct === "function")return func_ProName;
+  else if (isFunc(func_ProName))return func_ProName;
   return function (item) {
     return item
   };
@@ -225,8 +277,8 @@ array.remove = arrRemove;
 array.add = arrAdd;
 array.first = arrFirst;
 function mapProName(proNameOrFun) {
-  if (typeof proNameOrFun == "function")return proNameOrFun;
-  else if (proNameOrFun && typeof proNameOrFun == "string")
+  if (isFunc(proNameOrFun))return proNameOrFun;
+  else if (proNameOrFun && isStr(proNameOrFun))
     return function (item) {
       return item ? item[proNameOrFun] : undefined;
     };
@@ -248,7 +300,7 @@ function arrFind(array, proNameOrFun, value, unstrict,index) {
 array.findBy = arrFind;
 function arrForEachThenFilter(arr,forEach,filter,thisObj){
   var copy=arr.slice();
-  thisObj===undefined && (thisObj=arr);
+  thisObj===void 0 && (thisObj=arr);
   copy.forEach(forEach,thisObj);
   return arr.filter(filter,thisObj);
 }
@@ -267,7 +319,13 @@ inherit(array, Array, {
     return arrFirst(this, func_proName);
   }
 });
-
+function addMapArray(map, key, cb){
+  if(!map.hasOwnProperty(key))
+    map[key]=[cb];
+  else
+    arrAdd(map[key],cb);
+  return map;
+}
 function obj(from) {
   if (!(this instanceof obj))return new obj(from);
   if (typeof from === "object")
@@ -279,19 +337,17 @@ function obj(from) {
     }, this);
 }
 function addEventListener(obj, evtName, handler) {
-  if (typeof evtName == "string" && evtName && typeof handler == "function") {
-    var cbs, hs;
-    if (!obj.hasOwnProperty('_callbacks'))obj._callbacks = {};
-    cbs = obj._callbacks;
-    if (!(hs = cbs[evtName]))hs = cbs[evtName] = [];
-    arrAdd(hs, handler);
+  if (isStr(evtName) && evtName && isFunc(handler)) {
+    if (!obj.hasOwnProperty(CALLBACK_PROPERTY_NAME))
+      obj[CALLBACK_PROPERTY_NAME] = {};
+    addMapArray(obj[CALLBACK_PROPERTY_NAME], evtName, handler);
   }
   return obj;
 }
 obj.on = addEventListener;
 function emitEvent(obj, evtName, argArray, thisObj) {
   var callbacks , handlers,toRemove;
-  if (!(obj.hasOwnProperty('_callbacks')) || !(handlers = (callbacks = obj._callbacks)[evtName]))return false;
+  if (!(obj.hasOwnProperty(CALLBACK_PROPERTY_NAME)) || !(handlers = (callbacks = obj[CALLBACK_PROPERTY_NAME])[evtName]))return false;
   if (!argArray)argArray = [];
   else if (!(argArray instanceof Array)) argArray = [argArray];
   if (thisObj === undefined) thisObj = obj;
@@ -304,8 +360,8 @@ function emitEvent(obj, evtName, argArray, thisObj) {
 obj.emit = emitEvent;
 function removeEventListener(obj, evtName, handler) {
   var cbs, hs;
-  if (evtName === undefined)delete obj._callbacks;
-  else if ((cbs = obj._callbacks) && (hs = cbs[evtName]) && hs) {
+  if (evtName === undefined)delete obj[CALLBACK_PROPERTY_NAME];
+  else if ((cbs = obj[CALLBACK_PROPERTY_NAME]) && (hs = cbs[evtName]) && hs) {
     if (handler) array.remove(hs, handler);
     else delete cbs[evtName];
   }
@@ -313,7 +369,7 @@ function removeEventListener(obj, evtName, handler) {
 }
 obj.off = removeEventListener;
 function addEventListenerOnce(obj, evtName, handler) {
-  if (typeof handler == "function")
+  if (isFunc(handler))
     obj.on(evtName, function () {
       handler.apply(obj, arguments);
       return -1;
@@ -361,38 +417,73 @@ function mixObj(){
 }
 function isFunc(value){return typeof value==="function"}
 function isObj(value){return (typeof value==="object") && value}
+function isStr(value){return typeof value==="string"}
 function noop(){}
+function parseStyleText(styleText){
+  var i=0,ret={},ruleStart,ruleEnd;
+  while((ruleStart=styleText.indexOf('{',i))>-1){
+    ruleEnd=styleText.indexOf('}',ruleStart);
+    addMapArray(
+        ret,
+        styleText.substring(i,ruleStart).trim(),
+        parseCssText(styleText.substring(ruleStart+1,ruleEnd))
+    );
+    i=ruleEnd+1;
+  }
+  return ret;
+}
+function parseCssText(cssText,target){
+  var ret=isObj(target)?target:{},pair;
+  cssText.split(';').forEach(function (rule) {
+    if(rule=rule.replace(/[\r\n\t\f\s]/g,'')){
+      pair=rule.split(':');
+      ret[pair[0]]=pair[1];
+    }
+  });
+  return ret;
+}
 if (typeof module !== "undefined" && module.exports)
   module.exports = Flip;
 else if(typeof define!=="undefined")define(function(){return Flip});
 else if (window) {
   window.Flip = Flip;
 }
-function CssProxy(obj){
-  if(!(this instanceof CssProxy))return new CssProxy(obj);
+function CssProxy(obj) {
+  if (!(this instanceof CssProxy))return new CssProxy(obj);
   this.$merge(obj);
-  this.$invaild=true;
+  this.$invalid = true;
 }
-Flip.CssProxy=CssProxy;
-(function(){
-  var defaultPrefixes= ['-moz-','-ms-','-webkit-','-o-',''],cssPrivateKeyPrefix='$$';
-  var cssPropertyKeys=Object.getOwnPropertyNames(document.documentElement.style), cssPrivateKeys=[];
-  function formatNum(value){
-    return isNaN(value)? value:Number(value).toFixed(5).replace(/\.0+$/,'')
+Flip.CssProxy = CssProxy;
+(function () {
+  var defaultPrefixes , cssPrivateKeyPrefix = '$$';
+  var cssPropertyKeys = Object.getOwnPropertyNames(document.documentElement.style), cssPrivateKeys = [];
+
+  function formatNum(value) {
+    return isNaN(value) ? value : Number(value).toFixed(5).replace(/\.0+$/, '')
   }
-  var p=CssProxy.prototype={
-    $cssText:function(selector){
-      return this.$invaild? (this.$lastStyle=selector +'{'+this+'}'):this.$lastStyle;
+
+  var p = CssProxy.prototype = {
+    $styleText: function (selector,separator) {
+      return combineStyleText(selector,this.$toSafeCssString(separator));
     },
-    $toSafeCssString:function(separator){
-      var rules=[];
-      objForEach(this,function(val,key){
-        var i=cssPrivateKeys.indexOf(key);
-        if(i>-1 && val!==void 0)rules.push(cssPropertyKeys[i]+':'+formatNum(val))
+    $toCachedCssString:function(reset){
+      if(this.$invalid)
+      {
+        this.$cachedCssString=this.$toSafeCssString();
+        this.$invalid=!!reset;
+      }
+      return this.$cachedCssString;
+    },
+    $toSafeCssString: function (separator) {
+      var rules = [];
+      objForEach(this, function (val, key) {
+        var i = cssPrivateKeys.indexOf(key);
+        if (i > -1 && val !== void 0)
+          rules.push(cssPropertyKeys[i] + ':' + formatNum(val))
       });
-      return rules.join(separator||';')
+      return rules.join(';'+(separator || ''));
     },
-    toString:function(){
+    toString: function () {
       return this.$toSafeCssString();
     },
     /**
@@ -405,23 +496,23 @@ Flip.CssProxy=CssProxy;
      * css.$withPrefix('border-radius','50%')
      * //add css rules: -moz-border-radius,-webkit-border-radius,-ms-border-radius
      */
-   $withPrefix:function(key,value,prefixes){
-     var self=this;
-     (prefixes||defaultPrefixes).forEach(function(prefix){
-       self[prefix+key]=value;
-     });
-     return self;
-   },
+    $withPrefix: function (key, value, prefixes) {
+      var self = this;
+      (prefixes || defaultPrefixes).forEach(function (prefix) {
+        self[prefix + key] = value;
+      });
+      return self;
+    },
     /**
      * combine another css rules
      * @param {CssProxy|Object}obj
      * @returns {CssProxy} return itself
      */
-   $merge:function(obj){
-     if(isObj(obj)&&obj!==this)
-       objForEach(obj,cloneFunc,this);
-     return this;
-   },
+    $merge: function (obj) {
+      if (isObj(obj) && obj !== this)
+        objForEach(obj, cloneFunc, this);
+      return this;
+    },
     /**
      * format string
      * @param {string} stringTemplate
@@ -433,45 +524,64 @@ Flip.CssProxy=CssProxy;
      *  //css.boxShadow='0 0'+param.blurBase+param.blurRange+' '+ param.spread +' '+param.blurColor+' inset';
      * }
      */
-   $template:stringTemplate
- };
-  cssPropertyKeys.forEach(function(key){
-    var privateKey=cssPrivateKeyPrefix+key,lowerCaseKey=toLowerCssKey(key);
+    $template: stringTemplate
+  };
+  cssPropertyKeys = cssPropertyKeys.map(function (key) {
+    var privateKey = cssPrivateKeyPrefix + key, lowerCaseKey = toLowerCssKey(key);
     cssPrivateKeys.push(privateKey);
-    registerProperty(p,[key,/^(webkit|moz|o|ms)[A-Z]/.test(key)?('-'+lowerCaseKey):lowerCaseKey],{get:getter,set:setter});
-    function getter(){
+    registerProperty(p, [key, /^(webkit|moz|o|ms)[A-Z]/.test(key) ? ('-' + lowerCaseKey) : lowerCaseKey], {
+      get: getter,
+      set: setter
+    });
+    function getter() {
       return this[privateKey]
     }
-    function setter(val){
-      this.$invalid=true;
-      this[privateKey]=castInvalidValue(val);
+
+    function setter(val) {
+      var v = castInvalidValue(val);
+      if (v != this[privateKey]) {
+        this.$invalid = true;
+        this[privateKey] = v;
+      }
     }
+
+    return toLowerCssKey(key);
   });
-  Flip.stringTemplate=p.$t=stringTemplate;
-  function stringTemplate(stringTemplate){
-    var arg=arguments,r;
-    return stringTemplate.replace(/\$\{(\d+)\}/g,function($i,i){
-      return ((r=arg[i])==undefined)?$i:formatNum(r);
+  defaultPrefixes=['-moz-','-ms-','-webkit-','-o-',''].filter(function(prefix){var key=prefix.substring(1);return cssPropertyKeys.some(function(pro){return pro.indexOf(key)==0})});
+  Flip.stringTemplate = p.$t = stringTemplate;
+  function stringTemplate(stringTemplate) {
+    var arg = arguments, r;
+    return stringTemplate.replace(/\$\{(\d+)}/g, function ($i, i) {
+      return ((r = arg[i]) == undefined) ? $i : formatNum(r);
     })
   }
-  function castInvalidValue(val){
-    var type=typeof val;
-    return type=='string' || type=='number'? val :void  0;
+
+  function castInvalidValue(val) {
+    var type = typeof val;
+    return type == 'string' || type == 'number' ? val : void  0;
   }
-  function toLowerCssKey(key){
-    return key.replace(/[A-Z]/g,function(str){return '-'+str.toLowerCase()})
+
+  function toLowerCssKey(key) {
+    return key.replace(/[A-Z]/g, function (str) {
+      return '-' + str.toLowerCase()
+    })
   }
-  function registerProperty(target,keys,define){
-    keys.forEach(function(key){
-      Object.defineProperty(target,key,define);
+
+  function registerProperty(target, keys, define) {
+    keys.forEach(function (key) {
+      Object.defineProperty(target, key, define);
     })
   }
 })();
+function combineStyleText(selector,body){
+  return selector +'{'+body+'}';
+}
 function Render(){
 }
 inherit(Flip.Render=Render,Flip.util.Object,{
   update:function(){},
   render:function(){},
+  finalize:function(){},
   invalid:function(){
     var t,p;
     if(t=this._task) t.invalid();
@@ -517,33 +627,6 @@ inherit(RenderTask, Flip.util.Object, {
   }
 });
 
-function TimeLine(task) {
-  this.last = this.now = this._stopTime = 0;
-  this._startTime = this._lastStop = Date.now();
-  this.task = task;
-  this._isStop = true;
-}
-inherit(TimeLine, Flip.util.Object, {
-  ticksPerSecond: 1000,
-  stop: function () {
-    if (!this._isStop) {
-      this._isStop = true;
-      this._lastStop = Date.now();
-    }
-  },
-  start: function () {
-    if (this._isStop) {
-      this._isStop = false;
-      this._stopTime += Date.now() - this._lastStop;
-    }
-  },
-  move: function () {
-    if (!this._isStop) {
-      this.last = this.now;
-      this.now = Date.now() - this._startTime - this._stopTime;
-    }
-  }
-});
 /**
  * @namespace Flip.Animation
  * @param {AnimationOptions} opt
@@ -560,8 +643,7 @@ function Animation(opt) {
     selector:'',
     fillMode:FILL_MODE.REMOVE,
     clock:opt.clock||new Clock(opt)}));
-  this._cssMap={};
-  this._cssCallback={};
+  this._cssHandlerMap={};
   this._immutable={};
   this._variable={};
   this._param={};
@@ -664,7 +746,7 @@ inherit(Animation,Render,
   param:function(key,value,immutable){
     if(isObj(key))
       cloneWithPro(key,this[value?'_immutable':'_variable']);
-    else if(typeof key==="string")
+    else if(isStr(key))
       this[immutable?'_immutable':'_variable'][key]=value;
     return this;
   },
@@ -690,7 +772,7 @@ inherit(Animation,Render,
      */
   transform:function(selector,matCallback){
       objForEach(normalizeMapArgs(arguments),function(callback,selector){
-        self.css(selector,wrapTransformCallback);
+        this.css(selector,wrapTransformCallback);
         function wrapTransformCallback(cssProxy,param){
           var transformMat;
           if(callback instanceof Mat3)
@@ -702,7 +784,7 @@ inherit(Animation,Render,
           else throw Error('argument Error for transform');
           cssProxy.$withPrefix('transform',transformMat+'');
         }
-      });
+      },this);
       return this;
     },
     /**
@@ -728,10 +810,9 @@ inherit(Animation,Render,
      * })
      */
   css:function(selector,mapOrFunc){
-    var callbackMap=this._cssCallback,cssProxyMap=this._cssMap;
+    var callbackMap=this._cssHandlerMap;
     objForEach(normalizeMapArgs(arguments),function(callback,selector){
-      addMap(selector,callbackMap,callback);
-      addMap(selector,cssProxyMap,new CssProxy());
+      addMapArray(callbackMap, selector, {cb: callback, proxy: new CssProxy()});
     });
     return this;
   },
@@ -814,7 +895,10 @@ inherit(Animation,Render,
      */
   then:function(onFinished,onerror){
     return this.promise.then(onFinished,onerror);
-  }
+  },
+    lastStyleText:function(separator){
+      return renderAnimationCssProxies(this,true).join(separator)
+    }
 });
 /** triggered when in every frame after animation starts
  * @event Flip.Animation#update  */
@@ -840,7 +924,8 @@ function findTaskToAddOrThrow(ani,opt){
       t.add(ani);
     else
       throw Error('please specify the render task for animation to restart');
-  }return t;
+  }
+  return t;
 }
 function invokeClock(animation,method,evtName,evtArg){
   var clock=animation.clock;
@@ -921,7 +1006,7 @@ function cloneWithPro(from,to){
  */
 function animate(opt) {
   if (isObj(opt))
-    var constructor = Flip.register[opt.animationType];
+    var constructor = Flip.register[opt.animationName];
   else
     throw Error('cannot construct an animation');
   if (!constructor)
@@ -941,71 +1026,7 @@ function setAniEnv(aniOpt, animation) {
 };*/
 
 Flip.animate = animate;
-/**
- * set css style immediately,you can cancel it later
- * @param {string|AnimationCssOptions} selector
- * @param {?Object} rule
- * @memberof Flip
- * @returns {function} cancel the css style
- * @example
- * var cancel=Flip.css('.content',{
- *  width:document.documentElement.clientWidth+'px',
- *  height:document.documentElement.clientHeight+'px'
- * });
- *  //cancel the style 2s later
- *  setTimeout(cancel,2000);
- *  // you can pass multiple style rules
- *  Flip.css({
- *    body:{
- *      margin:0
- *    },
- *    '.danger':{
- *       color:'red',
- *       borderColor:'orange'
- *    }
- *  })
- */
-Flip.css=function(selector,rule){
-  var literal=[];
-  if(arguments.length==2)
-    resolve(rule,selector);
-  else if(isObj(selector))
-    objForEach(selector,resolve);
-  else throw Error('argument error');
-  return FlipScope.global.immediate(literal.join('\n'));
-  function resolve(rule,selector){
-    var str=getStyleRuleStr(resolveCss(rule),selector,'\n',1);
-    if(str)literal.push(str);
-  }
-};
-/**
- * set transform style immediately
- * @param {string|AnimationTransformOptions} selector
- * @param {?Object|Flip.Mat3} rule
- * @memberof Flip
- * @returns {function} cancel the css style
- * @example
- * Flip.transform('.scale',Flip.Mat3().scale(0.5))
- */
-Flip.transform=function(selector,rule){
-  var matMap={},literal=[];
-  if(arguments.length==2)
-    warpMatrix(rule,selector);
-  else if(isObj(selector))
-    objForEach(selector,warpMatrix);
-  else throw Error('argument error');
-  objForEach(matMap,function(mat,selector){
-    literal.push(selector,'{','transform:'+mat,'}')
-  });
-  return FlipScope.global.immediate(literal.join('\n'));
-  function warpMatrix(val,selector){
-    var mat;
-    if(isFunc(val)) mat=val(mat=new Mat3())||mat;
-    else if(val instanceof Mat3) mat=val;
-    else mat=new Mat3(val);
-    matMap[selector]=mat;
-  }
-};
+
 Flip.register = (function () {
   function register(definition) {
     var beforeCallBase, name = definition.name, Constructor;
@@ -1385,13 +1406,9 @@ Flip.EASE = Clock.EASE = (function () {
   return Object.freeze(F);
 })();
 (function (Flip) {
+  var slice=Array.prototype.slice;
   function $$(slt, ele) {
-    var r = [], root = ele || document;
-    if (slt)
-      slt.split(',').forEach(function (selector) {
-        r.push.apply(r, r.slice.apply(root.querySelectorAll(selector)))
-      });
-    return r;
+    return slice.apply((ele||document).querySelectorAll(slt));
   }
   function $(slt,ele){
     return (ele||document).querySelector(slt)
@@ -1553,11 +1570,13 @@ Mat3.prototype={
    *
    * @param {number} angle
    * @param {boolean}[horizontal]
+   * @param {number} [ratio=1]
    * @returns {Flip.Mat3} itself
    */
-  flip:function(angle,horizontal){
+  flip:function(angle,horizontal,ratio){
     var sinA = sin(angle), cosA = cos(angle);
-    return multiplyMat(this,horizontal?[1,0,0,-sinA,cosA,0,0,0,1]:[cosA,sinA,0,0,1,0,0,0,1]);
+    ratio=ratio||.6;
+    return multiplyMat(this,horizontal?[1,0,0,-sinA*ratio,cosA,0,0,0,1]:[cosA,sinA*ratio,0,0,1,0,0,0,1]);
   },
   /**
    *
@@ -1674,7 +1693,8 @@ function multiplyMat(mat,other,reverse){
         catch (ex){
           return rejectPromise(ex);
         }
-      }
+      },
+      get: function (pro) {return pro ? reason[pro]:reason;}
     })
   }
 
@@ -1723,14 +1743,11 @@ function multiplyMat(mat,other,reverse){
     }
     return new Thenable({
       then:function(thenable,errorBack){
-        var _success=ensureThenable(thenable,function(v){return v}),
-          _fail=ensureThenable(errorBack,function(e){throw e});
-        if(resolvedPromise){
-          enqueue(function(){resolvedPromise.then(_success,_fail); });
-          return new Promise(function(resolver){resolvedPromise.then(resolver); })
-        }
+        var handler=[ensureThenable(thenable,function(v){return v}),ensureThenable(errorBack,function(e){throw e})];
+        if(resolvedPromise)
+          return warpPromiseValue(resolvedPromise.then.apply(resolvedPromise,handler))
         else{
-          pending.push([_success,_fail]);
+          pending.push(handler);
           return new Promise(function(resolve,reject){next(resolve,reject);})
         }
       },
@@ -1846,7 +1863,6 @@ function loopGlobal(global){
 function updateGlobal(global,state){
   state.global.emit(EVENT_UPDATE, [state,global]);
   objForEach(global._tasks,function(task){updateTask(task,state)});
-  global.apply();
 }
 function updateTask(task,state){
   if(!task.disabled){
@@ -1869,18 +1885,20 @@ function updateTask(task,state){
     }
   }
 }
+function resetStyleElement(styleElement){
+  var replaceNode=styleElement.cloneNode(false);
+  styleElement.parentNode.replaceChild(replaceNode,styleElement);
+  return replaceNode;
+}
 function renderGlobal(global,state){
   if(global._invalid||state.forceRender){
     objForEach(global._tasks,function(task){renderTask(task,state);});
-    var styleSheet=global._styleElement.sheet;
-    state.styleStack.forEach(function(map){
-      objForEach(map,function(proxies,selector){
-        proxies.forEach(function(proxy){styleSheet.insertRule(proxy.$cssText(selector),styleSheet.length)})
-      })
-    });
-    FlipScope.forceRender=global._invalid=false;
+    var styleEle=global._styleElement=resetStyleElement(global._styleElement),styleSheet=styleEle.sheet;
+    state.styleStack.forEach(function(cssText,i){styleSheet.insertRule(cssText,i);});
+    global._invalid=false;
   }
   objForEach(global._tasks,function(task){finalizeTask(task,state)});
+  global._forceRender=false;
 }
 function renderTask(task,state){
   if(!task.disabled){
@@ -1911,14 +1929,7 @@ function finalizeTask(task,state){
     });
   }
 }
-function finalizeAnimation(animation){
-  var fillMode=animation.fillMode;
-  if(animation.fillMode!==FILL_MODE.KEEP){
-    animation.finalize();
-    if(fillMode===FILL_MODE.SNAPSHOT)
-      animation.cancelStyle=FlipScope.global.immediate(animation.lastStyleRules.join('\n'));
-  }
-}
+
 
 function updateAnimation(animation,renderState){
   var clock=animation.clock;
@@ -1936,10 +1947,18 @@ function updateAnimation(animation,renderState){
   renderState.animatetion=null;
   return true;
 }
-
+function finalizeAnimation(animation){
+  var fillMode=animation.fillMode;
+  if(animation.fillMode!==FILL_MODE.KEEP){
+    animation.finalize();
+    if(fillMode===FILL_MODE.SNAPSHOT)
+      animation.cancelStyle=FlipScope.global.immediate(animation.lastStyleText());
+  }
+}
 function renderAnimation(ani,state){
+  var styleStack=state.styleStack;
   state.animation = ani;
-  state.styleStack.push(updateAnimationCssProxies(ani));
+  styleStack.push.apply(styleStack,renderAnimationCssProxies(ani));
   ani.emit(EVENT_RENDER, state);
   if(ani._finished)
     ani.emit(EVENT_FINISH,state);
@@ -1951,28 +1970,26 @@ function updateAnimationParam(animation){
     cur[key]=isFunc(value)? value(p,cur):(isNaN(value)?value:p*value);
   });
 }
-function updateAnimationCssProxies(animation){
-  var cssProxyMap=animation._cssMap,param=animation.current,proxies,results,retMap={},animationSelector=animation.selector;
-  objForEach(animation._cssCallback,function(cbs,selector){
-    proxies=cssProxyMap[selector];
-    retMap[selector.replace(/&/g,animationSelector)]=results=[];
-    cbs.forEach(function(cb,i){results.push(resolveCss(cb,animation,proxies[i],param)); });
+function renderAnimationCssProxies(animation,noUpdate){
+  var param=animation.current,results=[],body,animationSelector=animation.selector;
+  objForEach(animation._cssHandlerMap,function(cbs,selector){
+    body=cbs.map(function(handler){return resolveCss(handler.cb,handler.proxy,animation,param,noUpdate).$toCachedCssString(true)});
+    results.push(combineStyleText(selector.replace(/&/g,animationSelector),body.join(';')));
   });
-  return retMap;
+  return results;
 }
-function resolveCss(rule,thisObj,cssProxy,e){
-  var ret=cssProxy;
-  if(isObj(rule))
-    ret.$merge(rule);
-  else if(isFunc(rule))
-    ret=rule.apply(thisObj,[ret,e])||ret;
-  return ret;
+function resolveCss(callbackOrRuleObj,cssProxy,thisObj,e,noUpdate){
+  if(!noUpdate){
+    if(isObj(callbackOrRuleObj))
+      cssProxy.$merge(callbackOrRuleObj);
+    else if(isFunc(callbackOrRuleObj))
+      callbackOrRuleObj.apply(thisObj||cssProxy,[cssProxy,e]);
+    else if(isStr(callbackOrRuleObj))
+      parseCssText(callbackOrRuleObj,cssProxy);
+  }
+  return cssProxy;
 }
-function addMap(key,Map,cb){
-  var cbs=Map[key];
-  if(!cbs)Map[key]=[cb];
-  else arrAdd(cbs,cb);
-}
+
 Flip.RenderGlobal = RenderGlobal;
 function RenderGlobal(opt) {
   if(!(this instanceof RenderGlobal))return new RenderGlobal(opt);
@@ -1980,7 +1997,7 @@ function RenderGlobal(opt) {
   this._tasks = {};
   this._defaultTaskName=opt.defaultTaskName;
   this._invalid=true;
-  this._persistStyles={};
+  this._persistIndies=[];
   this._persistElement=Flip.ele({tagName:'style',attributes:{'data-flip':'frame'}});
   this._styleElement=Flip.ele({tagName:'style',attributes:{'data-flip':'persist'}});
 }
@@ -2018,17 +2035,24 @@ inherit(RenderGlobal, Flip.util.Object, {
   },
   immediate:function(style){
     if(!style)return noop;
-    var styles=this._persistStyles,uid=nextUid('immediateStyle'),self=this,cancel;
-    styles[uid]=style;
-    cancel=function cancelImmediate(){
-      var style=styles[uid];
-      delete styles[uid];
-      self._persistStyle=false;
-      return style;
-    };
-    cancel.id=uid;
-    this._persistStyle=false;
+    var styleSheet=this._persistElement.sheet,indies=this._persistIndies,index;
+    if(indies.length){
+      index=indies.pop();
+      styleSheet.deleteRule(index);
+    }
+    else
+      index=styleSheet.rules.length;
+    styleSheet.insertRule(style,index);
     return cancel;
+    function cancel(){
+      if(styleSheet){
+        styleSheet.deleteRule(index);
+        styleSheet.insertRule('*{}',index);
+        styleSheet=null;
+        indies.push(index);
+        return !(index=-1)+1;
+      }
+    }
   },
   refresh:function(){
     this._foreceRender=true;
@@ -2055,13 +2079,6 @@ inherit(RenderGlobal, Flip.util.Object, {
     loopGlobal(this);
     window.requestAnimationFrame(this.loop.bind(this), element||window.document.body);
   },
-  apply:function(){
-    if(!this._persistStyle){
-      var i= 0,sheet=this._persistElement.sheet;
-      objForEach(this._persistStyles,function(cssText){sheet.insertRule(cssText,i++)});
-      this._persistStyle=true;
-    }
-  },
   createRenderState: function () {
     return {global: this, task:null,styleStack:[],forceRender:this._foreceRender}
   }
@@ -2069,6 +2086,33 @@ inherit(RenderGlobal, Flip.util.Object, {
 FlipScope.global = new RenderGlobal();
 
 
+function TimeLine(task) {
+  this.last = this.now = this._stopTime = 0;
+  this._startTime = this._lastStop = Date.now();
+  this.task = task;
+  this._isStop = true;
+}
+inherit(TimeLine, Flip.util.Object, {
+  ticksPerSecond: 1000,
+  stop: function () {
+    if (!this._isStop) {
+      this._isStop = true;
+      this._lastStop = Date.now();
+    }
+  },
+  start: function () {
+    if (this._isStop) {
+      this._isStop = false;
+      this._stopTime += Date.now() - this._lastStop;
+    }
+  },
+  move: function () {
+    if (!this._isStop) {
+      this.last = this.now;
+      this.now = Date.now() - this._startTime - this._stopTime;
+    }
+  }
+});
 var nextUid=(function(map){
   return function (type){
     if(!map[type])map[type]=1;

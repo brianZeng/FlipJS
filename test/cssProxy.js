@@ -1,7 +1,7 @@
 /**
  * Created by Administrator on 2015/10/27.
  */
-fdescribe('Css Proxy test',function(){
+describe('Css Proxy test',function(){
   var proxy;
   beforeEach(function () {
     proxy=new Flip.CssProxy();

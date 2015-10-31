@@ -61,11 +61,63 @@ Flip.fallback = function (window) {
     }, Array.prototype)
   }
 };
+/**
+ * set css style immediately,you can cancel it later
+ * @memberof Flip
+ * @returns {function} cancel the css style
+ * @example
+ * var cancel=Flip.css('.content',{
+ *  width:document.documentElement.clientWidth+'px',
+ *  height:document.documentElement.clientHeight+'px'
+ * });
+ *  //cancel the style 2s later
+ *  setTimeout(cancel,2000);
+ *  // you can pass multiple style rules
+ *  Flip.css({
+ *    body:{
+ *      margin:0
+ *    },
+ *    '.danger':{
+ *       color:'red',
+ *       borderColor:'orange'
+ *    }
+ *  })
+ */
+Flip.css=function(selector,rule){
+  return setDefaultImmediateStyle('css',selector,rule);
+};
+Flip.parseCssText=parseCssText;
+Flip.parseStyleText=parseStyleText;
+function setDefaultImmediateStyle(property,selector,rule){
+  var _cancel,ani={_cssHandlerMap:{},selector:isStr(selector)?selector:''};
+  Animation.prototype[property].apply(ani,[selector,rule]);
+  Flip(function () {
+    var style=renderAnimationCssProxies(ani);
+    _cancel=Flip.instance.immediate(style);
+  });
+  return cancel;
+  function cancel(){
+    if(_cancel){
+      ani=null;
+      return _cancel();
+    }
+  }
+}
+/**
+ * set transform style immediately
+ * @memberof Flip
+ * @returns {function} cancel the css style
+ * @example
+ * Flip.transform('.scale',Flip.Mat3().scale(0.5))
+ */
+Flip.transform=function(selector,rule){
+  return setDefaultImmediateStyle('transform',selector,rule);
+};
 var EVENT_FRAME_START='frameStart',EVENT_UPDATE='update',EVENT_FRAME_END='frameEnd',EVENT_RENDER_START='renderStart',EVENT_RENDER_END='renderEnd';
 /**
  * @typedef  AnimationOptions
  * @type {Object}
- * @property {?string} [type] a registered animation name
+ * @property {?string} [animationName] a registered animation name
  * @property {?string} [selector='']  css selector to apply animation
  * @property {?boolean}[fillMode] if set true the css and transform will keep after animation finished
  * @property {?number} [duration=.7] animation duration (in second)

@@ -120,7 +120,7 @@ inherit(Animation,Render,
   param:function(key,value,immutable){
     if(isObj(key))
       cloneWithPro(key,this[value?'_immutable':'_variable']);
-    else if(typeof key==="string")
+    else if(isStr(key))
       this[immutable?'_immutable':'_variable'][key]=value;
     return this;
   },
@@ -380,7 +380,7 @@ function cloneWithPro(from,to){
  */
 function animate(opt) {
   if (isObj(opt))
-    var constructor = Flip.register[opt.animationType];
+    var constructor = Flip.register[opt.animationName];
   else
     throw Error('cannot construct an animation');
   if (!constructor)
@@ -400,70 +400,7 @@ function setAniEnv(aniOpt, animation) {
 };*/
 
 Flip.animate = animate;
-/**
- * set css style immediately,you can cancel it later
- * @param {string|AnimationCssOptions} selector
- * @param {?Object} rule
- * @memberof Flip
- * @returns {function} cancel the css style
- * @example
- * var cancel=Flip.css('.content',{
- *  width:document.documentElement.clientWidth+'px',
- *  height:document.documentElement.clientHeight+'px'
- * });
- *  //cancel the style 2s later
- *  setTimeout(cancel,2000);
- *  // you can pass multiple style rules
- *  Flip.css({
- *    body:{
- *      margin:0
- *    },
- *    '.danger':{
- *       color:'red',
- *       borderColor:'orange'
- *    }
- *  })
- */
-Flip.css=function(selector,rule){
-  var literal=[];
-  if(arguments.length==2)
-    resolve(rule,selector);
-  else if(isObj(selector))
-    objForEach(selector,resolve);
-  else throw Error('argument error');
-  return FlipScope.global.immediate(literal.join('\n'));
-  function resolve(rule,selector){
-    literal.push(combineStyleText(selector, resolveCss(rule,new CssProxy())));
-  }
-};
-/**
- * set transform style immediately
- * @param {string|AnimationTransformOptions} selector
- * @param {?Object|Flip.Mat3} rule
- * @memberof Flip
- * @returns {function} cancel the css style
- * @example
- * Flip.transform('.scale',Flip.Mat3().scale(0.5))
- */
-Flip.transform=function(selector,rule){
-  var matMap={},literal=[];
-  if(arguments.length==2)
-    warpMatrix(rule,selector);
-  else if(isObj(selector))
-    objForEach(selector,warpMatrix);
-  else throw Error('argument error');
-  objForEach(matMap,function(mat,selector){
-    literal.push(selector,'{','transform:'+mat,'}')
-  });
-  return FlipScope.global.immediate(literal.join('\n'));
-  function warpMatrix(val,selector){
-    var mat;
-    if(isFunc(val)) mat=val(mat=new Mat3())||mat;
-    else if(val instanceof Mat3) mat=val;
-    else mat=new Mat3(val);
-    matMap[selector]=mat;
-  }
-};
+
 Flip.register = (function () {
   function register(definition) {
     var beforeCallBase, name = definition.name, Constructor;

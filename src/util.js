@@ -62,11 +62,10 @@ function arrRemove(array, item) {
   return false;
 }
 function arrMapFun(func_ProName) {
-  var ct = typeof func_ProName;
-  if (ct === "string")return function (item) {
+  if (isStr(func_ProName))return function (item) {
     return item[func_ProName]
   };
-  else if (ct === "function")return func_ProName;
+  else if (isFunc(func_ProName))return func_ProName;
   return function (item) {
     return item
   };
@@ -76,7 +75,7 @@ array.add = arrAdd;
 array.first = arrFirst;
 function mapProName(proNameOrFun) {
   if (isFunc(proNameOrFun))return proNameOrFun;
-  else if (proNameOrFun && typeof proNameOrFun == "string")
+  else if (proNameOrFun && isStr(proNameOrFun))
     return function (item) {
       return item ? item[proNameOrFun] : undefined;
     };
@@ -135,7 +134,7 @@ function obj(from) {
     }, this);
 }
 function addEventListener(obj, evtName, handler) {
-  if (typeof evtName == "string" && evtName && isFunc(handler)) {
+  if (isStr(evtName) && evtName && isFunc(handler)) {
     if (!obj.hasOwnProperty(CALLBACK_PROPERTY_NAME))
       obj[CALLBACK_PROPERTY_NAME] = {};
     addMapArray(obj[CALLBACK_PROPERTY_NAME], evtName, handler);
@@ -215,7 +214,31 @@ function mixObj(){
 }
 function isFunc(value){return typeof value==="function"}
 function isObj(value){return (typeof value==="object") && value}
+function isStr(value){return typeof value==="string"}
 function noop(){}
+function parseStyleText(styleText){
+  var i=0,ret={},ruleStart,ruleEnd;
+  while((ruleStart=styleText.indexOf('{',i))>-1){
+    ruleEnd=styleText.indexOf('}',ruleStart);
+    addMapArray(
+        ret,
+        styleText.substring(i,ruleStart).trim(),
+        parseCssText(styleText.substring(ruleStart+1,ruleEnd))
+    );
+    i=ruleEnd+1;
+  }
+  return ret;
+}
+function parseCssText(cssText,target){
+  var ret=isObj(target)?target:{},pair;
+  cssText.split(';').forEach(function (rule) {
+    if(rule=rule.replace(/[\r\n\t\f\s]/g,'')){
+      pair=rule.split(':');
+      ret[pair[0]]=pair[1];
+    }
+  });
+  return ret;
+}
 if (typeof module !== "undefined" && module.exports)
   module.exports = Flip;
 else if(typeof define!=="undefined")define(function(){return Flip});
