@@ -1,4 +1,7 @@
-(function(){var FlipScope = {readyFuncs: []};
+(function(){var FlipScope = {
+  readyFuncs: [],
+  global:null
+};
 /**
  * construct an animation with {@link AnimationOptions} or invoke function until dom ready
  * @namespace Flip
@@ -79,11 +82,11 @@ Flip.fallback = function (window) {
  *  })
  */
 Flip.css=function(selector,rule){
-  return setDefaultImmediateStyle('css',selector,rule);
+  return Flip.instance.css(selector,rule)
 };
 Flip.parseCssText=parseCssText;
 Flip.parseStyleText=parseStyleText;
-function setDefaultImmediateStyle(property,selector,rule){
+/*function setDefaultImmediateStyle(property,selector,rule){
   var _cancel,ani={_cssHandlerMap:{},selector:isStr(selector)?selector:''};
   Animation.prototype[property].apply(ani,[selector,rule]);
   Flip(function () {
@@ -97,7 +100,7 @@ function setDefaultImmediateStyle(property,selector,rule){
       return _cancel();
     }
   }
-}
+}*/
 /**
  * set transform style immediately
  * @memberof Flip
@@ -106,7 +109,7 @@ function setDefaultImmediateStyle(property,selector,rule){
  * Flip.transform('.scale',Flip.Mat3().scale(0.5))
  */
 Flip.transform=function(selector,rule){
-  return setDefaultImmediateStyle('transform',selector,rule);
+  return Flip.instance.transform(selector,rule);
 };
 var EVENT_FRAME_START='frameStart',EVENT_UPDATE='update',EVENT_FRAME_END='frameEnd',EVENT_RENDER_START='renderStart',EVENT_RENDER_END='renderEnd';
 /**
@@ -1416,20 +1419,26 @@ Flip.EASE = Clock.EASE = (function () {
   Flip.$$ = $$;
   Flip.$=$;
   Flip.ele=createElement;
-  function createElement(tagNameOrOption){
-    var tagName=isObj(tagNameOrOption)? tagNameOrOption.tagName:tagNameOrOption,options=makeOptions(tagNameOrOption,{attributes:{}}),ele=document.createElement(tagName);
-    objForEach(options.attributes,function(val,name){ele.setAttribute(name,val)});
-    return ele;
+
+
+  if(document.readyState=='complete'){
+    setTimeout(ready,0);
   }
-  document.addEventListener('DOMContentLoaded', function () {
+  document.addEventListener('DOMContentLoaded', ready);
+  function ready() {
     var funcs=FlipScope.readyFuncs;
     FlipScope.global.init();
     FlipScope.readyFuncs = null;
     funcs.forEach(function (callback) {
       callback(Flip);
     });
-  });
+  }
 })(Flip);
+function createElement(tagNameOrOption){
+  var tagName=isObj(tagNameOrOption)? tagNameOrOption.tagName:tagNameOrOption,options=makeOptions(tagNameOrOption,{attributes:{}}),ele=document.createElement(tagName);
+  objForEach(options.attributes,function(val,name){ele.setAttribute(name,val)});
+  return ele;
+}
 
 function Mat3(arrayOrX1,y1,dx,x2,y2,dy){
   if(!(this instanceof Mat3))return new Mat3(arrayOrX1,y1,dx,x2,y2,dy);
@@ -1998,8 +2007,8 @@ function RenderGlobal(opt) {
   this._defaultTaskName=opt.defaultTaskName;
   this._invalid=true;
   this._persistIndies=[];
-  this._persistElement=Flip.ele({tagName:'style',attributes:{'data-flip':'frame'}});
-  this._styleElement=Flip.ele({tagName:'style',attributes:{'data-flip':'persist'}});
+  this._persistElement=createElement({tagName:'style',attributes:{'data-flip':'frame'}});
+  this._styleElement=createElement({tagName:'style',attributes:{'data-flip':'persist'}});
 }
 inherit(RenderGlobal, Flip.util.Object, {
   get defaultTask(){
@@ -2081,10 +2090,30 @@ inherit(RenderGlobal, Flip.util.Object, {
   },
   createRenderState: function () {
     return {global: this, task:null,styleStack:[],forceRender:this._foreceRender}
+  },
+  css:function(selector,rule){
+    return setDefaultImmediateStyle(this,'css',selector,rule)
+  },
+  transform:function(selector,rule){
+    return setDefaultImmediateStyle(this,'transform',selector,rule)
   }
 });
 FlipScope.global = new RenderGlobal();
-
+function setDefaultImmediateStyle(renderGlobal,property,selector,rule){
+  var _cancel,ani={_cssHandlerMap:{},selector:isStr(selector)?selector:''};
+  Animation.prototype[property].apply(ani,[selector,rule]);
+  Flip(function () {
+    var style=renderAnimationCssProxies(ani);
+    _cancel=renderGlobal.immediate(style);
+  });
+  return cancel;
+  function cancel(){
+    if(_cancel){
+      ani=null;
+      return _cancel();
+    }
+  }
+}
 
 function TimeLine(task) {
   this.last = this.now = this._stopTime = 0;

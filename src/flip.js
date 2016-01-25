@@ -3,7 +3,10 @@
  * @ignore
  * @type {{readyFuncs: Array}}
  */
-var FlipScope = {readyFuncs: []};
+var FlipScope = {
+  readyFuncs: [],
+  global:null
+};
 /**
  * construct an animation with {@link AnimationOptions} or invoke function until dom ready
  * @namespace Flip
@@ -84,25 +87,10 @@ Flip.fallback = function (window) {
  *  })
  */
 Flip.css=function(selector,rule){
-  return setDefaultImmediateStyle('css',selector,rule);
+  return Flip.instance.css(selector,rule)
 };
 Flip.parseCssText=parseCssText;
 Flip.parseStyleText=parseStyleText;
-function setDefaultImmediateStyle(property,selector,rule){
-  var _cancel,ani={_cssHandlerMap:{},selector:isStr(selector)?selector:''};
-  Animation.prototype[property].apply(ani,[selector,rule]);
-  Flip(function () {
-    var style=renderAnimationCssProxies(ani);
-    _cancel=Flip.instance.immediate(style);
-  });
-  return cancel;
-  function cancel(){
-    if(_cancel){
-      ani=null;
-      return _cancel();
-    }
-  }
-}
 /**
  * set transform style immediately
  * @memberof Flip
@@ -111,7 +99,7 @@ function setDefaultImmediateStyle(property,selector,rule){
  * Flip.transform('.scale',Flip.Mat3().scale(0.5))
  */
 Flip.transform=function(selector,rule){
-  return setDefaultImmediateStyle('transform',selector,rule);
+  return Flip.instance.transform(selector,rule);
 };
 var EVENT_FRAME_START='frameStart',EVENT_UPDATE='update',EVENT_FRAME_END='frameEnd',EVENT_RENDER_START='renderStart',EVENT_RENDER_END='renderEnd';
 /**

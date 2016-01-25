@@ -9,8 +9,8 @@ function RenderGlobal(opt) {
   this._defaultTaskName=opt.defaultTaskName;
   this._invalid=true;
   this._persistIndies=[];
-  this._persistElement=Flip.ele({tagName:'style',attributes:{'data-flip':'frame'}});
-  this._styleElement=Flip.ele({tagName:'style',attributes:{'data-flip':'persist'}});
+  this._persistElement=createElement({tagName:'style',attributes:{'data-flip':'frame'}});
+  this._styleElement=createElement({tagName:'style',attributes:{'data-flip':'persist'}});
 }
 inherit(RenderGlobal, Flip.util.Object, {
   get defaultTask(){
@@ -92,7 +92,27 @@ inherit(RenderGlobal, Flip.util.Object, {
   },
   createRenderState: function () {
     return {global: this, task:null,styleStack:[],forceRender:this._foreceRender}
+  },
+  css:function(selector,rule){
+    return setDefaultImmediateStyle(this,'css',selector,rule)
+  },
+  transform:function(selector,rule){
+    return setDefaultImmediateStyle(this,'transform',selector,rule)
   }
 });
 FlipScope.global = new RenderGlobal();
-
+function setDefaultImmediateStyle(renderGlobal,property,selector,rule){
+  var _cancel,ani={_cssHandlerMap:{},selector:isStr(selector)?selector:''};
+  Animation.prototype[property].apply(ani,[selector,rule]);
+  Flip(function () {
+    var style=renderAnimationCssProxies(ani);
+    _cancel=renderGlobal.immediate(style);
+  });
+  return cancel;
+  function cancel(){
+    if(_cancel){
+      ani=null;
+      return _cancel();
+    }
+  }
+}
