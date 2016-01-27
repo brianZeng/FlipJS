@@ -6,6 +6,7 @@ function Render(){
 inherit(Flip.Render=Render,Flip.util.Object,{
   update:function(){},
   render:function(){},
+  finalize:function(){},
   invalid:function(){
     var t,p;
     if(t=this._task) t.invalid();

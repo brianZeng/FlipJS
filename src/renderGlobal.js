@@ -8,9 +8,9 @@ function RenderGlobal(opt) {
   this._tasks = {};
   this._defaultTaskName=opt.defaultTaskName;
   this._invalid=true;
-  this._persistStyles={};
-  this._persistElement=Flip.ele({tagName:'style',attributes:{'data-flip':'frame'}});
-  this._styleElement=Flip.ele({tagName:'style',attributes:{'data-flip':'persist'}});
+  this._persistIndies=[];
+  this._persistElement=createElement({tagName:'style',attributes:{'data-flip':'frame'}});
+  this._styleElement=createElement({tagName:'style',attributes:{'data-flip':'persist'}});
 }
 inherit(RenderGlobal, Flip.util.Object, {
   get defaultTask(){
@@ -46,17 +46,24 @@ inherit(RenderGlobal, Flip.util.Object, {
   },
   immediate:function(style){
     if(!style)return noop;
-    var styles=this._persistStyles,uid=nextUid('immediateStyle'),self=this,cancel;
-    styles[uid]=style;
-    cancel=function cancelImmediate(){
-      var style=styles[uid];
-      delete styles[uid];
-      self._persistStyle=false;
-      return style;
-    };
-    cancel.id=uid;
-    this._persistStyle=false;
+    var styleSheet=this._persistElement.sheet,indies=this._persistIndies,index;
+    if(indies.length){
+      index=indies.pop();
+      styleSheet.deleteRule(index);
+    }
+    else
+      index=styleSheet.rules.length;
+    styleSheet.insertRule(style,index);
     return cancel;
+    function cancel(){
+      if(styleSheet){
+        styleSheet.deleteRule(index);
+        styleSheet.insertRule('*{}',index);
+        styleSheet=null;
+        indies.push(index);
+        return !(index=-1)+1;
+      }
+    }
   },
   refresh:function(){
     this._foreceRender=true;
@@ -83,16 +90,35 @@ inherit(RenderGlobal, Flip.util.Object, {
     loopGlobal(this);
     window.requestAnimationFrame(this.loop.bind(this), element||window.document.body);
   },
-  apply:function(){
-    if(!this._persistStyle){
-      var styles=this._persistStyles;
-      styleEleUseRules(this._persistElement,Object.getOwnPropertyNames(styles).map(function(key){return styles[key]}));
-      this._persistStyle=true;
+  createRenderState: function () {
+    return {
+      global: this,
+      task: null,
+      styleStack: [],
+      forceRender: this._foreceRender,
+      transformMap: {}
     }
   },
-  createRenderState: function () {
-    return {global: this, task:null,styleStack:[],forceRender:this._foreceRender}
+  css:function(selector,rule){
+    return setDefaultImmediateStyle(this,'css',selector,rule)
+  },
+  transform:function(selector,rule){
+    return setDefaultImmediateStyle(this,'transform',selector,rule)
   }
 });
 FlipScope.global = new RenderGlobal();
-
+function setDefaultImmediateStyle(renderGlobal,property,selector,rule){
+  var _cancel,ani={_cssHandlerMap:{},selector:isStr(selector)?selector:''};
+  Animation.prototype[property].apply(ani,[selector,rule]);
+  Flip(function () {
+    var style = renderAnimationCssProxies(ani).map(combineStyleText).join('');
+    _cancel=renderGlobal.immediate(style);
+  });
+  return cancel;
+  function cancel(){
+    if(_cancel){
+      ani=null;
+      return _cancel();
+    }
+  }
+}

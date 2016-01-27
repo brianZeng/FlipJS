@@ -9,7 +9,7 @@ describe('register animation:', function () {
       iteration:3
     });
     var ani=Flip.animate({
-      animationType:'test',
+      animationName:'test',
       selector:'ss',
       duration:2
     });
@@ -25,7 +25,8 @@ describe('register animation:', function () {
       }
     });
     var ani=Flip.animate({
-      animationType:'test',
+      selector: ".test-123",
+      animationName:'test',
       immutable:{
         s:3,a:2
       },
@@ -47,7 +48,8 @@ describe('register animation:', function () {
       transform:function(mat){}
     });
     var ani=Flip.animate({
-      animationType:'test',
+      selector: '.test-123',
+      animationName:'test',
       css:{
         '&':{
           fontSize:'32px'
@@ -57,7 +59,7 @@ describe('register animation:', function () {
         '&':function(mat){}
       }
     });
-    expect(ani._cssCallback['&'].length).toBe(2);
-    expect(ani._matCallback['&'].length).toBe(2);
+    expect(ani._cssHandlerMap['&'].length).toBe(2);
+    expect(ani._matHandlerMap['&'].length).toBe(2);
   })
 });

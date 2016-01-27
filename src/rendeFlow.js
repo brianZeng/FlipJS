@@ -11,7 +11,6 @@ function loopGlobal(global){
 function updateGlobal(global,state){
   state.global.emit(EVENT_UPDATE, [state,global]);
   objForEach(global._tasks,function(task){updateTask(task,state)});
-  global.apply();
 }
 function updateTask(task,state){
   if(!task.disabled){
@@ -34,13 +33,27 @@ function updateTask(task,state){
     }
   }
 }
+function resetStyleElement(styleElement){
+  var replaceNode=styleElement.cloneNode(false);
+  styleElement.parentNode.replaceChild(replaceNode,styleElement);
+  return replaceNode;
+}
 function renderGlobal(global,state){
   if(global._invalid||state.forceRender){
     objForEach(global._tasks,function(task){renderTask(task,state);});
-    styleEleUseRules(global._styleElement,state.styleStack);
-    FlipScope.forceRender=global._invalid=false;
+    var styleEle=global._styleElement=resetStyleElement(global._styleElement),styleSheet=styleEle.sheet;
+    state.styleStack.forEach(function (style, i){
+      styleSheet.addRule(style.selector, style.rules.join(';'), i)
+    });
+    var cssProxy = new CssProxy(), index = styleSheet.cssRules.length;
+    objForEach(state.transformMap, function (mat, selector){
+      cssProxy.$withPrefix('transform', mat + '');
+      styleSheet.addRule(selector, cssProxy.$toSafeCssString(), index++);
+    });
+    global._invalid=false;
   }
   objForEach(global._tasks,function(task){finalizeTask(task,state)});
+  global._forceRender=false;
 }
 function renderTask(task,state){
   if(!task.disabled){
@@ -71,19 +84,4 @@ function finalizeTask(task,state){
     });
   }
 }
-function finalizeAnimation(animation){
-  var fillMode=animation.fillMode;
-  if(animation.fillMode!==FILL_MODE.KEEP){
-    animation.finalize();
-    if(fillMode===FILL_MODE.SNAPSHOT)
-      animation.cancelStyle=FlipScope.global.immediate(animation.lastStyleRules.join('\n'));
-  }
-}
-function styleEleUseRules(style,rules,notClearRules){
-  var sheet=style.sheet,len=sheet.cssRules.length, i,rule;
-  if(!notClearRules)
-    while(len--)
-      sheet.deleteRule(0);
-  for(i=0,len=rules.length;i<len;i++)
-    (rule=rules[i])&&sheet.insertRule(rule,i);
-}
+

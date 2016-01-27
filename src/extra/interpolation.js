@@ -46,13 +46,8 @@ inherit(Interpolation, {
     return this.interpolateBySeg(this._findSegByT(t));
   },
   itor: function (opt) {
-    var interval, count, self = this;
-    opt = createProxy(opt);
-    count = opt.source('count') || 100;
-    opt('interval', 1 / count, 'when', function (t) {
-      return self.when(t);
-    });
-    return new InterItor(opt.result);
+    var self=this;
+    return new InterItor(makeOptions(opt,{count:100,interval:0,when:function(t){return self.when(t)}}));
   },
   calcPoint:function(){
     throw Error('must be implement by specific interpolation');
@@ -105,7 +100,7 @@ inherit(Interpolation, {
 });
 function InterItor(opt) {
   if (!(this instanceof InterItor))return new InterItor(opt);
-  var interval = opt.interval, t, curPoint, end;
+  var interval = opt.interval||(1/opt.count), t, curPoint, end;
   this.reset = function () {
     return end = t = 0;
   };

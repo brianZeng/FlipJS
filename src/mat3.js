@@ -149,11 +149,13 @@ Mat3.prototype={
    *
    * @param {number} angle
    * @param {boolean}[horizontal]
+   * @param {number} [ratio=1]
    * @returns {Flip.Mat3} itself
    */
-  flip:function(angle,horizontal){
+  flip:function(angle,horizontal,ratio){
     var sinA = sin(angle), cosA = cos(angle);
-    return multiplyMat(this,horizontal?[1,0,0,-sinA,cosA,0,0,0,1]:[cosA,sinA,0,0,1,0,0,0,1]);
+    ratio=ratio||.6;
+    return multiplyMat(this,horizontal?[1,0,0,-sinA*ratio,cosA,0,0,0,1]:[cosA,sinA*ratio,0,0,1,0,0,0,1]);
   },
   /**
    *

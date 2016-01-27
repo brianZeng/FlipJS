@@ -3,6 +3,7 @@
  */
 describe('Construct Animation:', function () {
   var global=Flip.instance,task=global.defaultTask;
+
   function now(){return Date.now()}
   function clamp(v,min,max){
     expect(v).toBeLessThan(max);
@@ -35,7 +36,6 @@ describe('Construct Animation:', function () {
       var ani = Flip.animate({duration: 0.2, range: 1, autoStart: true});
       ani.clock.once('update', function () {
         tickSpy();
-        console.log(arguments);
       });
       ani.clock.once('finish', function () {
         finishSpy(this.value);
@@ -62,7 +62,6 @@ describe('Construct Animation:', function () {
     }
     beforeEach(construct);
     function isNewAnimation(animation){
-      expect(animation.lastStyleRules).toBeFalsy();
       expect(animation._promise).toBeFalsy();
       expect(animation.finished).toBeFalsy();
       expect(animation.percent).toBe(0);
@@ -90,7 +89,7 @@ describe('Construct Animation:', function () {
       });
       ani.once('finish',function(){
         expect(ani.percent).toBe(1);
-        expect(ani.lastStyleRules.indexOf('width:100')).toBeGreaterThan(-1);
+        expect(ani.lastStyleText().indexOf('width:100')).toBeGreaterThan(-1);
         notCall=jasmine.createSpy();
         ani.once('finish',notCall);
       });
@@ -188,19 +187,22 @@ describe('Construct Animation:', function () {
     it('snapshot remove animation but add its last css style to global', function (done) {
       var ani=Flip.animate({duration:.1,
         fillMode:'snapshot',
+        selector:'a',
         once:{
         finalize:function(){
           expect(task._updateObjs).not.toContain(ani);
           expect(typeof ani.cancelStyle).toBe('function');
           done();
         }
-      },css:{color:'#ccc'}})
+      },
+        css:{color:'#ccc'}})
     })
   });
   describe('6.hold',function(){
     it('1.next animation will be delayed by hold property',function(done){
       var t;
       Flip.animate({
+        selector:'.test',
         duration:.5,
         hold:.5,
         on:{
@@ -227,15 +229,34 @@ describe('Construct Animation:', function () {
   })
 });
 describe('css function',function(){
+  function getAnimationCssProxy(animation,selector,index){
+    return animation._cssHandlerMap[selector][index];
+  }
   it('Flip.css setImmediate css style',function(){
+    var ele=Flip.instance._persistElement,rules=ele.sheet.rules,
+        rulesCount=rules.length;
     var cancel= Flip.css('a',{color:'red'});
-    expect(Flip.instance._persistStyles[cancel.id]).toBeTruthy();
+    expect(rules.length).toBe(rulesCount+1);
     cancel();
-    expect(Flip.instance._persistStyles[cancel.id]).toBeFalsy();
+    Flip.css('a',{color:'#000'});
+    expect(rules.length).toBe(rulesCount+1);
+  });
+  it('Flip.parseCssText', function () {
+    expect(Flip.parseCssText('width:10px')).toEqual({width:'10px'});
+    expect(Flip.parseCssText('\theight:10px; \f width:20px;\r')).toEqual({height:'10px',width:'20px'});
+  });
+  it('Flip.parseStyleText', function () {
+    expect(Flip.parseStyleText('a{width:10px}')).toEqual({a:[{width:'10px'}]});
+    expect(Flip.parseStyleText('a{width:10px} a{color:red}')).toEqual({
+      a:[{width:'10px'},{color:'red'}]});
+    expect(Flip.parseStyleText('a{width:20px} b{height:20px}')).toEqual({
+      a:[{width:'20px'}],b:[{height:'20px'}]
+    });
   });
   it('animation css overwrite and merge',function(done){
      var ani=Flip.animate({
-       duration:.5,selector:'a',
+       duration:.5,
+       selector:'a',
        css:{
          '&:hover':{
            background:'#fff'
@@ -243,9 +264,9 @@ describe('css function',function(){
        },
        once:{
          render:function(){
-           expect(this.lastStyleRules).toContain('background:#fff');
-           expect(this.lastStyleRules).toContain('border:none');
-           expect(this._cssMap['&'].color).toBe('red');
+           var style=Flip.parseStyleText(this.lastStyleText(''));
+           expect(style['a:hover'][0]).toEqual({background:'#fff',border:'none'});
+           expect(style.a[0]).toEqual({color:'red'});
            done();
          }
        }
