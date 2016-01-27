@@ -131,5 +131,9 @@ Flip.CssProxy = CssProxy;
   }
 })();
 function combineStyleText(selector,body){
+  if (isObj(selector)) {
+    body = selector.rules.join(';');
+    selector = selector.selector;
+  }
   return selector +'{'+body+'}';
 }

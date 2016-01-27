@@ -25,6 +25,7 @@ describe('register animation:', function () {
       }
     });
     var ani=Flip.animate({
+      selector: ".test-123",
       animationName:'test',
       immutable:{
         s:3,a:2
@@ -47,6 +48,7 @@ describe('register animation:', function () {
       transform:function(mat){}
     });
     var ani=Flip.animate({
+      selector: '.test-123',
       animationName:'test',
       css:{
         '&':{
@@ -57,6 +59,7 @@ describe('register animation:', function () {
         '&':function(mat){}
       }
     });
-    expect(ani._cssHandlerMap['&'].length).toBe(4);
+    expect(ani._cssHandlerMap['&'].length).toBe(2);
+    expect(ani._matHandlerMap['&'].length).toBe(2);
   })
 });

@@ -91,7 +91,13 @@ inherit(RenderGlobal, Flip.util.Object, {
     window.requestAnimationFrame(this.loop.bind(this), element||window.document.body);
   },
   createRenderState: function () {
-    return {global: this, task:null,styleStack:[],forceRender:this._foreceRender}
+    return {
+      global: this,
+      task: null,
+      styleStack: [],
+      forceRender: this._foreceRender,
+      transformMap: {}
+    }
   },
   css:function(selector,rule){
     return setDefaultImmediateStyle(this,'css',selector,rule)
@@ -105,7 +111,7 @@ function setDefaultImmediateStyle(renderGlobal,property,selector,rule){
   var _cancel,ani={_cssHandlerMap:{},selector:isStr(selector)?selector:''};
   Animation.prototype[property].apply(ani,[selector,rule]);
   Flip(function () {
-    var style=renderAnimationCssProxies(ani);
+    var style = renderAnimationCssProxies(ani).map(combineStyleText).join('');
     _cancel=renderGlobal.immediate(style);
   });
   return cancel;
