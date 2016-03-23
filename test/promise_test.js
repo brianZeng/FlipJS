@@ -1,7 +1,7 @@
 /**
  * Created by 柏子 on 2015/1/29.
  */
-xdescribe('promise test',function(){
+describe('promise test',function(){
   var Promise=Flip.Promise;
   beforeEach(function(){
     Promise.option({acceptAnimationOnly:false});
@@ -103,27 +103,60 @@ xdescribe('promise test',function(){
       expect(d).toBe('d');
       done();
     })
+  });
+  it('Promise.resolve', function (done) {
+    Promise.option({acceptAnimationOnly:false});
+    var promise=Promise.resolve('a').then(function(a){
+      expect(a).toBe('a');
+      return 'b';
+    });
+    promise.then(function (b) {
+      expect(b).toBe('b');
+      return 'c'
+    }).then(Promise.resolve('c')).then(function (c) {
+      expect(c).toBe('c');
+      done();
+    });
+  });
+  it('Promise.reject', function (done) {
+    Promise.option({acceptAnimationOnly:false});
+    var notCalled=jasmine.createSpy('not call');
+    var promise=Promise.reject('a').then(notCalled);
+    promise.then(notCalled,function (a) {
+      expect(a).toBe('a');
+      return 'b'
+    }).then(function (b) {
+      expect('b').toBe(b);
+      throw 'c';
+    }).then(notCalled, function (c) {
+      expect(c).toBe('c');
+      return 'd'
+    }).then(function (d) {
+      expect(d).toBe('d');
+      expect(notCalled).not.toHaveBeenCalled();
+      done();
+    });
   })
 });
 describe('animation promise',function(){
   var Promise=Flip.Promise;
-  it('1accept animation',function(done){
+  it('1.accept animation',function(done){
     var opt={
       selector:'*',duration:0.1
     },ani;
     ani=Flip.animate(opt);
     var d=Date.now();
-    ani.then({selector:'div',duration:0.2,animationType:'translate'}).
-      then({selector:'div',duration:0.2,animationType:'rotate'}).
+    ani.then({selector:'div',duration:0.2}).
+      then({selector:'div',duration:0.2}).
       then(function(){
         expect(Date.now()-d).toBeGreaterThan(400);
         done();
       });
     ani.start();
   });
-  it('2 animation::then accept array of animations',function(done){
+  it('2.animation::then accept array of animations',function(done){
     var ani=Flip.animate({selector:'div',duration:1}),now=Date.now();
-    ani.then([{selector:'div',duration:0.2,animationType:'flip'},{selector:'div',duration:0.5}]).
+    ani.then([{selector:'div',duration:0.2},{selector:'div',duration:0.5}]).
       then(function(ans){
         expect(ans.length).toBe(2);
         expect(ans.every(function(ani){return ani.finished})).toBe(true);
@@ -132,19 +165,33 @@ describe('animation promise',function(){
       });
     ani.start();
   });
-  it('3support continue with a promise',function(done){
-     var ani=Flip.animate({selector:'div',animationType:'rotate',duration:0.2});
+  it('3.support continue with a promise',function(done){
+     var ani=Flip.animate({selector:'div',duration:0.2});
     ani.then(function(){
       return Flip.Promise(function(resolve){
         setTimeout(function(){
-          resolve({selector:'div',animationType:'scale',duration:0.3})
+          resolve({selector:'#uni',duration:0.3})
         },500);
       });
     }).then(function(pre){
       expect(pre.finished).toBe(true);
-      expect(pre.type).toBe('scale');
+      expect(pre.selector).toBe('#uni');
       done();
     });
     ani.start();
+  });
+  it('4.digest other promise',function(done){
+    expect(typeof window.Promise).toBe('function');
+    expect(window.Promise).not.toBe(Promise);
+    Promise.option({acceptAnimationOnly:1,sync:0});
+    var last=Date.now();
+    Promise.digest(window.Promise.resolve({duration:.1})).then(function(animation){
+      expect(animation instanceof Flip.Animation).toBeTruthy();
+      expect(Date.now()-last).toBeGreaterThan(100);
+      done();
+    },function(){
+      expect(1).toBe(0);
+      done();
+    });
   })
 });

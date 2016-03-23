@@ -11,19 +11,30 @@ var config = {
     flip:{
       files:{
         'temp/flip_core.js':['src/flip.js','src/util.js','src/*.js'],
+        'temp/flip.js':'temp/flip_core.js',
         'temp/flip_basic.js':['temp/flip_core.js','src/animations/*.js'],
+        'temp/flip_cubic_interpolation.js':['temp/flip_core.js','src/extra/*.js','src/interpolation/cubic.js'],
         'temp/flip_extra.js':['temp/flip_core.js','src/animations/*.js','src/extra/*.js','src/interpolation/*.js'],
         'temp/flip_gl.js':['temp/flip_core.js','src/webgl/gl.js','src/webgl/base/GLRender.js','src/webgl/**/*.js'],
-        'bin/flip.js':'temp/flip_basic.js',
+        'bin/flip.js':'temp/flip.js',
+        'dist/flip.js':'bin/flip.js',
         'bin/flip_extra.js':'temp/flip_extra.js',
         'bin/flip_gl.js':'temp/flip_gl.js'
       },
       options:{
         process:function(src,path){
-          if(path.indexOf('temp')==0&&path!=='temp/flip_core.js')
-            return '(function(){*})();'.replace('*', src);
+         if(path.indexOf('temp')==0&&path!=='temp/flip_core.js')
+            return '(function(){'+src+'})();';
           return src;
         },
+        stripBanners:true
+      }
+    },
+    bower_flip:{
+      files:{
+        'dist/flip.js':'bin/flip.js'
+      },
+      options:{
         stripBanners:true
       }
     },
@@ -90,11 +101,12 @@ config.uglify = {
       'bin/flip_extra.min.js': 'bin/flip_extra.js'
     }
   },
-  atrk: {
-    files: {
-      "bin/atrk.min.js": "bin/atrk.js"
-    }, options: {
-      banner: '/* borian@vip.qq.com */'
+  bower_flip:{
+    files:{
+      'dist/flip.min.js':'dist/flip.js'
+    },
+    options:{
+      screwIE8:true
     }
   },
   editor:{
@@ -128,5 +140,6 @@ module.exports = function (grunt) {
   grunt.initConfig(config);
   grunt.registerTask('begin_editor',['concat:editor_test','concat:editor_ng','watch:editor_ng','watch:editor_test']);
   grunt.registerTask('con-ugly', ['concat', 'uglify:flip']);
+  grunt.registerTask('bower_publish',['concat:flip','concat:bower_flip','uglify:bower_flip']);
   //grunt.registerTask('con-flip',['concat:flipCore','concat:flipBasic','concat:flipExtra','concat:flip'])
 };

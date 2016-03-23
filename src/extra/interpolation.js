@@ -7,16 +7,20 @@ function Interpolation(opt) {
     var pts = opt.data, len = pts.length, xs = new Float32Array(len), ys = new Float32Array(len);
     for (var i = 0, p = pts[0]; i < len; p = pts[++i]) {
       //both p={x:0,y:0} or p=[0,0] are ok
-      xs[i] = GLVec.get(p,'x');
-      ys[i] = GLVec.get(p,'y');
+      xs[i] = Vec.get(p,'x');
+      ys[i] = Vec.get(p,'y');
     }
     this.axis = {x: xs, y: ys}
   }
   else {
-    if (pts = opt.x)this.axis = {x: new Float32Array(pts)};
-    else throw Error('the data of X axis not provided');
-    if (pts = opt.y)this.axis.y = new Float32Array(pts);
-    else throw Error('the data of Y axis not provided');
+    if (pts = opt.x)
+      this.axis = {x: new Float32Array(pts)};
+    else
+      throw Error('the data of X axis not provided');
+    if (pts = opt.y)
+      this.axis.y = new Float32Array(pts);
+    else
+      throw Error('the data of Y axis not provided');
   }
   this.init(opt);
 }
@@ -42,13 +46,8 @@ inherit(Interpolation, {
     return this.interpolateBySeg(this._findSegByT(t));
   },
   itor: function (opt) {
-    var interval, count, self = this;
-    opt = createProxy(opt);
-    count = opt.source('count') || 100;
-    opt('interval', 1 / count, 'when', function (t) {
-      return self.when(t);
-    });
-    return new InterItor(opt.result);
+    var self=this;
+    return new InterItor(makeOptions(opt,{count:100,interval:0,when:function(t){return self.when(t)}}));
   },
   calcPoint:function(){
     throw Error('must be implement by specific interpolation');
@@ -101,7 +100,7 @@ inherit(Interpolation, {
 });
 function InterItor(opt) {
   if (!(this instanceof InterItor))return new InterItor(opt);
-  var interval = opt.interval, t, curPoint, end;
+  var interval = opt.interval||(1/opt.count), t, curPoint, end;
   this.reset = function () {
     return end = t = 0;
   };
@@ -167,7 +166,7 @@ InterItor.prototype = {
       if (matLike instanceof Matrix)mat = matLike;
       else if (matLike instanceof Array)mat = Matrix.fromRows.apply(matLike, matLike);
       proto.calcPoint = function (vt, vx, vy) {
-        var pv = GLVec.multiMat(vt, mat);
+        var pv = Vec.multiMat(vt, mat);
         return {x: pv.dot(vx), y: pv.dot(vy)}
       }
     }

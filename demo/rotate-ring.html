@@ -2,7 +2,7 @@
 <html>
 <head lang="en">
     <meta charset="UTF-8">
-    <title></title>
+    <title>Animation Event Example</title>
     <style>
         .circle{
             border-radius: 50%;
@@ -11,7 +11,7 @@
             display: inline-block;
             left: 100px;
             top: 100px;
-            background-color: rgb(11, 176, 253);
+            background-color: rgb(170, 228, 254);;
             border: 1px solid transparent;
             position: absolute;
             transition: all ease-in-out 0.5s;
@@ -25,10 +25,10 @@
         main{
             width: 200px;
             height: 200px;
-            margin: 200px auto;
+            margin: 100px auto;
         }
         .shadow{
-            box-shadow: 0 0 4px 4px rgba(170, 228, 254,.7);
+            box-shadow: 0 0 4px 4px cornflowerblue;
             border-color:rgb(170, 228, 254);
         }
     </style>
@@ -43,42 +43,29 @@
 <script>
     Flip(function(){
        var p= document.querySelector('#ring'),num=parseInt(attr('num'))
-               ,rotate,radius=attr('radius'),color= attr('color'),className='shadow-compute';
-        for(var i= 0,circle,d=360/num;i<num;i++){
-            createChild(Flip.stringTemplate('rotate({1}deg) translate({2}px,0)',d*i,radius),'circle');
-        }
-        p.children[i=0].classList.add(className);
-        rotate=d;
+               ,rotate,radius=attr('radius'),color= attr('color'),className='shadow';
+        //we use css transition to play the animation,see the <style> tag in head
         Flip.animate({
             selector:'#ring',
             autoReverse:true,
             duration:0.5,
             ease:Flip.EASE.bounceInOut,
             infinite:1,
-            param:{
-              r:4
-            },
             on:{
                 reverse:function(){
                     p.children[i].classList.remove(className);
                 },
                 iterate:function(){
-                    if(++i>=num)i=0;
+                    if(++i>=num)i=0;//skip to next child element
                     p.children[i].classList.add(className);
                 }
-            },
-            css:{
-                '.shadow-js':{
-                    boxShadow:'0 0 4px 4px rgba(170, 228, 254,.7)',
-                    borderColor:'rgb(170, 228, 254)'
-                },
-                '.shadow-compute':function(css,cur){
-                    css.boxShadow=css.template('0 0 4px {1}px rgba(170, 228, 254,.7)',cur.r);
-                    css.borderColor='rgb(170, 228, 254)';
-                    css.transition='none';
-                }
             }
-        }).start();
+        });
+        for(var i= 0,circle,d=360/num;i<num;i++){
+            createChild(Flip.stringTemplate('rotate({1}deg) translate({2}px,0)',d*i,radius),'circle');
+        }
+        p.children[i=0].classList.add(className);
+
         function attr(name){
             return p.getAttribute('data-'+name)
         }

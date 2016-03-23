@@ -1,43 +1,19 @@
-/**
- * Created by 柏然 on 2014/12/12.
- */
-
-
-
 Flip.util = {Object: obj, Array: array, inherit: inherit};
-function createProxy(obj) {
-  var from, result = {}, func, objType = typeof obj;
-  if (objType == "function")from = obj.proxy;
-  else if (objType == "object") from = obj;
-  else from = {};
-  func = function () {
-    for (var i = 0, v, prop, value, len = arguments.length; i < len; i += 2) {
-      prop = arguments[i];
-      value = arguments[i + 1];
-      if (!from.hasOwnProperty(prop)) {
-        v = value;
-        delete from[prop];
-      }
-      else v = from[prop];
-      result[prop] = v;
-    }
-    if(len==1)
-      return v;
-  };
-  func.source = function () {
-    if (arguments.length == 1)return from[arguments[0]];
-    for (var i = 0, prop, len = arguments.length; i < len; i += 2) {
-      prop = arguments[i];
-      if (!from.hasOwnProperty(prop))from[prop] = arguments[i + 1];
-    }
-    return from[arguments[0]];
-  };
-  func.result = result;
-  func.proxy = from;
-  return func;
+var CALLBACK_PROPERTY_NAME='_callbacks';
+function makeOptions(opt,defaults){
+  var ret={};
+  opt=opt||{};
+  objForEach(defaults||{},function(value,key){
+    ret[key]=opt.hasOwnProperty(key)? opt[key]:value
+  });
+  return ret;
+}
+function useOptions(target,opt){
+  objForEach(opt,cloneFunc,target);
+  return target;
 }
 function inherit(constructor, baseproto, expando, propertyObj) {
-  if (typeof  baseproto == "function")baseproto = new baseproto();
+  if (isFunc(baseproto))baseproto = new baseproto();
   baseproto = baseproto || {};
   var proto = constructor.prototype = Object.create(baseproto), proDes;
   if (expando)
@@ -77,6 +53,7 @@ function arrSort(array, func_ProName, des) {
 function arrFirst(array, func_ProName) {
   for (var i = 0, item, len = array.length, compare = arrMapFun(func_ProName); i < len; i++)
     if (compare(item = array[i]))return item;
+  return void 0;
 }
 function arrRemove(array, item) {
   var i = array.indexOf(item);
@@ -85,29 +62,20 @@ function arrRemove(array, item) {
   return false;
 }
 function arrMapFun(func_ProName) {
-  var ct = typeof func_ProName;
-  if (ct === "string")return function (item) {
+  if (isStr(func_ProName))return function (item) {
     return item[func_ProName]
   };
-  else if (ct === "function")return func_ProName;
+  else if (isFunc(func_ProName))return func_ProName;
   return function (item) {
     return item
   };
 }
-/*function arrSameSeq(arr, func_ProName, des) {
-  if (arr.length == 1)return true;
-  var compare = arrMapFun(func_ProName);
-  des = !!des;
-  for (var i = 1, len = arr.length; i < len; i++)
-    if (des != (compare(arr[i]) < compare(arr[i - 1])))return false;
-  return true;
-}*/
 array.remove = arrRemove;
 array.add = arrAdd;
 array.first = arrFirst;
 function mapProName(proNameOrFun) {
-  if (typeof proNameOrFun == "function")return proNameOrFun;
-  else if (proNameOrFun && typeof proNameOrFun == "string")
+  if (isFunc(proNameOrFun))return proNameOrFun;
+  else if (proNameOrFun && isStr(proNameOrFun))
     return function (item) {
       return item ? item[proNameOrFun] : undefined;
     };
@@ -127,16 +95,12 @@ function arrFind(array, proNameOrFun, value, unstrict,index) {
   return undefined;
 }
 array.findBy = arrFind;
-function arrSafeFilter(array, filter, thisObj) {
-  var copy = array.slice();
-  if (thisObj == undefined)thisObj = array;
-  return copy.filter(filter, thisObj).filter(function (item) {
-    return array.indexOf(item) > -1;
-  }).concat(array.filter(function (item) {
-    return copy.indexOf(item) == -1;
-  }));
+function arrForEachThenFilter(arr,forEach,filter,thisObj){
+  var copy=arr.slice();
+  thisObj===void 0 && (thisObj=arr);
+  copy.forEach(forEach,thisObj);
+  return arr.filter(filter,thisObj);
 }
-array.safeFilter = arrSafeFilter;
 array.sort = arrSort;
 inherit(array, Array, {
   add: function (item) {
@@ -148,14 +112,17 @@ inherit(array, Array, {
   remove: function (item) {
     return arrRemove(this, item);
   },
-  safeFilter: function (callback, thisObj) {
-    return arrSafeFilter(this, callback, thisObj);
-  },
   first: function (func_proName) {
     return arrFirst(this, func_proName);
   }
 });
-
+function addMapArray(map, key, cb){
+  if(!map.hasOwnProperty(key))
+    map[key]=[cb];
+  else
+    arrAdd(map[key],cb);
+  return map;
+}
 function obj(from) {
   if (!(this instanceof obj))return new obj(from);
   if (typeof from === "object")
@@ -167,31 +134,31 @@ function obj(from) {
     }, this);
 }
 function addEventListener(obj, evtName, handler) {
-  if (typeof evtName == "string" && evtName && typeof handler == "function") {
-    var cbs, hs;
-    if (!obj.hasOwnProperty('_callbacks'))obj._callbacks = {};
-    cbs = obj._callbacks;
-    if (!(hs = cbs[evtName]))hs = cbs[evtName] = [];
-    arrAdd(hs, handler);
+  if (isStr(evtName) && evtName && isFunc(handler)) {
+    if (!obj.hasOwnProperty(CALLBACK_PROPERTY_NAME))
+      obj[CALLBACK_PROPERTY_NAME] = {};
+    addMapArray(obj[CALLBACK_PROPERTY_NAME], evtName, handler);
   }
   return obj;
 }
 obj.on = addEventListener;
 function emitEvent(obj, evtName, argArray, thisObj) {
-  var callbacks , handlers;
-  if (!(obj.hasOwnProperty('_callbacks')) || !(handlers = (callbacks = obj._callbacks)[evtName]))return false;
+  var callbacks , handlers,toRemove;
+  if (!(obj.hasOwnProperty(CALLBACK_PROPERTY_NAME)) || !(handlers = (callbacks = obj[CALLBACK_PROPERTY_NAME])[evtName]))return false;
   if (!argArray)argArray = [];
   else if (!(argArray instanceof Array)) argArray = [argArray];
   if (thisObj === undefined) thisObj = obj;
-  return (callbacks[evtName] = arrSafeFilter(handlers, function (call) {
-    return call.apply(thisObj, argArray) != -1;
-  })).length;
+  toRemove=[];
+  return (callbacks[evtName] = arrForEachThenFilter(handlers,evalHandler,function(handler){return toRemove.indexOf(handler)==-1})).length;
+  function evalHandler(handler){
+    handler.apply(thisObj,argArray)==-1 && toRemove.push(handler)
+  }
 }
 obj.emit = emitEvent;
 function removeEventListener(obj, evtName, handler) {
   var cbs, hs;
-  if (evtName === undefined)delete obj._callbacks;
-  else if ((cbs = obj._callbacks) && (hs = cbs[evtName]) && hs) {
+  if (evtName === undefined)delete obj[CALLBACK_PROPERTY_NAME];
+  else if ((cbs = obj[CALLBACK_PROPERTY_NAME]) && (hs = cbs[evtName]) && hs) {
     if (handler) array.remove(hs, handler);
     else delete cbs[evtName];
   }
@@ -199,7 +166,7 @@ function removeEventListener(obj, evtName, handler) {
 }
 obj.off = removeEventListener;
 function addEventListenerOnce(obj, evtName, handler) {
-  if (typeof handler == "function")
+  if (isFunc(handler))
     obj.on(evtName, function () {
       handler.apply(obj, arguments);
       return -1;
@@ -247,7 +214,31 @@ function mixObj(){
 }
 function isFunc(value){return typeof value==="function"}
 function isObj(value){return (typeof value==="object") && value}
+function isStr(value){return typeof value==="string"}
 function noop(){}
+function parseStyleText(styleText){
+  var i=0,ret={},ruleStart,ruleEnd;
+  while((ruleStart=styleText.indexOf('{',i))>-1){
+    ruleEnd=styleText.indexOf('}',ruleStart);
+    addMapArray(
+        ret,
+        styleText.substring(i,ruleStart).trim(),
+        parseCssText(styleText.substring(ruleStart+1,ruleEnd))
+    );
+    i=ruleEnd+1;
+  }
+  return ret;
+}
+function parseCssText(cssText,target){
+  var ret=isObj(target)?target:{},pair;
+  cssText.split(';').forEach(function (rule) {
+    if(rule=rule.replace(/[\r\n\t\f\s]/g,'')){
+      pair=rule.split(':');
+      ret[pair[0]]=pair[1];
+    }
+  });
+  return ret;
+}
 if (typeof module !== "undefined" && module.exports)
   module.exports = Flip;
 else if(typeof define!=="undefined")define(function(){return Flip});

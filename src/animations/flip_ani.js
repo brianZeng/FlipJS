@@ -1,7 +1,7 @@
 /**
  * Created by 柏然 on 2014/12/14.
  */
-Flip.animation({
+Flip.register({
   name: 'flip',
   immutable:{
     vertical:true
@@ -10,7 +10,7 @@ Flip.animation({
     angle: Math.PI
   },
   beforeCallBase: function (proxy) {
-    proxy.source('ease', Clock.EASE.sineInOut);
+    proxy.ease=proxy.ease|| Clock.EASE.sineInOut;
   },
   transform:function(mat,param){
     mat.flip(param.angle,!param.vertical);

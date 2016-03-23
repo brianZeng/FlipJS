@@ -3,19 +3,26 @@
  */
 describe('Construct Animation:', function () {
   var global=Flip.instance,task=global.defaultTask;
-  describe('1.Animation.createOptProxy:', function () {
+
+  function now(){return Date.now()}
+  function clamp(v,min,max){
+    expect(v).toBeLessThan(max);
+    expect(v).toBeGreaterThan(min);
+  }
+  function clampTime(millsec,base){
+    console.log( millsec=millsec/1000);
+    expect(millsec).not.toBeLessThan(base);
+    expect(millsec).toBeLessThan(base*1.15+20);
+  }
+  describe('1.Animation create', function () {
     it('proxy result contains .clock .elements', function () {
-      var proxy = Flip.Animation.createOptProxy({selector:'.NO_ELE', duration: 0.5, abc: 3,persistAfterFinished:3});
-      expect(proxy.result.duration).toBe(undefined);
-      expect(proxy.result.persistAfterFinished).toBe(3);
-      expect(Object.getOwnPropertyNames(proxy.result).length).toBe(3)
+      var opt={selector:'.NO_ELE', duration: 0.5, abc: 3,fillMode:'forever'},animation = new Flip.Animation(opt);
+      expect(animation.clock.duration).toBe(0.5);
+      expect(animation.fillMode).toBe('forever');
+      expect(animation.abc).toBe(undefined);
     });
   });
-  describe('2.use Flip.animation() to construct an animation:', function () {
-    it('1.first param can be animation type', function () {
-      var ani = Flip.animate('translate');
-      expect(ani instanceof Flip.Animation).toBeTruthy();
-    });
+  describe('2.use Flip.animate() to construct an animation:', function () {
     it('2.ease function set by name or ease',function(){
       var ani=Flip.animate({
         ease:Flip.EASE.backIn
@@ -24,14 +31,13 @@ describe('Construct Animation:', function () {
       ani.clock.ease='backInOut';
       expect(ani.clock.ease).toBe(Flip.EASE.backInOut);
     });
-    it('animation clock ticks when change:', function (done) {
+    it('animation clock update when change:', function (done) {
       var tickSpy = jasmine.createSpy('tick'), finishSpy = jasmine.createSpy('finish');
       var ani = Flip.animate({duration: 0.2, range: 1, autoStart: true});
-      ani.clock.once(Flip.Clock.EVENT_NAMES.TICK, function () {
+      ani.clock.once('update', function () {
         tickSpy();
-        console.log(arguments);
       });
-      ani.clock.once(Flip.Clock.EVENT_NAMES.FINISH, function () {
+      ani.clock.once('finish', function () {
         finishSpy(this.value);
         expect(tickSpy).toHaveBeenCalled();
         expect(finishSpy).toHaveBeenCalledWith(1);
@@ -56,7 +62,6 @@ describe('Construct Animation:', function () {
     }
     beforeEach(construct);
     function isNewAnimation(animation){
-      expect(animation.lastStyleRule).toBeFalsy();
       expect(animation._promise).toBeFalsy();
       expect(animation.finished).toBeFalsy();
       expect(animation.percent).toBe(0);
@@ -84,7 +89,7 @@ describe('Construct Animation:', function () {
       });
       ani.once('finish',function(){
         expect(ani.percent).toBe(1);
-        expect(ani.lastStyleRule.indexOf('width:100')).toBeGreaterThan(-1);
+        expect(ani.lastStyleText().indexOf('width:100')).toBeGreaterThan(-1);
         notCall=jasmine.createSpy();
         ani.once('finish',notCall);
       });
@@ -121,7 +126,6 @@ describe('Construct Animation:', function () {
       }).then(function(last){
         expect(last).toBe(ani);
         expect(Date.now()-t).toBeGreaterThan(400);
-        debugger;
         done();
       });
     });
@@ -145,18 +149,114 @@ describe('Construct Animation:', function () {
       })
     })
   });
-
+  describe('5.fillMode',function(){
+    var task=Flip.instance.defaultTask;
+    it('remove animation by default',function(done){
+      var ani=Flip.animate({duration:.1,
+        once:{
+          finalize:function(){
+            Flip.instance.once('frameEnd',function(){
+              expect(task._updateObjs).not.toContain(ani);
+              done();
+            })
+          }
+        }})
+    });
+    it('never remove if keep', function (done) {
+      var ani=Flip.animate({duration:.1,
+        fillMode:'keep',
+        once:{
+        finish:function(){
+          Flip.animate({duration:.1,once:{
+            init:function(){
+              expect(task._updateObjs).toContain(ani);
+            },
+            finalize:function(){
+              tick=0;
+              expect(task._updateObjs).toContain(ani);
+              task.remove(ani);
+            }
+          }});
+        },
+          finalize: function () {
+            expect(tick).toBe(0);
+            done();
+          }
+      }}),tick=5;
+    });
+    it('snapshot remove animation but add its last css style to global', function (done) {
+      var ani=Flip.animate({duration:.1,
+        fillMode:'snapshot',
+        selector:'a',
+        once:{
+        finalize:function(){
+          expect(task._updateObjs).not.toContain(ani);
+          expect(typeof ani.cancelStyle).toBe('function');
+          done();
+        }
+      },
+        css:{color:'#ccc'}})
+    })
+  });
+  describe('6.hold',function(){
+    it('1.next animation will be delayed by hold property',function(done){
+      var t;
+      Flip.animate({
+        selector:'.test',
+        duration:.5,
+        hold:.5,
+        on:{
+          start:function(){
+            t=now();
+          },
+          hold:function(){
+            clamp(now()-t,500,550);
+            expect(this.finished).toBe(false);
+          }
+        }
+      }).then({
+        duration:.1,
+        on:{
+          start:function(){
+            clamp(now()-t,1000,1100);
+          },
+          finish:function(){
+            done();
+          }
+        }
+      })
+    })
+  })
 });
 describe('css function',function(){
+  function getAnimationCssProxy(animation,selector,index){
+    return animation._cssHandlerMap[selector][index];
+  }
   it('Flip.css setImmediate css style',function(){
+    var ele=Flip.instance._persistElement,rules=ele.sheet.rules,
+        rulesCount=rules.length;
     var cancel= Flip.css('a',{color:'red'});
-    expect(Flip.instance._persistStyles[cancel.id]).toBeTruthy();
+    expect(rules.length).toBe(rulesCount+1);
     cancel();
-    expect(Flip.instance._persistStyles[cancel.id]).toBeFalsy();
+    Flip.css('a',{color:'#000'});
+    expect(rules.length).toBe(rulesCount+1);
+  });
+  it('Flip.parseCssText', function () {
+    expect(Flip.parseCssText('width:10px')).toEqual({width:'10px'});
+    expect(Flip.parseCssText('\theight:10px; \f width:20px;\r')).toEqual({height:'10px',width:'20px'});
+  });
+  it('Flip.parseStyleText', function () {
+    expect(Flip.parseStyleText('a{width:10px}')).toEqual({a:[{width:'10px'}]});
+    expect(Flip.parseStyleText('a{width:10px} a{color:red}')).toEqual({
+      a:[{width:'10px'},{color:'red'}]});
+    expect(Flip.parseStyleText('a{width:20px} b{height:20px}')).toEqual({
+      a:[{width:'20px'}],b:[{height:'20px'}]
+    });
   });
   it('animation css overwrite and merge',function(done){
      var ani=Flip.animate({
-       duration:.5,selector:'a',
+       duration:.5,
+       selector:'a',
        css:{
          '&:hover':{
            background:'#fff'
@@ -164,9 +264,9 @@ describe('css function',function(){
        },
        once:{
          render:function(){
-           expect(this.lastStyleRule).toContain('background:#fff');
-           expect(this.lastStyleRule).toContain('border:none');
-           expect(this._cssMap['&'].color).toBe('red');
+           var style=Flip.parseStyleText(this.lastStyleText(''));
+           expect(style['a:hover'][0]).toEqual({background:'#fff',border:'none'});
+           expect(style.a[0]).toEqual({color:'red'});
            done();
          }
        }

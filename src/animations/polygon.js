@@ -1,7 +1,7 @@
 /**
  * Created by Administrator on 2015/4/15.
  */
-Flip.animation({
+Flip.register({
   name:'polygon',
   variable:{
     rotateY:Math.PI*2,
@@ -20,7 +20,7 @@ Flip.animation({
     }
   },
   afterInit:function(proxy){
-    var imm=this._immutable, n=imm.faceCount,self=this,faceClass=proxy('faceClass')||'f';
+    var imm=this._immutable, n=imm.faceCount,self=this,faceClass=proxy.faceClass||'f';
     var faceRotate=Math.PI*2/ n,dz=-imm.faceWidth/2/Math.tan(faceRotate/2),rotateY=this._variable.rotateY|| 0,ryFunc,lastAngle,indices;
     ryFunc=typeof rotateY=="number"?function(p){return rotateY*p}:rotateY;
     for(var i=0;i<n;i++)
@@ -38,7 +38,7 @@ Flip.animation({
         return Math.round((num-min)/range*6);
       })
     });
-    Flip.$(proxy('selector')+'> *[class]').forEach(function(ele){
+    Flip.$(proxy.selector+'> *[class]').forEach(function(ele){
       ele.className+=' '+faceClass;
     });
     this.css('& .'+faceClass,{

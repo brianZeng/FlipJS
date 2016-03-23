@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>two sides card</title>
+    <script src="../dist/flip.js"></script>
+    <style>
+        .flip-card {
+            width: 200px;
+            height: 300px;
+            margin: 100px auto;
+        }
+    </style>
+</head>
+<body>
+<div class='flip-card'>
+    <img class='front-side' src="../images/card-front.jpg">
+    <img class='back-side' src="../images/card-back.jpg">
+</div>
+<script>
+    Flip({
+        duration:1.6,
+        selector:'.flip-card',
+        infinite:true,
+        variable:{
+            rotation:Math.PI*2,
+            showFront:function(p){
+                return p<0.25 || p>0.75
+            }
+        },
+//'&' represents the animation selector
+        css:{
+            '&':{
+                position:'relative'
+            },
+            '& img':{
+                position:'absolute',
+                left:0,
+                top:0,
+                width:'100%',
+                height:'100%',
+                display:'block'
+            },
+            '& .front-side':function(css,param){
+                css.display=param.showFront? 'block':'none'
+            },
+            '& .back-side':function(css,param){
+                css.display=!param.showFront? 'block':'none'
+            }
+        },
+        transform:{
+            '& .front-side':function(mat,param){
+                if(param.showFront)//if it not show we don't need to compute its transform
+                    mat.flip(param.rotation)
+            },
+            '& .back-side':function(mat,param){
+                if(!param.showFront)
+                    mat.flip(param.rotation+Math.PI)
+            }
+        }
+    })
+</script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <script src="../dist/flip.js"></script>
+</head>
+<body>
+<div class='cubic'></div>
+<script>
+    Flip({
+        selector: '.cubic',
+        duration: 2,
+        transform: function (mat){
+            var p = this.percent;
+            mat.scale(p, p);
+        }
+    });
+    Flip({
+        selector:'.cubic',
+        infinite:true,
+        css:{
+            width:'100px',
+            height:'100px',
+            margin:'40px auto',
+            background:'red'
+        },
+        variable:{
+            rotation:Math.PI*2
+        },
+        transform:function(matrix,param){
+            matrix.flip(param.rotation)
+        }
+    });
+
+</script>
+</body>
+</html>

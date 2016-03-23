@@ -126,12 +126,11 @@ Mat3.prototype={
   },
   /**
    *
-   * @param {number} angleX
-   * @param {number} angleY
+   * @param {number} angle
    * @returns {Flip.Mat3} itself
    */
-  skew:function(angleX,angleY){
-    return multiplyMat(this,[1,tan(angleX),0,tan(angleY),1,0,0,1])
+  skew:function(angle){
+    return multiplyMat(this,[1,tan(angle),0,tan(angle||0),1,0,0,0,1])
   },
   transform:function(m11,m12,m21,m22,dx,dy){
     return multiplyMat(this,[m11,m21,0,m12,m22,0,dx||0,dy||0,1])
@@ -144,17 +143,19 @@ Mat3.prototype={
    * @returns {Flip.Mat3} itself
    */
   translate:function(x,y,z){
-    return multiplyMat(this,[1,0,0,0,1,0,x||0,y||0,z||0])
+    return multiplyMat(this,[1,0,0,0,1,0,x||0,y||0,defaultIfNaN(z,1)])
   },
   /**
    *
    * @param {number} angle
    * @param {boolean}[horizontal]
+   * @param {number} [ratio=1]
    * @returns {Flip.Mat3} itself
    */
-  flip:function(angle,horizontal){
+  flip:function(angle,horizontal,ratio){
     var sinA = sin(angle), cosA = cos(angle);
-    return multiplyMat(this,horizontal?[1,0,0,-sinA,cosA,0,0,0,1]:[cosA,sinA,0,0,1,0,0,0,1]);
+    ratio=ratio||.6;
+    return multiplyMat(this,horizontal?[1,0,0,-sinA*ratio,cosA,0,0,0,1]:[cosA,sinA*ratio,0,0,1,0,0,0,1]);
   },
   /**
    *
@@ -201,6 +202,7 @@ function multiplyMat(mat,other,reverse){
   else{
     a=other;
     b=out=mat.elements;
+
   }
    var a00 = a[0], a01 = a[1], a02 = a[2],
     a10 = a[3], a11 = a[4], a12 = a[5],

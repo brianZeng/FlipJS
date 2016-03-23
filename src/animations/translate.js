@@ -1,7 +1,7 @@
 /**
  * Created by 柏然 on 2014/12/13.
  */
-Flip.animation({
+Flip.register({
   name: 'translate',
   immutable:{sx:0,sy:0},
   variable: {

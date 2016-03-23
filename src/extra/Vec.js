@@ -33,8 +33,8 @@ Vec.multi = Vec.concat = function (v1, v2) {
 };
 Vec.get = function (vec, index) {
   if (isNaN(index))
-    if ('x' === index)return vec.hasOwnProperty('x') ? vec.x : vec[0];
-    else if ('y' === index) return vec.hasOwnProperty('y') ? vec.y : vec[1];
+    if ('x' === index)return 'x' in vec ? vec.x : vec[0];
+    else if ('y' === index) return 'y' in vec ? vec.y : vec[1];
     else return undefined;
   return vec[index];
 };

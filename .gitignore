@@ -2,11 +2,9 @@ node_modules
 .idea
 .git
 lib
-images
 plugin/ng
 plugin/test
 projectFilesBackup
 bower_components
 bin
-images
 temp

@@ -3,7 +3,10 @@
  * @ignore
  * @type {{readyFuncs: Array}}
  */
-var FlipScope = {readyFuncs: []};
+var FlipScope = {
+  readyFuncs: [],
+  global: null
+};
 /**
  * construct an animation with {@link AnimationOptions} or invoke function until dom ready
  * @namespace Flip
@@ -24,50 +27,97 @@ var FlipScope = {readyFuncs: []};
   *   }
  * });
  */
-function Flip (readyFuncOrAniOpt) {
+function Flip(readyFuncOrAniOpt){
   var func, readyFuncs = FlipScope.readyFuncs;
-  if(isObj(readyFuncOrAniOpt)) func=function(){animate(readyFuncOrAniOpt)};
-  else if(isFunc(readyFuncOrAniOpt)) func=readyFuncOrAniOpt;
-  else throw Error('argument should be an animation option or a function');
+  if (isObj(readyFuncOrAniOpt)) {
+    func = function (){
+      animate(readyFuncOrAniOpt)
+    };
+  } else if (isFunc(readyFuncOrAniOpt)) {
+    func = readyFuncOrAniOpt;
+  } else {
+    throw Error('argument should be an animation option or a function');
+  }
   readyFuncs ? arrAdd(FlipScope.readyFuncs, func) : func(Flip);
 }
-Object.defineProperty(Flip, 'instance', {get: function () {
-  return FlipScope.global;
-}});
-Flip.fallback = function (window) {
-  if (!window.requestAnimationFrame)
-  {
+Object.defineProperty(Flip, 'instance', {
+  get: function (){
+    return FlipScope.global;
+  }
+});
+Flip.fallback = function (window){
+  if (!window.requestAnimationFrame) {
     //IE9
-    window.requestAnimationFrame = function (callback) {
+    window.requestAnimationFrame = function (callback){
       setTimeout(callback, 30);
     };
-    Flip.Mat3.prototype.applyContext2D=function(ctx){
+    Flip.Mat3.prototype.applyContext2D = function (ctx){
       //there is a bug in IE9 ctx.apply
-      var eles=this.elements;
-      ctx.transform(eles[0],eles[1],eles[2],eles[3],eles[4],eles[5]);
+      var eles = this.elements;
+      ctx.transform(eles[0], eles[1], eles[2], eles[3], eles[4], eles[5]);
     }
   }
   if (!window.Float32Array) {
-    window.Float32Array = inherit(function (lengthOrArray) {
-      if (!(this instanceof arguments.callee))return new arguments.callee(lengthOrArray);
+    window.Float32Array = inherit(function (lengthOrArray){
+      if (!(this instanceof arguments.callee)) {
+        return new arguments.callee(lengthOrArray);
+      }
       var i = 0, from, len;
       if (typeof lengthOrArray === "number") {
         from = [0];
         len = lengthOrArray;
-      } else
+      } else {
         len = (from = lengthOrArray).length;
+      }
       for (i; i < len; i++)
         this[i] = from[i] || 0;
     }, Array.prototype)
   }
 };
-
+/**
+ * set css style immediately,you can cancel it later
+ * @memberof Flip
+ * @returns {function} cancel the css style
+ * @example
+ * var cancel=Flip.css('.content',{
+ *  width:document.documentElement.clientWidth+'px',
+ *  height:document.documentElement.clientHeight+'px'
+ * });
+ *  //cancel the style 2s later
+ *  setTimeout(cancel,2000);
+ *  // you can pass multiple style rules
+ *  Flip.css({
+ *    body:{
+ *      margin:0
+ *    },
+ *    '.danger':{
+ *       color:'red',
+ *       borderColor:'orange'
+ *    }
+ *  })
+ */
+Flip.css = function (selector, rule){
+  return Flip.instance.css(selector, rule)
+};
+Flip.parseCssText = parseCssText;
+Flip.parseStyleText = parseStyleText;
+/**
+ * set transform style immediately
+ * @memberof Flip
+ * @returns {function} cancel the css style
+ * @example
+ * Flip.transform('.scale',Flip.Mat3().scale(0.5))
+ */
+Flip.transform = function (selector, rule){
+  return Flip.instance.transform(selector, rule);
+};
+var EVENT_FRAME_START = 'frameStart', EVENT_UPDATE = 'update', EVENT_FRAME_END = 'frameEnd', EVENT_RENDER_START = 'renderStart', EVENT_RENDER_END = 'renderEnd';
 /**
  * @typedef  AnimationOptions
  * @type {Object}
- * @property {?string} [animationType] a registered animation name
+ * @property {?string} [animationName] a registered animation name
  * @property {?string} [selector='']  css selector to apply animation
- * @property {?boolean}[persistAfterFinished] if set true the css and transform will keep after animation finished
+ * @property {?boolean}[fillMode] if set true the css and transform will keep after animation finished
  * @property {?number} [duration=.7] animation duration (in second)
  * @property {?number} [iteration=1] how many times the animation will iterate
  * @property {?number} [delay=0] how many seconds it will begin after it starts
@@ -153,4 +203,4 @@ Flip.fallback = function (window) {
  * @callback cssUpdate
  * @param {CssProxy} css the {@link CssProxy} for update
  * @param {Object} param the calculation param
-*/
+ */

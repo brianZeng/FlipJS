@@ -35,7 +35,7 @@ Matrix.luSolve = function (L, U, B) {
   var n = L.row, Y, X;
   if (n !== L.col || n !== U.row || n !== U.col) throw Error('invalid dimensions in L U Matrix');
   Y = new Float32Array(n);
-  X = new GLVec(n);
+  X = new Vec(n);
   for (var i = 0, j; i < n; i++) {
     Y[i] = B[i];
     for (j = 0; j < i; j++)
@@ -115,7 +115,7 @@ inherit(Matrix, [], {
     var n = this.row, cols = new Array(n), B;
     if (n == this.col) {
       for (var i = 0; i < n; i++) {
-        B = new GLVec(n);
+        B = new Vec(n);
         B[i] = 1;
         cols[i] = this.solve(B);
       }
@@ -130,9 +130,9 @@ inherit(Matrix, [], {
     return mat;
   },
   multiVec: function (vec) {
-    var len, r = new GLVec(len = this.row);
+    var len, r = new Vec(len = this.row);
     for (var i = 0; i < len; i++)
-      r[i] = GLVec.dot(this[i], vec);
+      r[i] = Vec.dot(this[i], vec);
     return r;
   },
   multiMat: function (mat) {
@@ -149,7 +149,7 @@ inherit(Matrix, [], {
   multi: function (a) {
     if (typeof  a === "number")return this.dot(a);
     if (a instanceof Matrix)return this.multiMat(a);
-    if (a instanceof GLVec || a.length !== undefined)return this.multiVec(a);
+    if (a instanceof Vec || a.length !== undefined)return this.multiVec(a);
   },
   dot: function (a) {
     var mat = new Matrix(this);

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        .map {
+            background: url(../images/world_map.jpg);
+            margin: 100px auto;
+            background-size: cover;
+            width: 600px;
+            height: 395px;
+            position: relative;
+        }
+
+        .map span {
+            display: inline-block;
+            position: absolute;
+            color: #fff;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .point {
+            width: 6px;
+            height: 6px;
+            background: lightgreen;
+            border-radius: 50%;
+            position: absolute;
+            left: 0;
+            top: 0;
+            display: inline-block;
+        }
+    </style>
+    <script src="../dist/flip.js"></script>
+</head>
+<body>
+<div class="map">
+
+</div>
+<script>
+    Flip(function () {
+        var mapEle = document.querySelector('.map'), mapWidth = mapEle.clientWidth, mapHeight = mapEle.clientHeight, points = [], uid = 0;
+       // create the point
+        '0.12,0.3,A;.22,.6,B;.45,.5,C;.56,.22,D1;.68,.4,D2;.82,.72,D3;.91,.12,E'.split(';').forEach(function (tem) {createPoint.apply(null, tem.split(','))});
+
+        function travelOnce() {
+            return Flip.animate(travelAniOption(points[0], points[1])).//A->B
+                    then(travelAniOption(points[1], points[2])).//B->C
+                    then([
+                        travelAniOption(points[2], points[3], .5),
+                        travelAniOption(points[2], points[4], 1),
+                        travelAniOption(points[2], points[5], 1.2)
+                    ]).//C->D1,C->D2,C->D3
+                    then(travelAniOption(points[3], points[6], .5)).//D1->E
+                    then(travelAniOption(points[4], points[6]), .4).//D2->E
+                    then(travelAniOption(points[5], points[6]),.3); //D3->E
+        }
+        //when travel once ends,it call travelOnce again,thus make the loop infinite
+        function loop() {
+            return travelOnce().then(loop)
+        }
+        loop();
+        //returns an Animation Construct Options
+        //animation#then accept this option, convert it to another animation after last animation ends
+        function travelAniOption(from, to, duration) {
+            var point = document.createElement('span'), id = 'p' + uid++;
+            point.className = 'point';
+            point.id = id;
+            return {
+                selector: '#' + id,
+                duration: duration || 1.3,
+                immutable: {
+                    sx: +from[0], sy: +from[1]
+                },
+                variable: {
+                    dx: to[0] - from[0],
+                    dy: to[1] - from[1]
+                },
+                once: {
+                    init: function () {
+                        mapEle.appendChild(point)
+                    },
+                    finish: function () {
+                        mapEle.removeChild(point)
+                    }
+                },
+                transform: function (mat, param) {
+                    mat.translate((param.sx + param.dx) * mapWidth, (param.sy + param.dy) * mapHeight)
+                }
+            }
+        }
+
+        function createPoint(x, y, tag) {
+            var span = document.createElement('span');
+            span.innerHTML = tag;
+            span.style.left = mapWidth * x + 'px';
+            span.style.top = mapHeight * y + 'px';
+            mapEle.appendChild(span);
+            points.push([x, y, span]);
+            return span
+        }
+    });
+</script>
+</body>
+</html>

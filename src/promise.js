@@ -11,10 +11,12 @@
     this.then=opt.then;
     this.get=opt.get;
   }
+
   function castToPromise(value){
     if(value instanceof Animation)return value.promise;
-    else if(value instanceof Array)return Promise.all(value.map(castToPromise));
-    else if(likePromise(value))return value;
+    if(value instanceof Array)return Promise.all(value.map(castToPromise));
+    if(likePromise(value)) return value;
+    if(!strictRet)return warpPromiseValue(value);
     throw Error('cannot cast to promise');
   }
   function resolvePromise(future){
@@ -43,7 +45,8 @@
         catch (ex){
           return rejectPromise(ex);
         }
-      }
+      },
+      get: function (pro) {return pro ? reason[pro]:reason;}
     })
   }
 
@@ -92,14 +95,11 @@
     }
     return new Thenable({
       then:function(thenable,errorBack){
-        var _success=ensureThenable(thenable,function(v){return v}),
-          _fail=ensureThenable(errorBack,function(e){throw e});
-        if(resolvedPromise){
-          enqueue(function(){resolvedPromise.then(_success,_fail); });
-          return new Promise(function(resolver){resolvedPromise.then(resolver); })
-        }
+        var handler=[ensureThenable(thenable,function(v){return v}),ensureThenable(errorBack,function(e){throw e})];
+        if(resolvedPromise)
+          return warpPromiseValue(resolvedPromise.then.apply(resolvedPromise,handler))
         else{
-          pending.push([_success,_fail]);
+          pending.push(handler);
           return new Promise(function(resolve,reject){next(resolve,reject);})
         }
       },
@@ -116,7 +116,7 @@
     return def;
   }
   function acceptAnimation(obj){
-    var t,ani;
+    var t;
     if(strictRet){
       if(obj instanceof Animation)return obj._finished? obj:obj.promise;
       if((t=typeof obj)=="object"){
@@ -124,8 +124,7 @@
         else if(obj instanceof Array)
           return obj.map(acceptAnimation);
         else{
-          ani=Flip.animate(obj);
-          return ani.promise;
+          return Flip.animate(obj).promise;
         }
       }
       else if(typeof t==="function")
@@ -182,6 +181,22 @@
        defer.reject=rejector;
     });
     return defer;
+  };
+  Promise.resolve=warpPromiseValue;
+  function warpPromiseValue(any){
+     return Promise(function(resolve){
+       resolve(any);
+     })
+  }
+  Promise.reject=function(reason){
+    return Promise(function(resolve,reject){
+      reject(reason);
+    })
+  };
+  Promise.digest =function(thenable){
+    return Promise(function(resolve,reject){
+      thenable.then(resolve,reject);
+    })
   };
   Promise.option=function(opt){
     if(!opt)return;

@@ -1,11 +1,11 @@
 {
-  "name": "flip",
-  "version": "0.0.1",
+  "name": "flip-js",
+  "version": "0.0.2",
   "authors": [
-    "borian <borian@vip.qq.com>"
+    "bairan.zeng<borian@vip.qq.com>"
   ],
   "description": "javascript animation framework",
-  "main": "bin/flip.js",
+  "main": ["dist/flip.min.js","dist/flip.js"],
   "keywords": [
     "interpolation",
     "animation"
@@ -20,11 +20,11 @@
     "test.html",
     "images",
     "test",
-    "tests"
-  ],
-  "devDependencies": {
-    "angular": "~1.3.8",
-    "angular-mocks": "~1.3.8",
-    "jasmine": "~2.1.3"
-  }
+    "tests",
+    "src",
+    "demo",
+    "jsdoc",
+    "bin",
+    "*.js"
+  ]
 }

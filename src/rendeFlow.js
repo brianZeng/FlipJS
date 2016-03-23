@@ -3,46 +3,76 @@
  */
 function loopGlobal(global){
   var state = global.createRenderState();
-  global.emit(RenderGlobal.EVENT_NAMES.FRAME_START, [state]);
+  global.emit(EVENT_FRAME_START, [state]);
   updateGlobal(global,state);
   renderGlobal(global,state);
-  global.emit(RenderGlobal.EVENT_NAMES.FRAME_END, [state]);
+  global.emit(EVENT_FRAME_END, [state]);
 }
 function updateGlobal(global,state){
-  state.global.emit(RenderGlobal.EVENT_NAMES.UPDATE, [state,global]);
+  state.global.emit(EVENT_UPDATE, [state,global]);
   objForEach(global._tasks,function(task){updateTask(task,state)});
-  global.apply();
 }
 function updateTask(task,state){
   if(!task.disabled){
-    var updateParam = [state, state.task=task];
+    var components=task._updateObjs;
+    state.task=task;
     (state.timeline = task.timeline).move();
     task.update(state);
-    task.emit(RenderTask.EVENT_NAMES.UPDATE, updateParam);
-    task._updateObjs = arrSafeFilter(task._updateObjs, filterIUpdate, state);
+    task.emit(EVENT_UPDATE, state);
+    task._updateObjs=arrForEachThenFilter(components,updateComponent,isObj);
+    state.task=null;
   }
+  function updateComponent(item,index) {
+    if (!isObj(item))
+      components[index]=undefined;
+    else if(!item.disabled){
+      if (isFunc(item.update))
+        item.update(state);
+      else if (isFunc(item.emit))
+        item.emit(EVENT_UPDATE,state);
+    }
+  }
+}
+function resetStyleElement(styleElement){
+  var replaceNode=styleElement.cloneNode(false);
+  styleElement.parentNode.replaceChild(replaceNode,styleElement);
+  return replaceNode;
 }
 function renderGlobal(global,state){
   if(global._invalid||state.forceRender){
     objForEach(global._tasks,function(task){renderTask(task,state);});
-    global._styleElement.innerHTML=state.styleStack.join('\n');
-    FlipScope.forceRender=global._invalid=false;
+    var styleEle=global._styleElement=resetStyleElement(global._styleElement),styleSheet=styleEle.sheet;
+    state.styleStack.forEach(function (style, i){
+      styleSheet.addRule(style.selector, style.rules.join(';'), i)
+    });
+    var cssProxy = new CssProxy(), index = styleSheet.cssRules.length;
+    objForEach(state.transformMap, function (mat, selector){
+      cssProxy.$withPrefix('transform', mat + '');
+      styleSheet.addRule(selector, cssProxy.$toSafeCssString(), index++);
+    });
+    global._invalid=false;
   }
   objForEach(global._tasks,function(task){finalizeTask(task,state)});
+  global._forceRender=false;
 }
 function renderTask(task,state){
   if(!task.disabled){
-    var evtParam = [state, state.task=task];
+    state.task=task;
     if (task._invalid||state.forceRender) {
-      task.emit(RenderTask.EVENT_NAMES.RENDER_START, evtParam);
-      task._updateObjs.forEach(function (item) {if(isFunc(item.render)&&!item.disabled)item.render(state);});
+      task.emit(EVENT_RENDER_START, state);
+      task._updateObjs.forEach(function (item) {
+        if(isFunc(item.render)&&!item.disabled)
+          item.render(state);
+      });
       task._invalid = false;
     }
-    task.emit(RenderTask.EVENT_NAMES.RENDER_END, evtParam);
+    task.emit(EVENT_RENDER_END, state);
+    state.task=null;
   }
 }
 function finalizeTask(task,state){
   var taskItems=(state.task=task)._updateObjs,index,finItems=task._finalizeObjs;
+  task._finalizeObjs=[];
   if(finItems.length){
     task.invalid();
     finItems.forEach(function(item){
@@ -52,11 +82,6 @@ function finalizeTask(task,state){
         item._task=null;
       isObj(item)&&isFunc(item.finalize)&&item.finalize(state);
     });
-    task._finalizeObjs=[];
   }
 }
-function finalizeAnimation(animation){
-  if(!animation.persistAfterFinished){
-    animation.finalize();
-  }
-}
+
