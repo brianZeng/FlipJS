@@ -484,9 +484,9 @@ function useAniOption(animation){
   return animation;
 }
 function normalizeMapArgs(args){
-  var ret = {}, arg;
-  if (args.length == 2) {
-    ret[args[0]] = args[1];
+  var ret = {}, arg, key = args[0];
+  if (key != void 0 && (arg = args[1]) != void 0) {
+    ret[key] = arg;
   }
   else if (isFunc(arg = args[0]) || !hasNestedObj(arg)) {
     ret['&'] = arg;

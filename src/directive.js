@@ -13,8 +13,7 @@
   Flip.$=$;
   Flip.ele=createElement;
 
-
-  if(document.readyState=='complete'){
+  if (document.readyState !== 'loading') {
     setTimeout(ready,0);
   }
   document.addEventListener('DOMContentLoaded', ready);

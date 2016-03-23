@@ -107,7 +107,12 @@ Flip.transform = function (selector, rule){
   return Flip.instance.transform(selector, rule);
 };
 var EVENT_FRAME_START = 'frameStart', EVENT_UPDATE = 'update', EVENT_FRAME_END = 'frameEnd', EVENT_RENDER_START = 'renderStart', EVENT_RENDER_END = 'renderEnd';
-/**
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = Flip;
+  } else if (window) {
+    window.Flip = Flip;
+  }
+  /**
  * @typedef  AnimationOptions
  * @type {Object}
  * @property {?string} [animationName] a registered animation name
@@ -440,12 +445,7 @@ function parseCssText(cssText,target){
   });
   return ret;
 }
-if (typeof module !== "undefined" && module.exports)
-  module.exports = Flip;
-else if(typeof define!=="undefined")define(function(){return Flip});
-else if (window) {
-  window.Flip = Flip;
-}
+
 function CssProxy(obj) {
   if (!(this instanceof CssProxy))return new CssProxy(obj);
   this.$merge(obj);
@@ -1112,9 +1112,9 @@ function useAniOption(animation){
   return animation;
 }
 function normalizeMapArgs(args){
-  var ret = {}, arg;
-  if (args.length == 2) {
-    ret[args[0]] = args[1];
+  var ret = {}, arg, key = args[0];
+  if (key != void 0 && (arg = args[1]) != void 0) {
+    ret[key] = arg;
   }
   else if (isFunc(arg = args[0]) || !hasNestedObj(arg)) {
     ret['&'] = arg;
@@ -1462,8 +1462,7 @@ Flip.EASE = Clock.EASE = (function () {
   Flip.$=$;
   Flip.ele=createElement;
 
-
-  if(document.readyState=='complete'){
+  if (document.readyState !== 'loading') {
     setTimeout(ready,0);
   }
   document.addEventListener('DOMContentLoaded', ready);
@@ -2116,24 +2115,32 @@ inherit(RenderGlobal, Flip.util.Object, {
       return this.defaultTask.add(obj);
     return false;
   },
-  immediate:function(style){
-    if(!style)return noop;
-    var styleSheet=this._persistElement.sheet,indies=this._persistIndies,index;
-    if(indies.length){
-      index=indies.pop();
-      styleSheet.deleteRule(index);
-    }
-    else
-      index=styleSheet.rules.length;
-    styleSheet.insertRule(style,index);
+  immediate: function (){
+    var styleSheet = this._persistElement.sheet,
+      reusableIndies = this._persistIndies,
+      insertedIndices = [],
+      styles = arguments[0] instanceof Array ? arguments[0] : Array.prototype.slice.apply(arguments);
+    styles.forEach(function (style){
+      var currentIndex;
+      if (reusableIndies.length) {
+        currentIndex = reusableIndies.pop();
+        styleSheet.deleteRule(currentIndex);
+      }
+      else {
+        currentIndex = styleSheet.rules.length;
+      }
+      styleSheet.insertRule(style, currentIndex);
+      insertedIndices.push(currentIndex);
+    });
     return cancel;
     function cancel(){
       if(styleSheet){
-        styleSheet.deleteRule(index);
-        styleSheet.insertRule('*{}',index);
-        styleSheet=null;
-        indies.push(index);
-        return !(index=-1)+1;
+        insertedIndices.forEach(currentIndex=>{
+          styleSheet.deleteRule(currentIndex);
+          styleSheet.insertRule('*{}', currentIndex);
+          reusableIndies.push(currentIndex);
+        });
+        return !(styleSheet = null);
       }
     }
   },
@@ -2183,8 +2190,8 @@ function setDefaultImmediateStyle(renderGlobal,property,selector,rule){
   var _cancel,ani={_cssHandlerMap:{},selector:isStr(selector)?selector:''};
   Animation.prototype[property].apply(ani,[selector,rule]);
   Flip(function () {
-    var style = renderAnimationCssProxies(ani).map(combineStyleText).join('');
-    _cancel=renderGlobal.immediate(style);
+    var styles = renderAnimationCssProxies(ani).map(combineStyleText);
+    _cancel = renderGlobal.immediate.apply(renderGlobal, styles);
   });
   return cancel;
   function cancel(){
