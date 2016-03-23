@@ -15,12 +15,13 @@ function finalizeBinder(binder,state){
   })
 }
 function correlateBinder(ctrl,state){
-  var scene=state.glSecne,attributes=scene.attributes,uniforms=scene.uniforms,param,cvt,target=ctrl.binder;
+  var scene = state.glSecne, attributes = scene.attributes, uniforms = scene.uniforms, cvt, target = ctrl.binder;
   if(ctrl._invalidBinder){
     objForEach(target,function(binderOrFunc,key){
-      if(((param=attributes[key])&&!(param instanceof GLAttribute))||(param=uniforms[key])&&!(param instanceof GLUniform))
+      if ((attributes.hasOwnProperty(key) && !(target[key] instanceof GLAttribute)) ||
+        (uniforms.hasOwnProperty(key) && !(target[key] instanceof GLUniform)))
       {
-        cvt=target[key]=param.convert(binderOrFunc);
+        cvt = target[key] = (attributes[key] || uniforms[key]).convert(binderOrFunc);
         cvt._controller=ctrl;
       }
       else if(isFunc(binderOrFunc)){

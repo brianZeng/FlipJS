@@ -31,7 +31,7 @@ function checkSamplerSource(sampler,source){
   sampler._source=source;
   sampler.format=format;
 }
-GLSampler2D.prototype={
+Flip.util.inherit(GLSampler2D, GLUniform.prototype, {
   get textureIndex(){
     return this._texture._index
   },
@@ -39,8 +39,14 @@ GLSampler2D.prototype={
     checkSamplerSource(this,value);
     this._buffered=false;
   },
+  get value(){
+    return this.source;
+  },
   get source(){
     return this._source
+  },
+  set value(v){
+    this.source = v;
   },
   bind:function(gl,state){
     var entry=state.glParam[this.name];
@@ -66,6 +72,6 @@ GLSampler2D.prototype={
       else
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, null);
       this._buffered=true;
+    }
   }
-}
-};
+});

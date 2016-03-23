@@ -16,7 +16,7 @@ function updateGLRender(render,state){
 inherit(GLRender,Render.prototype,{
   get parent(){return this._parent},
   update:function(state){
-      updateGLRender(this,state);
+    updateGLRender(this, state);
     this._children.forEach(function (c){
         c.update(state)
       }
@@ -47,7 +47,9 @@ inherit(GLRender,Render.prototype,{
     return this
   },
   render:function(state){
-      useBinder(this.binder,state);
-      this._children.forEach(function(c){c.render(state)});
+    useBinder(this.binder, state);
+    this._children.forEach(function (c){
+      c.render(state)
+    });
   }
 });

@@ -346,9 +346,8 @@ function obj(from) {
 }
 function addEventListener(obj, evtName, handler) {
   if (isStr(evtName) && evtName && isFunc(handler)) {
-    if (!obj.hasOwnProperty(CALLBACK_PROPERTY_NAME)) {
+    if (!obj.hasOwnProperty(CALLBACK_PROPERTY_NAME))
       obj[CALLBACK_PROPERTY_NAME] = {};
-    }
     addMapArray(obj[CALLBACK_PROPERTY_NAME], evtName, handler);
   }
   return obj;
@@ -447,7 +446,7 @@ function noop(){}
         parseCssText(styleText.substring(ruleStart + 1, ruleEnd))
       );
       i = ruleEnd + 1;
-    }
+  }
     return ret;
   }
 
@@ -555,10 +554,10 @@ else if (window) {
       registerProperty(p, [key, /^(webkit|moz|o|ms)[A-Z]/.test(key) ? ('-' + lowerCaseKey) : lowerCaseKey], {
         get: getter,
         set: setter
-      });
+    });
       function getter(){
         return this[privateKey]
-      }
+    }
 
       function setter(val){
         var v = castInvalidValue(val);
@@ -566,7 +565,7 @@ else if (window) {
           this.$invalid = true;
           this[privateKey] = v;
         }
-      }
+    }
 
       return toLowerCssKey(key);
     });
@@ -587,7 +586,7 @@ else if (window) {
     function castInvalidValue(val){
       var type = typeof val;
       return type == 'string' || type == 'number' ? val : void  0;
-    }
+  }
 
     function toLowerCssKey(key){
       return key.replace(/[A-Z]/g, function (str){
@@ -646,14 +645,11 @@ inherit(RenderTask, Flip.util.Object, {
     if (obj._task) {
       throw Error('_task has been taken');
     }
-    if (type == 'update') {
+    if (type == 'update')
       return arrAdd(this._updateObjs, obj);
-    }
-    if (obj instanceof Clock || obj instanceof Render) {
-      if (arrAdd(this._updateObjs, obj)) {
+    if (obj instanceof Clock || obj instanceof Render)
+      if (arrAdd(this._updateObjs, obj))
         obj._task = this;
-      }
-    }
     this.invalid();
   },
   remove: function (obj) {
@@ -665,34 +661,6 @@ inherit(RenderTask, Flip.util.Object, {
   }
 });
 
-  function TimeLine(task){
-    this.last = this.now = this._stopTime = 0;
-    this._startTime = this._lastStop = Date.now();
-    this.task = task;
-    this._isStop = true;
-  }
-
-  inherit(TimeLine, Flip.util.Object, {
-    ticksPerSecond: 1000,
-    stop: function (){
-      if (!this._isStop) {
-        this._isStop = true;
-        this._lastStop = Date.now();
-      }
-    },
-    start: function (){
-      if (this._isStop) {
-        this._isStop = false;
-        this._stopTime += Date.now() - this._lastStop;
-      }
-    },
-    move: function (){
-      if (!this._isStop) {
-        this.last = this.now;
-        this.now = Date.now() - this._startTime - this._stopTime;
-      }
-    }
-  });
 /**
  * @namespace Flip.Animation
  * @param {AnimationOptions} opt
@@ -770,7 +738,7 @@ function Animation(opt){
       get elements(){
         return Flip.$(this.selector);
       },
-      /**
+    /**
      * mostly you don't need to call this manually
      * @alias Flip.Animation#init
      * @function
@@ -858,12 +826,12 @@ function Animation(opt){
           if (callback instanceof Mat3) {
             cb = function (mat){
               return mat.concat(callback);
-            }
+          }
           }
           else if (isFunc(callback)) {
             cb = function (mat, param){
               return callback.apply(this, [mat, param]) || mat;
-            }
+          }
           }
           else {
             throw Error('callback expect function or mat');
@@ -958,7 +926,7 @@ function Animation(opt){
         if (!this._canceled && !this._finished) {
           if (t = this._task) {
             this._ltName = t.name;
-          }
+        }
           this._canceled = true;
           this.emit(EVENT_CANCEL, evt);
           this.finalize();
@@ -1013,7 +981,7 @@ function Animation(opt){
       t.add(ani);
       } else {
       throw Error('please specify the render task for animation to restart');
-      }
+    }
     }
     return t;
 }
@@ -1300,20 +1268,19 @@ inherit(Clock, obj, {
         this.controller.cancel();
       }
       this.emit(EVENT_CANCEL);
-    }
+      }
   },
     finalize:function(){
       var task = this._task;
       if (task instanceof RenderTask)
         task.toFinalize(this);
-      else {
+      else
         this.emit(EVENT_FINALIZE);
-      }
     },
     update:function(state){
-      if (this.finished) {
+      if (this.finished)
         this.finalize();
-      } else {
+      else {
         updateClock(this, state);
       }
     }
@@ -1374,7 +1341,7 @@ function emitWithCtrl(clock,evtName,arg){
           else {
             return iterateClock();
           }
-        }
+      }
         else if (clock.autoReverse) {
           return iterateClock(clock.d = 1);
         } else {
@@ -1404,7 +1371,7 @@ function emitWithCtrl(clock,evtName,arg){
         emitWithCtrl(clock, EVENT_HOLD, state);
         return _updateClock(clock, state) || true;
       }
-    }
+  }
   }
 
   function reactiveClock(clock, now){
@@ -1544,7 +1511,6 @@ Flip.EASE = Clock.EASE = (function () {
   function $(slt, ele){
     return (ele || document).querySelector(slt)
   }
-
   Flip.$$ = $$;
   Flip.$ = $;
   Flip.ele = createElement;
@@ -2031,9 +1997,9 @@ function updateTask(task,state){
     if (!isObj(item)) {
       components[index] = undefined;
     } else if (!item.disabled) {
-      if (isFunc(item.update)) {
+      if (isFunc(item.update))
         item.update(state);
-      } else if (isFunc(item.emit)) {
+      else if (isFunc(item.emit)) {
         item.emit(EVENT_UPDATE, state);
       }
     }
@@ -2068,9 +2034,8 @@ function renderTask(task,state){
     if (task._invalid||state.forceRender) {
       task.emit(EVENT_RENDER_START, state);
       task._updateObjs.forEach(function (item){
-        if (isFunc(item.render) && !item.disabled) {
+        if (isFunc(item.render) && !item.disabled)
           item.render(state);
-        }
       });
       task._invalid = false;
     }
@@ -2116,8 +2081,8 @@ function finalizeTask(task,state){
       animation.finalize();
       if (fillMode === FILL_MODE.SNAPSHOT) {
         animation.cancelStyle = FlipScope.global.immediate(animation.lastStyleText());
-      }
     }
+  }
   }
 
   function renderAnimation(ani, state){
@@ -2145,7 +2110,7 @@ function updateAnimationParam(animation){
         selector: selector.replace(/&/g, animationSelector),
         rules: cbs.map(function (handler){
           return resolveCss(handler.cb, handler.proxy, animation, param, noUpdate).$toCachedCssString()
-        })
+      })
       })
   });
     return results;
@@ -2178,7 +2143,7 @@ function updateAnimationParam(animation){
         callbackOrRuleObj.apply(thisObj || cssProxy, [cssProxy, e]);
       } else if (isStr(callbackOrRuleObj)) {
         parseCssText(callbackOrRuleObj, cssProxy);
-      }
+    }
     }
     return cssProxy;
 }
@@ -2215,7 +2180,7 @@ function updateAnimationParam(animation){
         this.add(r)
     }
       return r;
-  },
+    },
     add: function (obj){
       var task, taskName, tasks;
       if (obj instanceof RenderTask) {
@@ -2233,7 +2198,7 @@ function updateAnimationParam(animation){
         return this.defaultTask.add(obj);
       }
       return false;
-    },
+  },
     immediate: function (style){
       if (!style) {
         return noop;
@@ -2250,12 +2215,12 @@ function updateAnimationParam(animation){
       return cancel;
       function cancel(){
         if (styleSheet) {
-          styleSheet.deleteRule(index);
+        styleSheet.deleteRule(index);
           styleSheet.insertRule('*{}', index);
           styleSheet = null;
           indies.push(index);
           return !(index = -1) + 1;
-        }
+      }
       }
   },
     refresh: function (){
@@ -2316,6 +2281,34 @@ function updateAnimationParam(animation){
   }
   }
 
+  function TimeLine(task){
+    this.last = this.now = this._stopTime = 0;
+    this._startTime = this._lastStop = Date.now();
+    this.task = task;
+    this._isStop = true;
+  }
+
+  inherit(TimeLine, Flip.util.Object, {
+    ticksPerSecond: 1000,
+    stop: function (){
+      if (!this._isStop) {
+        this._isStop = true;
+        this._lastStop = Date.now();
+    }
+    },
+    start: function (){
+      if (this._isStop) {
+        this._isStop = false;
+        this._stopTime += Date.now() - this._lastStop;
+      }
+    },
+    move: function (){
+      if (!this._isStop) {
+        this.last = this.now;
+        this.now = Date.now() - this._startTime - this._stopTime;
+      }
+    }
+  });
   var nextUid = (function (map){
     return function (type){
       if (!map[type]) {

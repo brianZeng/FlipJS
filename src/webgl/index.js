@@ -4,7 +4,7 @@
 Flip.GL={
   Scene:GLScene,
   Task:GLRenderTask,
-  Vector:GLVec,
+  // Vector:GLVec,
   Render:GLRender,
   Geometry: GLGeometry,
   Uniform: GLUniform,

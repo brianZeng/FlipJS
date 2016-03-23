@@ -52,14 +52,14 @@ UniformEntry.converter = {
   vec2: function (value){
     return new GLUniform({ name: this.name, value: convertToVec(value, 2) })
   },
-  mat4: function (gl, mat){
-    throw Error('not implement')
+  mat4: function (mat){
+    return convertMat(mat, 16);
   },
-  mat3: function (gl, mat){
-    throw Error('not implement')
+  mat3: function (mat){
+    return convertMat(mat, 9);
   },
-  mat2: function (gl, mat){
-    throw Error('not implement')
+  mat2: function (mat){
+    return convertMat(mat, 4);
   },
   float: function (val){
     return new GLUniform({ name: this.name, value: parseFloat(val) })
@@ -106,6 +106,24 @@ UniformEntry.setter = {
     gl.uniform1i(this._loc, i);
   }
 };
+function convertMat(mat, elementCount){
+  let elements;
+  if (mat instanceof GLUniform) {
+    return mat;
+  } else if (mat instanceof Float32Array) {
+    elements = new Float32Array(mat);
+  }
+  else if (mat instanceof Array) {
+    elements = new Float32Array(elementCount);
+    for (var i = 0; i < elementCount; i++) {
+      elements[i] = mat[i];
+    }
+  }
+  else {
+    throw Error('not support');
+  }
+  return { elements: elements }
+}
 UniformEntry.prototype = {
   use: function (gl, value){
     this.set(gl, value);
