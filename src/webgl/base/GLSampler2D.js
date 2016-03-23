@@ -25,7 +25,9 @@ function checkSamplerSource(sampler,source){
     format=WebGLRenderingContext.RGBA;
   else if(!source)
     format=0;
-  else throw Error('invalid source');
+  else {
+    throw Error('invalid source');
+  }
   sampler._source=source;
   sampler.format=format;
 }
@@ -36,7 +38,10 @@ GLSampler2D.prototype={
   set source(value){
     checkSamplerSource(this,value);
     this._buffered=false;
-  },get source(){return this._source},
+  },
+  get source(){
+    return this._source
+  },
   bind:function(gl,state){
     var entry=state.glParam[this.name];
     this.bufferData(gl);

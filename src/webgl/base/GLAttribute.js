@@ -14,9 +14,13 @@ GLAttribute.prototype={
     var ob=this._buffer;
     if(ob instanceof GLBuffer)
       ob.release(this);
-    if(v instanceof GLBuffer) this._buffer=v;
-    else if(v.length) this._buffer=new GLBuffer(v);
-    else throw Error('expect data array or GLBuffer');
+    if (v instanceof GLBuffer) {
+      this._buffer = v;
+    } else if (v && v.buffer instanceof ArrayBuffer) {
+      this._buffer = new GLBuffer(v);
+    } else {
+      throw Error('expect data array or GLBuffer');
+    }
     this._buffer.ref(this);
   },
   get buffer(){
@@ -27,8 +31,23 @@ GLAttribute.prototype={
     return b? b.data:null
   },
   set data(v){
-    var b=this.buffer;
-    b? b.data=v:this.buffer=v;
+    if (v instanceof GLBuffer) {
+      this.buffer = v;
+    }
+    else if (v.buffer instanceof ArrayBuffer) {
+      var b = this.buffer;
+      if (b) {
+        b.data = v;
+        b.invalid();
+      }
+      else {
+        this.buffer = new GLBuffer(v)
+      }
+    }
+    else {
+      throw Error();
+    }
+    this.invalid();
   },
   bind:function(gl,state){
     var entry=state.glParam[this.name];

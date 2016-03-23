@@ -31,15 +31,18 @@ function correlateBinder(ctrl,state){
   }
 }
 function addBinder(target,nameOrBinder,func){
-  if(isObj(nameOrBinder))objForEach(nameOrBinder,function(value,key){
-    add(key,value);
-  });
-  else add(nameOrBinder,func);
+  if (isObj(nameOrBinder) && !nameOrBinder.name) {
+    objForEach(nameOrBinder, function (value, key){
+      add(key, value);
+    });
+  } else {
+    add(nameOrBinder, func);
+  }
   return target;
   function add(nameOrBinder,func){
     if( typeof nameOrBinder==="string")
       target[nameOrBinder]=func;
-    else if(isObj(nameOrBinder)&&nameOrBinder.name)
+    else if (isObj(nameOrBinder) && nameOrBinder.name)
       target[nameOrBinder.name]=nameOrBinder;
     else throw Error('argument error');
   }

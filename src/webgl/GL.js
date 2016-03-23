@@ -6,5 +6,11 @@ Flip.GL={
   Task:GLRenderTask,
   Vector:GLVec,
   Render:GLRender,
-  Geometry:GLGeometry
+  Geometry: GLGeometry,
+  Uniform: GLUniform,
+  Attribute: GLAttribute,
+  Binder: GLBinder,
+  Sampler2D: GLSampler2D,
+  SamplerCube: GLSamplerCube,
+  Buffer: GLBuffer
 };

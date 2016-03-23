@@ -17,7 +17,10 @@ inherit(GLRender,Render.prototype,{
   get parent(){return this._parent},
   update:function(state){
       updateGLRender(this,state);
-      this._children.forEach(function(c){c.update(state)})
+    this._children.forEach(function (c){
+        c.update(state)
+      }
+    );
   },
   finalize:function(state){
     finalizeBinder(this.binder,state.glResMng);
@@ -29,7 +32,9 @@ inherit(GLRender,Render.prototype,{
         if(arrAdd(this._children,arg))
           arg._parent=this;
       }
-      else this.addBinder(arg);
+      else {
+        this.addBinder(arg);
+      }
     }
     this.invalid();
     return this;

@@ -47,7 +47,7 @@
 <body>
 <canvas id="cvs"></canvas>
 <canvas id="cvs2d"></canvas>
-<img src="../../../images/gao.jpg" id="img">
+<img src="./joker-comic.jpg" id="img">
 <script>
     function guassianWeight(x,y,sigma){
         var dev=1/2*sigma*sigma;
@@ -79,7 +79,7 @@
     Flip(function(){
         var scene=new Flip.GL.Scene({
             vertexSource:document.getElementById('vs').innerHTML,
-            fragSource:document.getElementById('fs').innerHTML.replace(/\$radius/gi,'10')
+            fragSource: document.getElementById('fs').innerHTML.replace(/\$radius/gi, '30')
         }),task=Flip.GL.Task({canvas:cvs,name:'gltest'}),img=document.querySelector('#img'),ctx=cvs2d.getContext('2d');
         if(img.complete)init();
         else
@@ -96,6 +96,7 @@
                 aVertex:[-1,1,1,1,-1,-1,1,-1],
                 sImg:ctx.getImageData(0,0,cvs2d.width,cvs2d.height)
             });
+
             scene.add(geo=new Flip.GL.Geometry({drawCount:4,drawMode:WebGLRenderingContext.TRIANGLE_STRIP}));
             geo.paint=function(){
                 Flip.GL.Geometry.prototype.paint.apply(geo,arguments);
