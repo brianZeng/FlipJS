@@ -13,7 +13,6 @@
   Flip.$=$;
   Flip.ele=createElement;
 
-
   if (document.readyState !== 'loading') {
     setTimeout(ready,0);
   }
