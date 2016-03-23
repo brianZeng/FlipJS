@@ -629,6 +629,34 @@ inherit(RenderTask, Flip.util.Object, {
   }
 });
 
+  function TimeLine(task) {
+    this.last = this.now = this._stopTime = 0;
+    this._startTime = this._lastStop = Date.now();
+    this.task = task;
+    this._isStop = true;
+  }
+
+  inherit(TimeLine, Flip.util.Object, {
+    ticksPerSecond: 1000,
+    stop: function () {
+      if (!this._isStop) {
+        this._isStop = true;
+        this._lastStop = Date.now();
+      }
+    },
+    start: function () {
+      if (this._isStop) {
+        this._isStop = false;
+        this._stopTime += Date.now() - this._lastStop;
+      }
+    },
+    move: function () {
+      if (!this._isStop) {
+        this.last = this.now;
+        this.now = Date.now() - this._startTime - this._stopTime;
+      }
+    }
+  });
 /**
  * @namespace Flip.Animation
  * @param {AnimationOptions} opt
@@ -1463,7 +1491,7 @@ Flip.EASE = Clock.EASE = (function () {
   Flip.ele=createElement;
 
 
-  if(document.readyState=='complete'){
+  if (document.readyState !== 'loading') {
     setTimeout(ready,0);
   }
   document.addEventListener('DOMContentLoaded', ready);
@@ -2195,33 +2223,6 @@ function setDefaultImmediateStyle(renderGlobal,property,selector,rule){
   }
 }
 
-function TimeLine(task) {
-  this.last = this.now = this._stopTime = 0;
-  this._startTime = this._lastStop = Date.now();
-  this.task = task;
-  this._isStop = true;
-}
-inherit(TimeLine, Flip.util.Object, {
-  ticksPerSecond: 1000,
-  stop: function () {
-    if (!this._isStop) {
-      this._isStop = true;
-      this._lastStop = Date.now();
-    }
-  },
-  start: function () {
-    if (this._isStop) {
-      this._isStop = false;
-      this._stopTime += Date.now() - this._lastStop;
-    }
-  },
-  move: function () {
-    if (!this._isStop) {
-      this.last = this.now;
-      this.now = Date.now() - this._startTime - this._stopTime;
-    }
-  }
-});
 var nextUid=(function(map){
   return function (type){
     if(!map[type])map[type]=1;
