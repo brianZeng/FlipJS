@@ -598,7 +598,7 @@ else if (window) {
       keys.forEach(function (key){
         Object.defineProperty(target, key, define);
       })
-    }
+  }
   })();
   function combineStyleText(selector, body){
     if (isObj(selector)) {
@@ -1341,7 +1341,7 @@ function emitWithCtrl(clock,evtName,arg){
           else {
             return iterateClock();
           }
-      }
+        }
         else if (clock.autoReverse) {
           return iterateClock(clock.d = 1);
         } else {
@@ -1370,7 +1370,7 @@ function emitWithCtrl(clock,evtName,arg){
         clock._status = CLOCK_STATUS_HOLDING;
         emitWithCtrl(clock, EVENT_HOLD, state);
         return _updateClock(clock, state) || true;
-      }
+    }
   }
   }
 
@@ -2300,13 +2300,13 @@ function updateAnimationParam(animation){
       if (this._isStop) {
         this._isStop = false;
         this._stopTime += Date.now() - this._lastStop;
-      }
+    }
     },
     move: function (){
       if (!this._isStop) {
         this.last = this.now;
         this.now = Date.now() - this._startTime - this._stopTime;
-      }
+    }
     }
   });
   var nextUid = (function (map){

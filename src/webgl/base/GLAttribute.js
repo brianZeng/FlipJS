@@ -9,11 +9,12 @@ function GLAttribute(name, bufferOrData, stride, offset) {
   this.buffer=bufferOrData;
   this._invalid = true;
 }
-GLAttribute.prototype={
+inherit(GLAttribute, GLBinder.prototype, {
   set buffer(v){
-    var ob=this._buffer;
-    if(ob instanceof GLBuffer)
+    var ob = this._buffer;
+    if (ob instanceof GLBuffer) {
       ob.release(this);
+    }
     if (v instanceof GLBuffer) {
       this._buffer = v;
     } else if (v && v.buffer instanceof ArrayBuffer) {
@@ -27,8 +28,8 @@ GLAttribute.prototype={
     return this._buffer;
   },
   get data(){
-    var b=this.buffer;
-    return b? b.data:null
+    var b = this.buffer;
+    return b ? b.data : null
   },
   set data(v){
     if (v instanceof GLBuffer) {
@@ -39,10 +40,10 @@ GLAttribute.prototype={
       if (b) {
         b.data = v;
         b.invalid();
-      }
+    }
       else {
         this.buffer = new GLBuffer(v)
-      }
+    }
     }
     else {
       throw Error();
@@ -61,7 +62,8 @@ GLAttribute.prototype={
     this.buffer.release(this);
     this.buffer.finalize(gl);
   }
-};
+  }
+);
 function AttributeEntry(type, loc,name) {
   var t;
   switch (type) {

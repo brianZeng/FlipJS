@@ -21,6 +21,7 @@ var config = {
           'src/webgl/base/GLRender.js',
           'src/webgl/base/GLBinder.js',
           'src/webgl/base/GLUniform.js',
+          'src/webgl/base/GLAttribute.js',
           'src/webgl/base/*.js'
         ],
         'bin/flip.js':'temp/flip.js',

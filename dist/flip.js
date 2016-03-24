@@ -2207,7 +2207,7 @@ function setDefaultImmediateStyle(renderGlobal,property,selector,rule){
       if (!this._isStop) {
         this._isStop = true;
         this._lastStop = Date.now();
-      }
+    }
     },
     start: function (){
       if (this._isStop) {
