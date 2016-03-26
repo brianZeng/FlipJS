@@ -47,12 +47,13 @@ function updateAnimationParam(animation){
 function renderAnimationCssProxies(animation, noUpdate){
   var param = animation.current, results = [], animationSelector = animation.selector;
   objForEach(animation._cssHandlerMap, function (cbs, selector){
-    results.push({
+    var result = {
       selector: selector.replace(/&/g, animationSelector),
       rules: cbs.map(function (handler){
         return resolveCss(handler.cb, handler.proxy, animation, param, noUpdate).$toCachedCssString()
       })
-    })
+    };
+    result.selector && results.push(result)
   });
   return results;
 }

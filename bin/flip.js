@@ -604,7 +604,7 @@ else if (window) {
     if (isObj(selector)) {
       body = selector.rules.join(';');
       selector = selector.selector;
-    }
+  }
     return selector + '{' + body + '}';
   }
 function Render(){
@@ -2014,15 +2014,19 @@ function updateTask(task,state){
 function renderGlobal(global,state){
   if(global._invalid||state.forceRender){
     objForEach(global._tasks,function(task){renderTask(task,state);});
-    var styleEle = global._styleElement = resetStyleElement(global._styleElement), styleSheet = styleEle.sheet;
-    state.styleStack.forEach(function (style, i){
-      styleSheet.addRule(style.selector, style.rules.join(';'), i)
-    });
-    var cssProxy = new CssProxy(), index = styleSheet.cssRules.length;
-    objForEach(state.transformMap, function (mat, selector){
-      cssProxy.$withPrefix('transform', mat + '');
-      styleSheet.addRule(selector, cssProxy.$toSafeCssString(), index++);
-    });
+    var styleStack = state.styleStack, transformMap = state.transformMap;
+    delete transformMap[""];
+    if (styleStack.length || Object.getOwnPropertyNames(transformMap).length) {
+      var styleEle = global._styleElement = resetStyleElement(global._styleElement), styleSheet = styleEle.sheet;
+      styleStack.forEach(function (style, i){
+        styleSheet.addRule(style.selector, style.rules.join(';'), i)
+      });
+      var cssProxy = new CssProxy(), index = styleSheet.cssRules.length;
+      objForEach(transformMap, function (mat, selector){
+        cssProxy.$withPrefix('transform', mat + '');
+        styleSheet.addRule(selector, cssProxy.$toSafeCssString(), index++);
+      });
+    }
     global._invalid = false;
   }
   objForEach(global._tasks,function(task){finalizeTask(task,state)});
@@ -2106,12 +2110,13 @@ function updateAnimationParam(animation){
   function renderAnimationCssProxies(animation, noUpdate){
     var param = animation.current, results = [], animationSelector = animation.selector;
     objForEach(animation._cssHandlerMap, function (cbs, selector){
-      results.push({
+      var result = {
         selector: selector.replace(/&/g, animationSelector),
         rules: cbs.map(function (handler){
           return resolveCss(handler.cb, handler.proxy, animation, param, noUpdate).$toCachedCssString()
       })
-      })
+      };
+      result.selector && results.push(result)
   });
     return results;
 }
@@ -2158,8 +2163,8 @@ function updateAnimationParam(animation){
     this._defaultTaskName = opt.defaultTaskName;
     this._invalid = true;
     this._persistIndies = [];
-    this._persistElement = createElement({ tagName: 'style', attributes: { 'data-flip': 'frame' } });
-    this._styleElement = createElement({ tagName: 'style', attributes: { 'data-flip': 'persist' } });
+    this._persistElement = createElement({ tagName: 'style', attributes: { 'data-flip': 'persist' } });
+    this._styleElement = createElement({ tagName: 'style', attributes: { 'data-flip': 'frame' } });
   }
 
   inherit(RenderGlobal, Flip.util.Object, {

@@ -9,8 +9,8 @@ function RenderGlobal(opt) {
   this._defaultTaskName=opt.defaultTaskName;
   this._invalid=true;
   this._persistIndies=[];
-  this._persistElement=createElement({tagName:'style',attributes:{'data-flip':'frame'}});
-  this._styleElement=createElement({tagName:'style',attributes:{'data-flip':'persist'}});
+  this._persistElement = createElement({ tagName: 'style', attributes: { 'data-flip': 'persist' } });
+  this._styleElement = createElement({ tagName: 'style', attributes: { 'data-flip': 'frame' } });
 }
 inherit(RenderGlobal, Flip.util.Object, {
   get defaultTask(){

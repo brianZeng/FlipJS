@@ -41,15 +41,19 @@ function resetStyleElement(styleElement){
 function renderGlobal(global,state){
   if(global._invalid||state.forceRender){
     objForEach(global._tasks,function(task){renderTask(task,state);});
-    var styleEle=global._styleElement=resetStyleElement(global._styleElement),styleSheet=styleEle.sheet;
-    state.styleStack.forEach(function (style, i){
-      styleSheet.addRule(style.selector, style.rules.join(';'), i)
-    });
-    var cssProxy = new CssProxy(), index = styleSheet.cssRules.length;
-    objForEach(state.transformMap, function (mat, selector){
-      cssProxy.$withPrefix('transform', mat + '');
-      styleSheet.addRule(selector, cssProxy.$toSafeCssString(), index++);
-    });
+    var styleStack = state.styleStack, transformMap = state.transformMap;
+    delete transformMap[""];
+    if (styleStack.length || Object.getOwnPropertyNames(transformMap).length) {
+      var styleEle = global._styleElement = resetStyleElement(global._styleElement), styleSheet = styleEle.sheet;
+      styleStack.forEach(function (style, i){
+        styleSheet.addRule(style.selector, style.rules.join(';'), i)
+      });
+      var cssProxy = new CssProxy(), index = styleSheet.cssRules.length;
+      objForEach(transformMap, function (mat, selector){
+        cssProxy.$withPrefix('transform', mat + '');
+        styleSheet.addRule(selector, cssProxy.$toSafeCssString(), index++);
+      });
+    }
     global._invalid=false;
   }
   objForEach(global._tasks,function(task){finalizeTask(task,state)});
