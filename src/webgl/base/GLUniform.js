@@ -107,7 +107,7 @@ UniformEntry.setter = {
   }
 };
 function convertMat(mat, elementCount){
-  let elements;
+  var elements;
   if (mat instanceof GLUniform) {
     return mat;
   } else if (mat instanceof Float32Array) {

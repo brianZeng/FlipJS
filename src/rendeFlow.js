@@ -42,7 +42,6 @@ function renderGlobal(global,state){
   if(global._invalid||state.forceRender){
     objForEach(global._tasks,function(task){renderTask(task,state);});
     var styleStack = state.styleStack, transformMap = state.transformMap;
-    delete transformMap[""];
     if (styleStack.length || Object.getOwnPropertyNames(transformMap).length) {
       var styleEle = global._styleElement = resetStyleElement(global._styleElement), styleSheet = styleEle.sheet;
       styleStack.forEach(function (style, i){

@@ -64,7 +64,9 @@ function renderAnimationTransform(animation, matCache){
     cbs.forEach(function (callback){
       mat = callback.call(animation, mat, param) || mat;
     });
-    matCache[globalSelector] = mat;
+    if (globalSelector) {
+      matCache[globalSelector] = mat;
+    }
   });
 }
 function getMat3BySelector(map, selector){
