@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        .point {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: hotpink;
+            position: relative;
+            margin: 200px;
+        }
+    </style>
+    <script src="../bin/flip_extra.js"></script>
+</head>
+<body>
+<div class="point"></div>
+<script>
+    interpolateBabble({
+        minX: 0, maxX: 100, maxY: 200, incY: 10
+    });
+    function interpolateBabble(option){
+        var minX = option.minX, maxX = option.maxX, maxY = option.maxY, incY = option.incY;
+        for (var y = 0, points = [], x, dx = (maxX - minX) / 2, cx = (maxX + minX) / 2, left; y < maxY; y += incY, left = !left) {
+            x = cx + (left ? dx : -dx) * Math.random();
+            points.push([x, y])
+        }
+        var interpolation = Flip.interpolate({ name: 'cubic', data: points });
+        return Flip({
+            selector: '.point',
+            duration: 8,
+            variable: {
+                position: function (p){
+                    return interpolation.when(p);
+                }
+            },
+            transform: function (mat, param){
+                mat.translate(param.position.x, param.position.y)
+            }
+        })
+    }
+</script>
+</body>
+</html>
