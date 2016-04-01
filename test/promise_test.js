@@ -185,13 +185,18 @@ describe('animation promise',function(){
     expect(window.Promise).not.toBe(Promise);
     Promise.option({acceptAnimationOnly:1,sync:0});
     var last=Date.now();
-    Promise.digest(window.Promise.resolve({duration:.1})).then(function(animation){
-      expect(animation instanceof Flip.Animation).toBeTruthy();
-      expect(Date.now()-last).toBeGreaterThan(100);
-      done();
-    },function(){
-      expect(1).toBe(0);
+    Promise.digest(window.Promise.resolve({ duration: .1 })).then(onAnimation, onError);
+    Promise.resolve(window.Promise.resolve({ duration: .2 })).then(onAnimation, onError).then(done, function (){
       done();
     });
+    function onAnimation(animation){
+      expect(animation instanceof Flip.Animation).toBeTruthy();
+      expect(Date.now()-last).toBeGreaterThan(100);
+    }
+
+    function onError(e){
+      expect(1).toBe(0);
+      expect(e).toBeUndefined();
+    }
   })
 });

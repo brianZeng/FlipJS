@@ -442,7 +442,6 @@ function parseCssText(cssText,target){
 }
 if (typeof module !== "undefined" && module.exports)
   module.exports = Flip;
-else if(typeof define!=="undefined")define(function(){return Flip});
 else if (window) {
   window.Flip = Flip;
 }
@@ -497,7 +496,7 @@ Flip.CssProxy = CssProxy;
     $withPrefix: function (key, value, prefixes) {
       var self = this;
       (prefixes || defaultPrefixes).forEach(function (prefix) {
-        self[prefix + key] = value;
+        self[normalizeCSSKey(prefix + key)] = value;
       });
       return self;
     },
@@ -545,7 +544,12 @@ Flip.CssProxy = CssProxy;
 
     return toLowerCssKey(key);
   });
-  defaultPrefixes=['-moz-','-ms-','-webkit-','-o-',''].filter(function(prefix){var key=prefix.substring(1);return cssPropertyKeys.some(function(pro){return pro.indexOf(key)==0})});
+  defaultPrefixes = ['-moz-', '-ms-', '-webkit-', '-o-', ''].filter(function (prefix){
+    var key = prefix.substring(1);
+    return cssPropertyKeys.some(function (pro){
+      return pro.indexOf(key) == 0
+    })
+  });
   Flip.stringTemplate = p.$t = stringTemplate;
   function stringTemplate(stringTemplate) {
     var arg = arguments, r;
@@ -554,6 +558,11 @@ Flip.CssProxy = CssProxy;
     })
   }
 
+  function normalizeCSSKey(cssKey){
+    return cssKey.replace(/^\-/, '').replace(/\-([a-z])/g, function (str, char){
+      return char.toUpperCase();
+    })
+  }
   function castInvalidValue(val) {
     var type = typeof val;
     return type == 'string' || type == 'number' ? val : void  0;
@@ -1112,9 +1121,9 @@ function useAniOption(animation){
   return animation;
 }
 function normalizeMapArgs(args){
-  var ret = {}, arg;
-  if (args.length == 2) {
-    ret[args[0]] = args[1];
+  var ret = {}, arg, key = args[0];
+  if (key != void 0 && (arg = args[1]) != void 0) {
+    ret[key] = arg;
   }
   else if (isFunc(arg = args[0]) || !hasNestedObj(arg)) {
     ret['&'] = arg;
@@ -1881,28 +1890,32 @@ function multiplyMat(mat,other,reverse){
     });
     return defer;
   };
-  Promise.resolve=warpPromiseValue;
-  function warpPromiseValue(any){
-     return Promise(function(resolve){
-       resolve(any);
-     })
-  }
+  Promise.resolve = function (any){
+    return (any && isFunc(any.then)) ? digestThenable(any) : warpPromiseValue(any);
+  };
   Promise.reject=function(reason){
     return Promise(function(resolve,reject){
       reject(reason);
     })
   };
-  Promise.digest =function(thenable){
-    return Promise(function(resolve,reject){
-      thenable.then(resolve,reject);
-    })
-  };
+  Promise.digest = digestThenable;
   Promise.option=function(opt){
     if(!opt)return;
     strictRet=!!opt.acceptAnimationOnly;
     syncEnqueue=!!opt.sync;
   };
   FlipScope.Promise=Flip.Promise=Promise;
+  function digestThenable(thenable){
+    return Promise(function (resolve, reject){
+      thenable.then(resolve, reject);
+    })
+  }
+
+  function warpPromiseValue(any){
+    return Promise(function (resolve){
+      resolve(any);
+    })
+  }
 })(Flip);
 function loopGlobal(global){
   var state = global.createRenderState();

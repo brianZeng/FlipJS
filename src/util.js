@@ -241,7 +241,6 @@ function parseCssText(cssText,target){
 }
 if (typeof module !== "undefined" && module.exports)
   module.exports = Flip;
-else if(typeof define!=="undefined")define(function(){return Flip});
 else if (window) {
   window.Flip = Flip;
 }

@@ -18,6 +18,7 @@ describe('Css Proxy test',function(){
     proxy.width=[];
     expect(proxy.width).toBe(void 0);
   });
+
   it('3.support dash property', function () {
     var proxy=new Flip.CssProxy();
     proxy['background-color']='red';
@@ -42,5 +43,15 @@ describe('Css Proxy test',function(){
     expect(proxy.$invalid).toBeFalsy();
     proxy.color='red';
     expect(proxy.$invalid).toBeFalsy();
+  });
+  fit('6.with prefix', function (){
+    var t = 'translate(0,0)';
+    proxy.$withPrefix('transform', t, ['-moz-', '-webkit-']);
+    expect(proxy.webkitTransform).toBe(t);
+    expect(proxy.mozTransform).toBe(t);
+    if (window.chrome) {
+      proxy.$withPrefix('transformOriginX', '50%', ['-webkit-']);
+      expect(proxy['-webkit-transform-origin-x']).toBe('50%');
+    }
   })
 });
