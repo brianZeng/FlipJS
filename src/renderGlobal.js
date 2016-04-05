@@ -116,10 +116,26 @@ inherit(RenderGlobal, Flip.util.Object, {
 });
 FlipScope.global = new RenderGlobal();
 function setDefaultImmediateStyle(renderGlobal,property,selector,rule){
-  var _cancel,ani={_cssHandlerMap:{},selector:isStr(selector)?selector:''};
+  var _cancel, ani = { _cssHandlerMap: {}, _matHandlerMap: {}, selector: isStr(selector) ? selector : '' };
   Animation.prototype[property].apply(ani,[selector,rule]);
   Flip(function () {
-    var styles = renderAnimationCssProxies(ani).map(combineStyleText);
+    var styles;
+    if (property == 'css') {
+      styles = renderAnimationCssProxies(ani).map(combineStyleText);
+    }
+    else if (property == 'transform') {
+      var cache = {};
+      styles = [];
+      renderAnimationTransform(ani, cache);
+      objForEach(cache, function (mat, selector){
+        var cssProxy = new CssProxy();
+        cssProxy.$withPrefix('transform', mat + '');
+        styles.push(cssProxy.$styleText(selector))
+      })
+    }
+    else {
+      throw Error('invalid property:' + property);
+    }
     _cancel = renderGlobal.immediate.apply(renderGlobal, styles);
   });
   return cancel;

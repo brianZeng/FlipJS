@@ -86,7 +86,7 @@ Flip.CssProxy = CssProxy;
   cssPropertyKeys = cssPropertyKeys.map(function (key) {
     var privateKey = cssPrivateKeyPrefix + key, lowerCaseKey = toLowerCssKey(key);
     cssPrivateKeys.push(privateKey);
-    registerProperty(p, [key, /^(webkit|moz|o|ms)[A-Z]/.test(key) ? ('-' + lowerCaseKey) : lowerCaseKey], {
+    registerProperty(p, [key, lowerCaseKey], {
       get: getter,
       set: setter
     });
@@ -102,7 +102,7 @@ Flip.CssProxy = CssProxy;
       }
     }
 
-    return toLowerCssKey(key);
+    return lowerCaseKey;
   });
   defaultPrefixes = ['-moz-', '-ms-', '-webkit-', '-o-', ''].filter(function (prefix){
     var key = prefix.substring(1);
@@ -129,7 +129,8 @@ Flip.CssProxy = CssProxy;
   }
 
   function toLowerCssKey(key) {
-    return key.replace(/[A-Z]/g, function (str) {
+    var prefix = /^(webkit|moz|o|ms)[A-Z]/.test(key) ? '-' : '';
+    return prefix + key.replace(/[A-Z]/g, function (str){
       return '-' + str.toLowerCase()
     })
   }
