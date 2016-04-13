@@ -107,11 +107,11 @@ Flip.transform = function (selector, rule){
   return Flip.instance.transform(selector, rule);
 };
 var EVENT_FRAME_START = 'frameStart', EVENT_UPDATE = 'update', EVENT_FRAME_END = 'frameEnd', EVENT_RENDER_START = 'renderStart', EVENT_RENDER_END = 'renderEnd';
-  if (typeof module !== "undefined" && module.exports) {
-    module.exports = Flip;
-  } else if (window) {
-    window.Flip = Flip;
-  }
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = Flip;
+} else if (window) {
+  window.Flip = Flip;
+}
 /**
  * @typedef  AnimationOptions
  * @type {Object}
@@ -1963,21 +1963,27 @@ function renderGlobal(global,state){
     var styleEle = global._styleElement = resetStyleElement(global._styleElement),
       styleSheet = styleEle.sheet;
     state.styleStack.forEach(function (style, i){
-      styleSheet.addRule(style.selector, style.rules.join(';'), i)
+      addSafeStyle(style.selector, style.rules.join(';'), i);
     });
-    var cssProxy = new CssProxy(), index = styleSheet.cssRules.length, styleText;
+    var cssProxy = new CssProxy(), index = styleSheet.cssRules.length;
     objForEach(state.transformMap, function (mat, selector){
       if (selector) {
         cssProxy.$withPrefix('transform', mat + '');
-        styleText = cssProxy.$toSafeCssString();
-        styleText && styleSheet.addRule(selector, styleText, index++);
+        addSafeStyle(selector, cssProxy.$toSafeCssString(), index++);
       }
     });
     global._invalid=false;
   }
   objForEach(global._tasks,function(task){finalizeTask(task,state)});
   global._forceRender=false;
+  function addSafeStyle(selector, style, index){
+    //empty style or selector will throw error in some browser.
+    if (style && selector) {
+      styleSheet.addRule(selector, style, index);
+    }
+  }
 }
+
 function renderTask(task,state){
   if(!task.disabled){
     state.task=task;
@@ -2055,10 +2061,14 @@ function renderAnimationCssProxies(animation, noUpdate){
   var param = animation.current, results = [], animationSelector = animation.selector;
   objForEach(animation._cssHandlerMap, function (cbs, selector){
     var globalSelector = selector.replace(/&/g, animationSelector),
-      rules = cbs.map(function (handler){
-        return resolveCss(handler.cb, handler.proxy, animation, param, noUpdate).$toCachedCssString()
+      rules = [];
+    cbs.forEach(function (handler){
+      var cssText = resolveCss(handler.cb, handler.proxy, animation, param, noUpdate).$toCachedCssString();
+      if (cssText) {
+        rules.push(cssText)
+      }
       });
-    if (globalSelector) {
+    if (globalSelector && rules.length) {
       results.push({ selector: globalSelector, rules: rules })
     }
   });
@@ -2071,6 +2081,9 @@ function renderAnimationTransform(animation, matCache){
       mat = getMat3BySelector(matCache, globalSelector);
     cbs.forEach(function (callback){
       mat = callback.call(animation, mat, param) || mat;
+      if (!(mat instanceof Mat3)) {
+        throw Error('Transform function should return an instance of Flip.Mat3');
+      }
     });
     globalSelector && (matCache[globalSelector] = mat);
   });

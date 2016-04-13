@@ -1,4 +1,4 @@
-describe('render flow', function (){
+fdescribe('render flow', function (){
   it('1.cascade transform with selector', function (done){
     var matrix, mm;
     Flip.animate({
@@ -62,5 +62,24 @@ describe('render flow', function (){
       }
     });
   });
-
+  it('4.empty css rule will not render', function (done){
+    var callSpy = jasmine.createSpy('animation-render');
+    Flip.animate({
+      selector: '.empty-css',
+      css: function (css){
+        callSpy();
+      },
+      once: {
+        update: function (){
+          Flip.instance.on('frameEnd', function (e){
+            expect(e.styleStack.some(function (style){
+              return style.selector == '.empty-css'
+            })).toBeFalsy();
+            expect(callSpy).toHaveBeenCalled();
+            done()
+          })
+        }
+      }
+    })
+  })
 });

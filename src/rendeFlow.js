@@ -44,21 +44,27 @@ function renderGlobal(global,state){
     var styleEle = global._styleElement = resetStyleElement(global._styleElement),
       styleSheet = styleEle.sheet;
     state.styleStack.forEach(function (style, i){
-      styleSheet.addRule(style.selector, style.rules.join(';'), i)
+      addSafeStyle(style.selector, style.rules.join(';'), i);
     });
-    var cssProxy = new CssProxy(), index = styleSheet.cssRules.length, styleText;
+    var cssProxy = new CssProxy(), index = styleSheet.cssRules.length;
     objForEach(state.transformMap, function (mat, selector){
       if (selector) {
         cssProxy.$withPrefix('transform', mat + '');
-        styleText = cssProxy.$toSafeCssString();
-        styleText && styleSheet.addRule(selector, styleText, index++);
+        addSafeStyle(selector, cssProxy.$toSafeCssString(), index++);
       }
     });
     global._invalid=false;
   }
   objForEach(global._tasks,function(task){finalizeTask(task,state)});
   global._forceRender=false;
+  function addSafeStyle(selector, style, index){
+    //empty style or selector will throw error in some browser.
+    if (style && selector) {
+      styleSheet.addRule(selector, style, index);
+    }
+  }
 }
+
 function renderTask(task,state){
   if(!task.disabled){
     state.task=task;

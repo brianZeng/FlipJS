@@ -48,10 +48,14 @@ function renderAnimationCssProxies(animation, noUpdate){
   var param = animation.current, results = [], animationSelector = animation.selector;
   objForEach(animation._cssHandlerMap, function (cbs, selector){
     var globalSelector = selector.replace(/&/g, animationSelector),
-      rules = cbs.map(function (handler){
-        return resolveCss(handler.cb, handler.proxy, animation, param, noUpdate).$toCachedCssString()
+      rules = [];
+    cbs.forEach(function (handler){
+      var cssText = resolveCss(handler.cb, handler.proxy, animation, param, noUpdate).$toCachedCssString();
+      if (cssText) {
+        rules.push(cssText)
+      }
       });
-    if (globalSelector) {
+    if (globalSelector && rules.length) {
       results.push({ selector: globalSelector, rules: rules })
     }
   });
@@ -64,6 +68,9 @@ function renderAnimationTransform(animation, matCache){
       mat = getMat3BySelector(matCache, globalSelector);
     cbs.forEach(function (callback){
       mat = callback.call(animation, mat, param) || mat;
+      if (!(mat instanceof Mat3)) {
+        throw Error('Transform function should return an instance of Flip.Mat3');
+      }
     });
     globalSelector && (matCache[globalSelector] = mat);
   });
