@@ -279,5 +279,4 @@ describe('css function',function(){
     ani.css({color:'red'});
     ani.start();
   });
-
 });

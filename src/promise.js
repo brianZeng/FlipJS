@@ -137,6 +137,9 @@
   function promiseAll(promises){
     return new Promise(function(resolve,reject){
       var fail,num,r=new Array(num=promises.length);
+      if (!promises.length) {
+        return resolve(r);
+      }
       promises.forEach(function(promise,i){
         promise.then(function(pre){
           check(pre,i);

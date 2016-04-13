@@ -47,29 +47,34 @@ function updateAnimationParam(animation){
 function renderAnimationCssProxies(animation, noUpdate){
   var param = animation.current, results = [], animationSelector = animation.selector;
   objForEach(animation._cssHandlerMap, function (cbs, selector){
-    results.push({
-      selector: selector.replace(/&/g, animationSelector),
-      rules: cbs.map(function (handler){
+    var globalSelector = selector.replace(/&/g, animationSelector),
+      rules = cbs.map(function (handler){
         return resolveCss(handler.cb, handler.proxy, animation, param, noUpdate).$toCachedCssString()
-      })
-    })
+      });
+    if (globalSelector) {
+      results.push({ selector: globalSelector, rules: rules })
+    }
   });
   return results;
 }
 function renderAnimationTransform(animation, matCache){
   var animationSelector = animation.selector, param = animation.current;
   objForEach(animation._matHandlerMap, function (cbs, selector){
-    var globalSelector = selector.replace(/&/g, animationSelector), mat = getMat3BySelector(matCache, globalSelector);
+    var globalSelector = selector.replace(/&/g, animationSelector),
+      mat = getMat3BySelector(matCache, globalSelector);
     cbs.forEach(function (callback){
       mat = callback.call(animation, mat, param) || mat;
     });
-    matCache[globalSelector] = mat;
+    globalSelector && (matCache[globalSelector] = mat);
   });
 }
 function getMat3BySelector(map, selector){
   var mat = map[selector];
   if (!mat) {
-    map[selector] = mat = new Mat3();
+    mat = new Mat3();
+    if (selector) {
+      map[selector] = mat;
+    }
   }
   return mat;
 }

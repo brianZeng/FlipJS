@@ -44,7 +44,7 @@ describe('Css Proxy test',function(){
     proxy.color='red';
     expect(proxy.$invalid).toBeFalsy();
   });
-  fit('6.with prefix', function (){
+  it('6.with prefix', function (){
     var t = 'translate(0,0)';
     proxy.$withPrefix('transform', t, ['-moz-', '-webkit-']);
     expect(proxy.webkitTransform).toBe(t);
