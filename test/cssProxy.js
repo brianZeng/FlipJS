@@ -3,6 +3,18 @@
  */
 describe('Css Proxy test',function(){
   var proxy;
+
+  function isChrome(){
+    return !!window.chrome
+  }
+
+  function isSafari(){
+    return /Safari/.test(navigator.userAgent)
+  }
+
+  function isFireFox(){
+    return /Firefox/.test(navigator.userAgent);
+  }
   beforeEach(function () {
     proxy=new Flip.CssProxy();
   });
@@ -24,9 +36,16 @@ describe('Css Proxy test',function(){
     proxy['background-color']='red';
     expect(proxy.backgroundColor).toBe('red');
     expect(proxy.$toSafeCssString('')).toBe('background-color:red');
-    if(window.chrome){
+    if (isChrome() || isSafari()) {
       proxy['-webkit-appearance']='none';
       expect(proxy.webkitAppearance).toBe('none')
+    }
+    else if (isFireFox()) {
+      proxy = new Flip.CssProxy();
+      proxy['-moz-appearance'] = 'none';
+      expect(proxy.mozAppearance).toBe('none');
+      expect(proxy.MozAppearance).toBe('none');
+      expect(proxy.$toSafeCssString('')).toBe('-moz-appearance:none')
     }
   });
   it('4.string template test', function () {
@@ -49,9 +68,13 @@ describe('Css Proxy test',function(){
     proxy.$withPrefix('transform', t, ['-moz-', '-webkit-']);
     expect(proxy.webkitTransform).toBe(t);
     expect(proxy.mozTransform).toBe(t);
-    if (window.chrome) {
-      proxy.$withPrefix('transformOriginX', '50%', ['-webkit-']);
-      expect(proxy['-webkit-transform-origin-x']).toBe('50%');
+    if (isChrome() || isSafari()) {
+      proxy.$withPrefix('appearance', 'none');
+      expect(proxy['-webkit-appearance']).toBe('none');
+    }
+    else if (isFireFox()) {
+      proxy.$withPrefix('transformOrigin', '0 0');
+      expect(proxy['-moz-transform-origin']).toBe('0 0')
     }
   })
 });

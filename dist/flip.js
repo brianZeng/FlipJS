@@ -451,10 +451,19 @@ function CssProxy(obj) {
   this.$invalid = true;
 }
 Flip.CssProxy = CssProxy;
+
 (function () {
   var defaultPrefixes , cssPrivateKeyPrefix = '$$';
-  var cssPropertyKeys = Object.getOwnPropertyNames(document.documentElement.style), cssPrivateKeys = [];
 
+  var cssPropertyKeys, cssPrivateKeys = [];
+  if (isFunc(window.CSS2Properties)) {
+    cssPropertyKeys = Object.getOwnPropertyNames(CSS2Properties.prototype).filter(function (key){
+      return key.indexOf('-') == -1;
+    });
+  }
+  else {
+    cssPropertyKeys = Object.getOwnPropertyNames(document.documentElement.style)
+  }
   function formatNum(value) {
     return isNaN(value) ? value : Number(value).toFixed(5).replace(/\.0+$/, '')
   }
@@ -524,9 +533,12 @@ Flip.CssProxy = CssProxy;
     $template: stringTemplate
   };
   cssPropertyKeys = cssPropertyKeys.map(function (key) {
-    var privateKey = cssPrivateKeyPrefix + key, lowerCaseKey = toLowerCssKey(key);
+    var privateKey = cssPrivateKeyPrefix + key,
+      capitalizedKey = capitalizeString(key),
+      camelKey = key[0].toLowerCase() + key.substring(1),
+      lowerCaseKey = toLowerCssKey(key);
     cssPrivateKeys.push(privateKey);
-    registerProperty(p, [key, lowerCaseKey], {
+    registerProperty(p, [key, lowerCaseKey, capitalizedKey, camelKey], {
       get: getter,
       set: setter
     });
@@ -545,9 +557,9 @@ Flip.CssProxy = CssProxy;
     return lowerCaseKey;
   });
   defaultPrefixes = ['-moz-', '-ms-', '-webkit-', '-o-', ''].filter(function (prefix){
-    var key = prefix.substring(1);
-    return cssPropertyKeys.some(function (pro){
-      return pro.indexOf(key) == 0
+    var key = prefix.replace(/^\-/, '');
+    return cssPropertyKeys.some(function (proKey){
+      return proKey.indexOf(key) == 0 || proKey.indexOf(prefix) == 0
     })
   });
   Flip.stringTemplate = p.$t = stringTemplate;
@@ -581,6 +593,12 @@ Flip.CssProxy = CssProxy;
     })
   }
 })();
+  function capitalizeString(str){
+    if (!str) {
+      return '';
+    }
+    return str[0].toUpperCase() + str.substring(1)
+  }
 function combineStyleText(selector,body){
   if (isObj(selector)) {
     body = selector.rules.join(';');
@@ -1979,7 +1997,7 @@ function renderGlobal(global,state){
   function addSafeStyle(selector, style, index){
     //empty style or selector will throw error in some browser.
     if (style && selector) {
-      styleSheet.addRule(selector, style, index);
+      styleSheet.insertRule(combineStyleText(selector, style), index);
     }
   }
 }
@@ -2166,7 +2184,7 @@ inherit(RenderGlobal, Flip.util.Object, {
         styleSheet.deleteRule(currentIndex);
       }
       else {
-        currentIndex = styleSheet.rules.length;
+        currentIndex = styleSheet.cssRules.length;
       }
       styleSheet.insertRule(style, currentIndex);
       insertedIndices.push(currentIndex);

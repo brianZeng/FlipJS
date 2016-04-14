@@ -1,4 +1,4 @@
-fdescribe('render flow', function (){
+describe('render flow', function (){
   it('1.cascade transform with selector', function (done){
     var matrix, mm;
     Flip.animate({
@@ -7,6 +7,7 @@ fdescribe('render flow', function (){
         matrix = mat;
       }
     });
+
     Flip.animate({
       selector: 'a1',
       transform: function (mat){

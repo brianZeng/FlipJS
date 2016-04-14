@@ -3,7 +3,6 @@
  */
 describe('Construct Animation:', function () {
   var global=Flip.instance,task=global.defaultTask;
-
   function now(){return Date.now()}
   function clamp(v,min,max){
     expect(v).toBeLessThan(max);
@@ -98,7 +97,7 @@ describe('Construct Animation:', function () {
         expect(ani.finished).toBe(true);
         ani=null;
         done();
-      })
+      });
     });
     it('finalize do not rest an animation',function(done){
       isNewAnimation(ani);
@@ -233,13 +232,15 @@ describe('css function',function(){
     return animation._cssHandlerMap[selector][index];
   }
   it('Flip.css setImmediate css style',function(){
-    var ele=Flip.instance._persistElement,rules=ele.sheet.rules,
-        rulesCount=rules.length;
+    var rulesCount = getRules().length;
     var cancel= Flip.css('a',{color:'red'});
-    expect(rules.length).toBe(rulesCount+1);
+    expect(getRules().length).toBe(rulesCount + 1);
     cancel();
     Flip.css('a',{color:'#000'});
-    expect(rules.length).toBe(rulesCount+1);
+    expect(getRules().length).toBe(rulesCount + 1);
+    function getRules(){
+      return Flip.instance._persistElement.sheet.cssRules;
+    }
   });
   it('Flip.parseCssText', function () {
     expect(Flip.parseCssText('width:10px')).toEqual({width:'10px'});

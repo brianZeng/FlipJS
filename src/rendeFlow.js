@@ -60,7 +60,7 @@ function renderGlobal(global,state){
   function addSafeStyle(selector, style, index){
     //empty style or selector will throw error in some browser.
     if (style && selector) {
-      styleSheet.addRule(selector, style, index);
+      styleSheet.insertRule(combineStyleText(selector, style), index);
     }
   }
 }

@@ -56,7 +56,7 @@ inherit(RenderGlobal, Flip.util.Object, {
         styleSheet.deleteRule(currentIndex);
       }
       else {
-        currentIndex = styleSheet.rules.length;
+        currentIndex = styleSheet.cssRules.length;
       }
       styleSheet.insertRule(style, currentIndex);
       insertedIndices.push(currentIndex);
