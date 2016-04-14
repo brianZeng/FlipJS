@@ -52,23 +52,22 @@ Flip.fallback = function (window){
       ctx.transform(eles[0], eles[1], eles[2], eles[3], eles[4], eles[5]);
     }
   }
-  if (!window.Float32Array) {
-    window.Float32Array = inherit(function (lengthOrArray){
-      if (!(this instanceof arguments.callee)) {
-        return new arguments.callee(lengthOrArray);
-      }
-      var i = 0, from, len;
-      if (typeof lengthOrArray === "number") {
-        from = [0];
-        len = lengthOrArray;
-      } else {
-        len = (from = lengthOrArray).length;
-      }
-      for (i; i < len; i++)
-        this[i] = from[i] || 0;
-    }, Array.prototype)
-  }
 };
+Flip.Float32Array = isFunc(window.Float32Array)? Float32Array: inherit(function (lengthOrArray){
+    if (!(this instanceof arguments.callee)) {
+      return new arguments.callee(lengthOrArray);
+    }
+    var i = 0, from, len;
+    if (typeof lengthOrArray === "number") {
+      from = [0];
+      len = lengthOrArray;
+    } else {
+      len = (from = lengthOrArray).length;
+    }
+    for (i; i < len; i++)
+      this[i] = from[i] || 0;
+  }, Array.prototype);
+
 /**
  * set css style immediately,you can cancel it later
  * @memberof Flip
@@ -456,13 +455,17 @@ Flip.CssProxy = CssProxy;
   var defaultPrefixes , cssPrivateKeyPrefix = '$$';
 
   var cssPropertyKeys, cssPrivateKeys = [];
+
   if (isFunc(window.CSS2Properties)) {
     cssPropertyKeys = Object.getOwnPropertyNames(CSS2Properties.prototype).filter(function (key){
       return key.indexOf('-') == -1;
     });
   }
   else {
-    cssPropertyKeys = Object.getOwnPropertyNames(document.documentElement.style)
+    cssPropertyKeys = Object.getOwnPropertyNames(document.documentElement.style);
+    Object.getOwnPropertyNames(CSSStyleDeclaration.prototype).forEach(function(key){
+      arrAdd(cssPropertyKeys,key)
+    });
   }
   function formatNum(value) {
     return isNaN(value) ? value : Number(value).toFixed(5).replace(/\.0+$/, '')
@@ -593,12 +596,12 @@ Flip.CssProxy = CssProxy;
     })
   }
 })();
-  function capitalizeString(str){
-    if (!str) {
-      return '';
-    }
-    return str[0].toUpperCase() + str.substring(1)
+function capitalizeString(str){
+  if (!str) {
+    return '';
   }
+  return str[0].toUpperCase() + str.substring(1)
+}
 function combineStyleText(selector,body){
   if (isObj(selector)) {
     body = selector.rules.join(';');
@@ -657,6 +660,33 @@ inherit(RenderTask, Flip.util.Object, {
   }
 });
 
+function TimeLine(task) {
+  this.last = this.now = this._stopTime = 0;
+  this._startTime = this._lastStop = Date.now();
+  this.task = task;
+  this._isStop = true;
+}
+inherit(TimeLine, Flip.util.Object, {
+  ticksPerSecond: 1000,
+  stop: function () {
+    if (!this._isStop) {
+      this._isStop = true;
+      this._lastStop = Date.now();
+    }
+  },
+  start: function () {
+    if (this._isStop) {
+      this._isStop = false;
+      this._stopTime += Date.now() - this._lastStop;
+    }
+  },
+  move: function () {
+    if (!this._isStop) {
+      this.last = this.now;
+      this.now = Date.now() - this._startTime - this._stopTime;
+    }
+  }
+});
 /**
  * @namespace Flip.Animation
  * @param {AnimationOptions} opt
@@ -1493,7 +1523,9 @@ Flip.EASE = Clock.EASE = (function () {
   if (document.readyState !== 'loading') {
     setTimeout(ready,0);
   }
-  document.addEventListener('DOMContentLoaded', ready);
+  else{
+    document.addEventListener('DOMContentLoaded', ready);
+  }
   function ready() {
     var funcs=FlipScope.readyFuncs;
     FlipScope.global.init();
@@ -1515,7 +1547,7 @@ function Mat3(arrayOrX1,y1,dx,x2,y2,dy){
   if(arrayOrX1==undefined)eles=[1,0,0,0,1,0,0,0,1];
   else if(y1==undefined)eles=arrayOrX1;
   else eles=[arrayOrX1,y1,0,x2,y2,dx,dy,1];
-  this.elements=new Float32Array(eles);
+  this.elements=new Flip.Float32Array(eles);
 }
 
 var sin=Math.sin,cos=Math.cos,tan=Math.tan,map2DArray=(function(){
@@ -1551,7 +1583,7 @@ Mat3.prototype={
     return ret.join(' ');
   },
   reset:function(arr){
-    this.elements=new Float32Array(arr);
+    this.elements=new Flip.Float32Array(arr);
     return this;
   },
   /**
@@ -2275,33 +2307,6 @@ function setDefaultImmediateStyle(renderGlobal,property,selector,rule){
   }
 }
 
-function TimeLine(task) {
-  this.last = this.now = this._stopTime = 0;
-  this._startTime = this._lastStop = Date.now();
-  this.task = task;
-  this._isStop = true;
-}
-inherit(TimeLine, Flip.util.Object, {
-  ticksPerSecond: 1000,
-  stop: function () {
-    if (!this._isStop) {
-      this._isStop = true;
-      this._lastStop = Date.now();
-    }
-  },
-  start: function () {
-    if (this._isStop) {
-      this._isStop = false;
-      this._stopTime += Date.now() - this._lastStop;
-    }
-  },
-  move: function () {
-    if (!this._isStop) {
-      this.last = this.now;
-      this.now = Date.now() - this._startTime - this._stopTime;
-    }
-  }
-});
 var nextUid=(function(map){
   return function (type){
     if(!map[type])map[type]=1;

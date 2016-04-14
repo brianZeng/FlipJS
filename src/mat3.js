@@ -16,7 +16,7 @@ function Mat3(arrayOrX1,y1,dx,x2,y2,dy){
   if(arrayOrX1==undefined)eles=[1,0,0,0,1,0,0,0,1];
   else if(y1==undefined)eles=arrayOrX1;
   else eles=[arrayOrX1,y1,0,x2,y2,dx,dy,1];
-  this.elements=new Float32Array(eles);
+  this.elements=new Flip.Float32Array(eles);
 }
 
 var sin=Math.sin,cos=Math.cos,tan=Math.tan,map2DArray=(function(){
@@ -52,7 +52,7 @@ Mat3.prototype={
     return ret.join(' ');
   },
   reset:function(arr){
-    this.elements=new Float32Array(arr);
+    this.elements=new Flip.Float32Array(arr);
     return this;
   },
   /**

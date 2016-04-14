@@ -4,7 +4,7 @@
 function Interpolation(opt) {
   if (!(this instanceof Interpolation))return new Interpolation(opt);
   if (opt.data instanceof Array) {
-    var pts = opt.data, len = pts.length, xs = new Float32Array(len), ys = new Float32Array(len);
+    var pts = opt.data, len = pts.length, xs = new Flip.Float32Array(len), ys = new Flip.Float32Array(len);
     for (var i = 0, p = pts[0]; i < len; p = pts[++i]) {
       //both p={x:0,y:0} or p=[0,0] are ok
       xs[i] = Vec.get(p,'x');
@@ -14,11 +14,11 @@ function Interpolation(opt) {
   }
   else {
     if (pts = opt.x)
-      this.axis = {x: new Float32Array(pts)};
+      this.axis = {x: new Flip.Float32Array(pts)};
     else
       throw Error('the data of X axis not provided');
     if (pts = opt.y)
-      this.axis.y = new Float32Array(pts);
+      this.axis.y = new Flip.Float32Array(pts);
     else
       throw Error('the data of Y axis not provided');
   }

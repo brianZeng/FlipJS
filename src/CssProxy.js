@@ -16,13 +16,17 @@ Flip.CssProxy = CssProxy;
   var defaultPrefixes , cssPrivateKeyPrefix = '$$';
 
   var cssPropertyKeys, cssPrivateKeys = [];
+
   if (isFunc(window.CSS2Properties)) {
     cssPropertyKeys = Object.getOwnPropertyNames(CSS2Properties.prototype).filter(function (key){
       return key.indexOf('-') == -1;
     });
   }
   else {
-    cssPropertyKeys = Object.getOwnPropertyNames(document.documentElement.style)
+    cssPropertyKeys = Object.getOwnPropertyNames(document.documentElement.style);
+    Object.getOwnPropertyNames(CSSStyleDeclaration.prototype).forEach(function(key){
+      arrAdd(cssPropertyKeys,key)
+    });
   }
   function formatNum(value) {
     return isNaN(value) ? value : Number(value).toFixed(5).replace(/\.0+$/, '')

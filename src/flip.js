@@ -57,23 +57,22 @@ Flip.fallback = function (window){
       ctx.transform(eles[0], eles[1], eles[2], eles[3], eles[4], eles[5]);
     }
   }
-  if (!window.Float32Array) {
-    window.Float32Array = inherit(function (lengthOrArray){
-      if (!(this instanceof arguments.callee)) {
-        return new arguments.callee(lengthOrArray);
-      }
-      var i = 0, from, len;
-      if (typeof lengthOrArray === "number") {
-        from = [0];
-        len = lengthOrArray;
-      } else {
-        len = (from = lengthOrArray).length;
-      }
-      for (i; i < len; i++)
-        this[i] = from[i] || 0;
-    }, Array.prototype)
-  }
 };
+Flip.Float32Array = isFunc(window.Float32Array)? Float32Array: inherit(function (lengthOrArray){
+    if (!(this instanceof arguments.callee)) {
+      return new arguments.callee(lengthOrArray);
+    }
+    var i = 0, from, len;
+    if (typeof lengthOrArray === "number") {
+      from = [0];
+      len = lengthOrArray;
+    } else {
+      len = (from = lengthOrArray).length;
+    }
+    for (i; i < len; i++)
+      this[i] = from[i] || 0;
+  }, Array.prototype);
+
 /**
  * set css style immediately,you can cancel it later
  * @memberof Flip

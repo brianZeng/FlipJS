@@ -42,8 +42,8 @@ Flip.interpolation({
     _initControlPoints: function (opt) {
       var xs = this.axis.x, segCount = xs.length - 1, i, j, gps, cy, cx, len = segCount * 2;
       this.coefficeint = {
-        x: new Float32Array(new Array(len)),
-        y: new Float32Array(new Array(len))
+        x: new Flip.Float32Array(new Array(len)),
+        y: new Flip.Float32Array(new Array(len))
       };
       if (gps = opt.cps)
         for (j = i = 0; i < len; i += 2, j++)

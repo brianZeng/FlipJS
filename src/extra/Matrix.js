@@ -34,7 +34,7 @@ Matrix.luDecompose = function (mat) {
 Matrix.luSolve = function (L, U, B) {
   var n = L.row, Y, X;
   if (n !== L.col || n !== U.row || n !== U.col) throw Error('invalid dimensions in L U Matrix');
-  Y = new Float32Array(n);
+  Y = new Flip.Float32Array(n);
   X = new Vec(n);
   for (var i = 0, j; i < n; i++) {
     Y[i] = B[i];
@@ -80,7 +80,7 @@ Matrix.constructRow = (function () {
   }
 
   return function (arryOrNum) {
-    var row = new Float32Array(arryOrNum);
+    var row = new Flip.Float32Array(arryOrNum);
     row.toString = toString;
     return row;
   }

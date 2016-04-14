@@ -9,8 +9,8 @@ describe('interrupt animation',function(){
     return ani;
   }
   function clamp(v,min,max){
-    expect(v).toBeGreaterThan(min);
-    expect(v).toBeLessThan(max);
+    expect(v).not.toBeLessThan(min);
+    expect(v).not.toBeGreaterThan(max);
   }
    it('pause and resume',function(done){
      var pauseSpy=jasmine.createSpy('paused'),onresume=jasmine.createSpy('resumed'),t1=Date.now();

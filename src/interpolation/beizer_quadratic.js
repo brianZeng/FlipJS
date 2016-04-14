@@ -33,7 +33,7 @@ Flip.interpolation({
     _initControlPoints: function (opt) {
       var xs = this.axis.x, segLen = xs.length - 1, co, cx, cy;
       this.coefficeint = co = {
-        x: new Float32Array(new Array(segLen)), y: new Float32Array(new Array(segLen))
+        x: new Flip.Float32Array(new Array(segLen)), y: new Flip.Float32Array(new Array(segLen))
       };
       if (opt.cps)
         opt.cps.forEach(function (cp, i) {

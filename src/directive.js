@@ -16,7 +16,9 @@
   if (document.readyState !== 'loading') {
     setTimeout(ready,0);
   }
-  document.addEventListener('DOMContentLoaded', ready);
+  else{
+    document.addEventListener('DOMContentLoaded', ready);
+  }
   function ready() {
     var funcs=FlipScope.readyFuncs;
     FlipScope.global.init();
