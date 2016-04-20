@@ -44,24 +44,32 @@ inherit(RenderGlobal, Flip.util.Object, {
       return this.defaultTask.add(obj);
     return false;
   },
-  immediate:function(style){
-    if(!style)return noop;
-    var styleSheet=this._persistElement.sheet,indies=this._persistIndies,index;
-    if(indies.length){
-      index=indies.pop();
-      styleSheet.deleteRule(index);
-    }
-    else
-      index=styleSheet.rules.length;
-    styleSheet.insertRule(style,index);
+  immediate: function (){
+    var styleSheet = this._persistElement.sheet,
+      reusableIndies = this._persistIndies,
+      insertedIndices = [],
+      styles = arguments[0] instanceof Array ? arguments[0] : Array.prototype.slice.apply(arguments);
+    styles.forEach(function (style){
+      var currentIndex;
+      if (reusableIndies.length) {
+        currentIndex = reusableIndies.pop();
+        styleSheet.deleteRule(currentIndex);
+      }
+      else {
+        currentIndex = styleSheet.cssRules.length;
+      }
+      styleSheet.insertRule(style, currentIndex);
+      insertedIndices.push(currentIndex);
+    });
     return cancel;
     function cancel(){
       if(styleSheet){
-        styleSheet.deleteRule(index);
-        styleSheet.insertRule('*{}',index);
-        styleSheet=null;
-        indies.push(index);
-        return !(index=-1)+1;
+        insertedIndices.forEach(function (currentIndex){
+          styleSheet.deleteRule(currentIndex);
+          styleSheet.insertRule('*{}', currentIndex);
+          reusableIndies.push(currentIndex);
+        });
+        return !(styleSheet = null);
       }
     }
   },
@@ -108,11 +116,27 @@ inherit(RenderGlobal, Flip.util.Object, {
 });
 FlipScope.global = new RenderGlobal();
 function setDefaultImmediateStyle(renderGlobal,property,selector,rule){
-  var _cancel,ani={_cssHandlerMap:{},selector:isStr(selector)?selector:''};
+  var _cancel, ani = { _cssHandlerMap: {}, _matHandlerMap: {}, selector: isStr(selector) ? selector : '' };
   Animation.prototype[property].apply(ani,[selector,rule]);
   Flip(function () {
-    var style = renderAnimationCssProxies(ani).map(combineStyleText).join('');
-    _cancel=renderGlobal.immediate(style);
+    var styles;
+    if (property == 'css') {
+      styles = renderAnimationCssProxies(ani).map(combineStyleText);
+    }
+    else if (property == 'transform') {
+      var cache = {};
+      styles = [];
+      renderAnimationTransform(ani, cache);
+      objForEach(cache, function (mat, selector){
+        var cssProxy = new CssProxy();
+        cssProxy.$withPrefix('transform', mat + '');
+        styles.push(cssProxy.$styleText(selector))
+      })
+    }
+    else {
+      throw Error('invalid property:' + property);
+    }
+    _cancel = renderGlobal.immediate.apply(renderGlobal, styles);
   });
   return cancel;
   function cancel(){

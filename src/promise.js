@@ -137,6 +137,9 @@
   function promiseAll(promises){
     return new Promise(function(resolve,reject){
       var fail,num,r=new Array(num=promises.length);
+      if (!promises.length) {
+        return resolve(r);
+      }
       promises.forEach(function(promise,i){
         promise.then(function(pre){
           check(pre,i);
@@ -182,26 +185,30 @@
     });
     return defer;
   };
-  Promise.resolve=warpPromiseValue;
-  function warpPromiseValue(any){
-     return Promise(function(resolve){
-       resolve(any);
-     })
-  }
+  Promise.resolve = function (any){
+    return (any && isFunc(any.then)) ? digestThenable(any) : warpPromiseValue(any);
+  };
   Promise.reject=function(reason){
     return Promise(function(resolve,reject){
       reject(reason);
     })
   };
-  Promise.digest =function(thenable){
-    return Promise(function(resolve,reject){
-      thenable.then(resolve,reject);
-    })
-  };
+  Promise.digest = digestThenable;
   Promise.option=function(opt){
     if(!opt)return;
     strictRet=!!opt.acceptAnimationOnly;
     syncEnqueue=!!opt.sync;
   };
   FlipScope.Promise=Flip.Promise=Promise;
+  function digestThenable(thenable){
+    return Promise(function (resolve, reject){
+      thenable.then(resolve, reject);
+    })
+  }
+
+  function warpPromiseValue(any){
+    return Promise(function (resolve){
+      resolve(any);
+    })
+  }
 })(Flip);

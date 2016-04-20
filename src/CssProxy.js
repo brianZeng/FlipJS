@@ -11,10 +11,19 @@ function CssProxy(obj) {
   this.$invalid = true;
 }
 Flip.CssProxy = CssProxy;
+
 (function () {
   var defaultPrefixes , cssPrivateKeyPrefix = '$$';
-  var cssPropertyKeys = Object.getOwnPropertyNames(document.documentElement.style), cssPrivateKeys = [];
 
+  var cssPropertyKeys, cssPrivateKeys = [];
+  if (isFunc(window.CSS2Properties)) {
+    cssPropertyKeys = Object.getOwnPropertyNames(CSS2Properties.prototype).filter(function (key){
+      return key.indexOf('-') == -1;
+    });
+  }
+  else {
+    cssPropertyKeys = Object.getOwnPropertyNames(document.documentElement.style)
+  }
   function formatNum(value) {
     return isNaN(value) ? value : Number(value).toFixed(5).replace(/\.0+$/, '')
   }
@@ -56,7 +65,7 @@ Flip.CssProxy = CssProxy;
     $withPrefix: function (key, value, prefixes) {
       var self = this;
       (prefixes || defaultPrefixes).forEach(function (prefix) {
-        self[prefix + key] = value;
+        self[normalizeCSSKey(prefix + key)] = value;
       });
       return self;
     },
@@ -84,9 +93,12 @@ Flip.CssProxy = CssProxy;
     $template: stringTemplate
   };
   cssPropertyKeys = cssPropertyKeys.map(function (key) {
-    var privateKey = cssPrivateKeyPrefix + key, lowerCaseKey = toLowerCssKey(key);
+    var privateKey = cssPrivateKeyPrefix + key,
+      capitalizedKey = capitalizeString(key),
+      camelKey = key[0].toLowerCase() + key.substring(1),
+      lowerCaseKey = toLowerCssKey(key);
     cssPrivateKeys.push(privateKey);
-    registerProperty(p, [key, /^(webkit|moz|o|ms)[A-Z]/.test(key) ? ('-' + lowerCaseKey) : lowerCaseKey], {
+    registerProperty(p, [key, lowerCaseKey, capitalizedKey, camelKey], {
       get: getter,
       set: setter
     });
@@ -102,9 +114,14 @@ Flip.CssProxy = CssProxy;
       }
     }
 
-    return toLowerCssKey(key);
+    return lowerCaseKey;
   });
-  defaultPrefixes=['-moz-','-ms-','-webkit-','-o-',''].filter(function(prefix){var key=prefix.substring(1);return cssPropertyKeys.some(function(pro){return pro.indexOf(key)==0})});
+  defaultPrefixes = ['-moz-', '-ms-', '-webkit-', '-o-', ''].filter(function (prefix){
+    var key = prefix.replace(/^\-/, '');
+    return cssPropertyKeys.some(function (proKey){
+      return proKey.indexOf(key) == 0 || proKey.indexOf(prefix) == 0
+    })
+  });
   Flip.stringTemplate = p.$t = stringTemplate;
   function stringTemplate(stringTemplate) {
     var arg = arguments, r;
@@ -113,13 +130,19 @@ Flip.CssProxy = CssProxy;
     })
   }
 
+  function normalizeCSSKey(cssKey){
+    return cssKey.replace(/^\-/, '').replace(/\-([a-z])/g, function (str, char){
+      return char.toUpperCase();
+    })
+  }
   function castInvalidValue(val) {
     var type = typeof val;
     return type == 'string' || type == 'number' ? val : void  0;
   }
 
   function toLowerCssKey(key) {
-    return key.replace(/[A-Z]/g, function (str) {
+    var prefix = /^(webkit|moz|o|ms)[A-Z]/.test(key) ? '-' : '';
+    return prefix + key.replace(/[A-Z]/g, function (str){
       return '-' + str.toLowerCase()
     })
   }
@@ -130,6 +153,12 @@ Flip.CssProxy = CssProxy;
     })
   }
 })();
+function capitalizeString(str){
+  if (!str) {
+    return '';
+  }
+  return str[0].toUpperCase() + str.substring(1)
+}
 function combineStyleText(selector,body){
   if (isObj(selector)) {
     body = selector.rules.join(';');

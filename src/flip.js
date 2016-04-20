@@ -112,6 +112,11 @@ Flip.transform = function (selector, rule){
   return Flip.instance.transform(selector, rule);
 };
 var EVENT_FRAME_START = 'frameStart', EVENT_UPDATE = 'update', EVENT_FRAME_END = 'frameEnd', EVENT_RENDER_START = 'renderStart', EVENT_RENDER_END = 'renderEnd';
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = Flip;
+} else if (window) {
+  window.Flip = Flip;
+}
 /**
  * @typedef  AnimationOptions
  * @type {Object}
