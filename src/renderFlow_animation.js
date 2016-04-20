@@ -54,7 +54,7 @@ function renderAnimationCssProxies(animation, noUpdate){
       if (cssText) {
         rules.push(cssText)
       }
-      });
+    });
     if (globalSelector && rules.length) {
       results.push({ selector: globalSelector, rules: rules })
     }

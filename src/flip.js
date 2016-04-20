@@ -58,9 +58,9 @@ Flip.fallback = function (window){
     }
   }
   if (!window.Float32Array) {
-    window.Float32Array = inherit(function (lengthOrArray){
-      if (!(this instanceof arguments.callee)) {
-        return new arguments.callee(lengthOrArray);
+    window.Float32Array = inherit(function F(lengthOrArray){
+      if (!(this instanceof F)) {
+        return new F(lengthOrArray);
       }
       var i = 0, from, len;
       if (typeof lengthOrArray === "number") {

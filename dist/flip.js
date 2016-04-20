@@ -53,9 +53,9 @@ Flip.fallback = function (window){
     }
   }
   if (!window.Float32Array) {
-    window.Float32Array = inherit(function F(lengthOrArray){
-      if (!(this instanceof F)) {
-        return new F(lengthOrArray);
+    window.Float32Array = inherit(function (lengthOrArray){
+      if (!(this instanceof arguments.callee)) {
+        return new arguments.callee(lengthOrArray);
       }
       var i = 0, from, len;
       if (typeof lengthOrArray === "number") {
@@ -107,6 +107,11 @@ Flip.transform = function (selector, rule){
   return Flip.instance.transform(selector, rule);
 };
 var EVENT_FRAME_START = 'frameStart', EVENT_UPDATE = 'update', EVENT_FRAME_END = 'frameEnd', EVENT_RENDER_START = 'renderStart', EVENT_RENDER_END = 'renderEnd';
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = Flip;
+  } else if (window) {
+    window.Flip = Flip;
+  }
 /**
  * @typedef  AnimationOptions
  * @type {Object}
@@ -440,22 +445,25 @@ function parseCssText(cssText,target){
   });
   return ret;
 }
-if (typeof module !== "undefined" && module.exports)
-  module.exports = Flip;
-else if(typeof define!=="undefined")define(function(){return Flip});
-else if (window) {
-  window.Flip = Flip;
-}
 function CssProxy(obj) {
   if (!(this instanceof CssProxy))return new CssProxy(obj);
   this.$merge(obj);
   this.$invalid = true;
 }
 Flip.CssProxy = CssProxy;
+
 (function () {
   var defaultPrefixes , cssPrivateKeyPrefix = '$$';
-  var cssPropertyKeys = Object.getOwnPropertyNames(document.documentElement.style), cssPrivateKeys = [];
 
+  var cssPropertyKeys, cssPrivateKeys = [];
+  if (isFunc(window.CSS2Properties)) {
+    cssPropertyKeys = Object.getOwnPropertyNames(CSS2Properties.prototype).filter(function (key){
+      return key.indexOf('-') == -1;
+    });
+  }
+  else {
+    cssPropertyKeys = Object.getOwnPropertyNames(document.documentElement.style)
+  }
   function formatNum(value) {
     return isNaN(value) ? value : Number(value).toFixed(5).replace(/\.0+$/, '')
   }
@@ -497,7 +505,7 @@ Flip.CssProxy = CssProxy;
     $withPrefix: function (key, value, prefixes) {
       var self = this;
       (prefixes || defaultPrefixes).forEach(function (prefix) {
-        self[prefix + key] = value;
+        self[normalizeCSSKey(prefix + key)] = value;
       });
       return self;
     },
@@ -525,9 +533,12 @@ Flip.CssProxy = CssProxy;
     $template: stringTemplate
   };
   cssPropertyKeys = cssPropertyKeys.map(function (key) {
-    var privateKey = cssPrivateKeyPrefix + key, lowerCaseKey = toLowerCssKey(key);
+    var privateKey = cssPrivateKeyPrefix + key,
+      capitalizedKey = capitalizeString(key),
+      camelKey = key[0].toLowerCase() + key.substring(1),
+      lowerCaseKey = toLowerCssKey(key);
     cssPrivateKeys.push(privateKey);
-    registerProperty(p, [key, /^(webkit|moz|o|ms)[A-Z]/.test(key) ? ('-' + lowerCaseKey) : lowerCaseKey], {
+    registerProperty(p, [key, lowerCaseKey, capitalizedKey, camelKey], {
       get: getter,
       set: setter
     });
@@ -543,9 +554,14 @@ Flip.CssProxy = CssProxy;
       }
     }
 
-    return toLowerCssKey(key);
+    return lowerCaseKey;
   });
-  defaultPrefixes=['-moz-','-ms-','-webkit-','-o-',''].filter(function(prefix){var key=prefix.substring(1);return cssPropertyKeys.some(function(pro){return pro.indexOf(key)==0})});
+  defaultPrefixes = ['-moz-', '-ms-', '-webkit-', '-o-', ''].filter(function (prefix){
+    var key = prefix.replace(/^\-/, '');
+    return cssPropertyKeys.some(function (proKey){
+      return proKey.indexOf(key) == 0 || proKey.indexOf(prefix) == 0
+    })
+  });
   Flip.stringTemplate = p.$t = stringTemplate;
   function stringTemplate(stringTemplate) {
     var arg = arguments, r;
@@ -554,13 +570,19 @@ Flip.CssProxy = CssProxy;
     })
   }
 
+  function normalizeCSSKey(cssKey){
+    return cssKey.replace(/^\-/, '').replace(/\-([a-z])/g, function (str, char){
+      return char.toUpperCase();
+    })
+  }
   function castInvalidValue(val) {
     var type = typeof val;
     return type == 'string' || type == 'number' ? val : void  0;
   }
 
   function toLowerCssKey(key) {
-    return key.replace(/[A-Z]/g, function (str) {
+    var prefix = /^(webkit|moz|o|ms)[A-Z]/.test(key) ? '-' : '';
+    return prefix + key.replace(/[A-Z]/g, function (str){
       return '-' + str.toLowerCase()
     })
   }
@@ -571,6 +593,12 @@ Flip.CssProxy = CssProxy;
     })
   }
 })();
+  function capitalizeString(str){
+    if (!str) {
+      return '';
+    }
+    return str[0].toUpperCase() + str.substring(1)
+  }
 function combineStyleText(selector,body){
   if (isObj(selector)) {
     body = selector.rules.join(';');
@@ -1112,9 +1140,9 @@ function useAniOption(animation){
   return animation;
 }
 function normalizeMapArgs(args){
-  var ret = {}, arg;
-  if (args.length == 2) {
-    ret[args[0]] = args[1];
+  var ret = {}, arg, key = args[0];
+  if (key != void 0 && (arg = args[1]) != void 0) {
+    ret[key] = arg;
   }
   else if (isFunc(arg = args[0]) || !hasNestedObj(arg)) {
     ret['&'] = arg;
@@ -1835,6 +1863,9 @@ function multiplyMat(mat,other,reverse){
   function promiseAll(promises){
     return new Promise(function(resolve,reject){
       var fail,num,r=new Array(num=promises.length);
+      if (!promises.length) {
+        return resolve(r);
+      }
       promises.forEach(function(promise,i){
         promise.then(function(pre){
           check(pre,i);
@@ -1880,28 +1911,32 @@ function multiplyMat(mat,other,reverse){
     });
     return defer;
   };
-  Promise.resolve=warpPromiseValue;
-  function warpPromiseValue(any){
-     return Promise(function(resolve){
-       resolve(any);
-     })
-  }
+  Promise.resolve = function (any){
+    return (any && isFunc(any.then)) ? digestThenable(any) : warpPromiseValue(any);
+  };
   Promise.reject=function(reason){
     return Promise(function(resolve,reject){
       reject(reason);
     })
   };
-  Promise.digest =function(thenable){
-    return Promise(function(resolve,reject){
-      thenable.then(resolve,reject);
-    })
-  };
+  Promise.digest = digestThenable;
   Promise.option=function(opt){
     if(!opt)return;
     strictRet=!!opt.acceptAnimationOnly;
     syncEnqueue=!!opt.sync;
   };
   FlipScope.Promise=Flip.Promise=Promise;
+  function digestThenable(thenable){
+    return Promise(function (resolve, reject){
+      thenable.then(resolve, reject);
+    })
+  }
+
+  function warpPromiseValue(any){
+    return Promise(function (resolve){
+      resolve(any);
+    })
+  }
 })(Flip);
 function loopGlobal(global){
   var state = global.createRenderState();
@@ -1943,24 +1978,30 @@ function resetStyleElement(styleElement){
 function renderGlobal(global,state){
   if(global._invalid||state.forceRender){
     objForEach(global._tasks,function(task){renderTask(task,state);});
-    var styleStack = state.styleStack, transformMap = state.transformMap;
-    delete transformMap[""];
-    if (styleStack.length || Object.getOwnPropertyNames(transformMap).length) {
-      var styleEle = global._styleElement = resetStyleElement(global._styleElement), styleSheet = styleEle.sheet;
-      styleStack.forEach(function (style, i){
-        styleSheet.addRule(style.selector, style.rules.join(';'), i)
-      });
-      var cssProxy = new CssProxy(), index = styleSheet.cssRules.length;
-      objForEach(transformMap, function (mat, selector){
+    var styleEle = global._styleElement = resetStyleElement(global._styleElement),
+      styleSheet = styleEle.sheet;
+    state.styleStack.forEach(function (style, i){
+      addSafeStyle(style.selector, style.rules.join(';'), i);
+    });
+    var cssProxy = new CssProxy(), index = styleSheet.cssRules.length;
+    objForEach(state.transformMap, function (mat, selector){
+      if (selector) {
         cssProxy.$withPrefix('transform', mat + '');
-        styleSheet.addRule(selector, cssProxy.$toSafeCssString(), index++);
-      });
-    }
+        addSafeStyle(selector, cssProxy.$toSafeCssString(), index++);
+      }
+    });
     global._invalid=false;
   }
   objForEach(global._tasks,function(task){finalizeTask(task,state)});
   global._forceRender=false;
+  function addSafeStyle(selector, style, index){
+    //empty style or selector will throw error in some browser.
+    if (style && selector) {
+      styleSheet.insertRule(combineStyleText(selector, style), index);
+    }
+  }
 }
+
 function renderTask(task,state){
   if(!task.disabled){
     state.task=task;
@@ -2037,30 +2078,41 @@ function updateAnimationParam(animation){
 function renderAnimationCssProxies(animation, noUpdate){
   var param = animation.current, results = [], animationSelector = animation.selector;
   objForEach(animation._cssHandlerMap, function (cbs, selector){
-    var result = {
-      selector: selector.replace(/&/g, animationSelector),
-      rules: cbs.map(function (handler){
-        return resolveCss(handler.cb, handler.proxy, animation, param, noUpdate).$toCachedCssString()
-      })
-    };
-    result.selector && results.push(result)
+    var globalSelector = selector.replace(/&/g, animationSelector),
+      rules = [];
+    cbs.forEach(function (handler){
+      var cssText = resolveCss(handler.cb, handler.proxy, animation, param, noUpdate).$toCachedCssString();
+      if (cssText) {
+        rules.push(cssText)
+      }
+    });
+    if (globalSelector && rules.length) {
+      results.push({ selector: globalSelector, rules: rules })
+    }
   });
   return results;
 }
 function renderAnimationTransform(animation, matCache){
   var animationSelector = animation.selector, param = animation.current;
   objForEach(animation._matHandlerMap, function (cbs, selector){
-    var globalSelector = selector.replace(/&/g, animationSelector), mat = getMat3BySelector(matCache, globalSelector);
+    var globalSelector = selector.replace(/&/g, animationSelector),
+      mat = getMat3BySelector(matCache, globalSelector);
     cbs.forEach(function (callback){
       mat = callback.call(animation, mat, param) || mat;
+      if (!(mat instanceof Mat3)) {
+        throw Error('Transform function should return an instance of Flip.Mat3');
+      }
     });
-    matCache[globalSelector] = mat;
+    globalSelector && (matCache[globalSelector] = mat);
   });
 }
 function getMat3BySelector(map, selector){
   var mat = map[selector];
   if (!mat) {
-    map[selector] = mat = new Mat3();
+    mat = new Mat3();
+    if (selector) {
+      map[selector] = mat;
+    }
   }
   return mat;
 }
@@ -2120,24 +2172,32 @@ inherit(RenderGlobal, Flip.util.Object, {
       return this.defaultTask.add(obj);
     return false;
   },
-  immediate:function(style){
-    if(!style)return noop;
-    var styleSheet=this._persistElement.sheet,indies=this._persistIndies,index;
-    if(indies.length){
-      index=indies.pop();
-      styleSheet.deleteRule(index);
-    }
-    else
-      index=styleSheet.rules.length;
-    styleSheet.insertRule(style,index);
+  immediate: function (){
+    var styleSheet = this._persistElement.sheet,
+      reusableIndies = this._persistIndies,
+      insertedIndices = [],
+      styles = arguments[0] instanceof Array ? arguments[0] : Array.prototype.slice.apply(arguments);
+    styles.forEach(function (style){
+      var currentIndex;
+      if (reusableIndies.length) {
+        currentIndex = reusableIndies.pop();
+        styleSheet.deleteRule(currentIndex);
+      }
+      else {
+        currentIndex = styleSheet.cssRules.length;
+      }
+      styleSheet.insertRule(style, currentIndex);
+      insertedIndices.push(currentIndex);
+    });
     return cancel;
     function cancel(){
       if(styleSheet){
-        styleSheet.deleteRule(index);
-        styleSheet.insertRule('*{}',index);
-        styleSheet=null;
-        indies.push(index);
-        return !(index=-1)+1;
+        insertedIndices.forEach(function (currentIndex){
+          styleSheet.deleteRule(currentIndex);
+          styleSheet.insertRule('*{}', currentIndex);
+          reusableIndies.push(currentIndex);
+        });
+        return !(styleSheet = null);
       }
     }
   },
@@ -2184,11 +2244,27 @@ inherit(RenderGlobal, Flip.util.Object, {
 });
 FlipScope.global = new RenderGlobal();
 function setDefaultImmediateStyle(renderGlobal,property,selector,rule){
-  var _cancel,ani={_cssHandlerMap:{},selector:isStr(selector)?selector:''};
+  var _cancel, ani = { _cssHandlerMap: {}, _matHandlerMap: {}, selector: isStr(selector) ? selector : '' };
   Animation.prototype[property].apply(ani,[selector,rule]);
   Flip(function () {
-    var style = renderAnimationCssProxies(ani).map(combineStyleText).join('');
-    _cancel=renderGlobal.immediate(style);
+    var styles;
+    if (property == 'css') {
+      styles = renderAnimationCssProxies(ani).map(combineStyleText);
+    }
+    else if (property == 'transform') {
+      var cache = {};
+      styles = [];
+      renderAnimationTransform(ani, cache);
+      objForEach(cache, function (mat, selector){
+        var cssProxy = new CssProxy();
+        cssProxy.$withPrefix('transform', mat + '');
+        styles.push(cssProxy.$styleText(selector))
+      })
+    }
+    else {
+      throw Error('invalid property:' + property);
+    }
+    _cancel = renderGlobal.immediate.apply(renderGlobal, styles);
   });
   return cancel;
   function cancel(){
