@@ -53,9 +53,9 @@ Flip.fallback = function (window){
     }
   }
   if (!window.Float32Array) {
-    window.Float32Array = inherit(function (lengthOrArray){
-      if (!(this instanceof arguments.callee)) {
-        return new arguments.callee(lengthOrArray);
+    window.Float32Array = inherit(function F(lengthOrArray){
+      if (!(this instanceof F)) {
+        return new F(lengthOrArray);
       }
       var i = 0, from, len;
       if (typeof lengthOrArray === "number") {
@@ -596,7 +596,7 @@ Flip.CssProxy = CssProxy;
   function capitalizeString(str){
     if (!str) {
       return '';
-    }
+  }
     return str[0].toUpperCase() + str.substring(1)
   }
 function combineStyleText(selector,body){
@@ -1971,15 +1971,19 @@ function updateTask(task,state){
   }
 }
 function resetStyleElement(styleElement){
-  var replaceNode=styleElement.cloneNode(false);
+  var styleSheet = styleElement.sheet;
+  for (var i = styleSheet.cssRules.length; i > 0; i--) {
+    styleSheet.deleteRule(i - 1)
+  }
+  /* var replaceNode=styleElement.cloneNode(false);
   styleElement.parentNode.replaceChild(replaceNode,styleElement);
-  return replaceNode;
+   return replaceNode;*/
+  return styleElement;
 }
 function renderGlobal(global,state){
   if(global._invalid||state.forceRender){
     objForEach(global._tasks,function(task){renderTask(task,state);});
-    var styleEle = global._styleElement = resetStyleElement(global._styleElement),
-      styleSheet = styleEle.sheet;
+    var styleSheet = resetStyleElement(global._styleElement).sheet;
     state.styleStack.forEach(function (style, i){
       addSafeStyle(style.selector, style.rules.join(';'), i);
     });
@@ -2300,7 +2304,7 @@ function setDefaultImmediateStyle(renderGlobal,property,selector,rule){
       if (!this._isStop) {
         this.last = this.now;
         this.now = Date.now() - this._startTime - this._stopTime;
-      }
+    }
     }
   });
 var nextUid=(function(map){

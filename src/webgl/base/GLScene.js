@@ -12,8 +12,7 @@ function GLScene(opt){
 inherit(GLScene, GLRender.prototype, {
   update: function (state){
     ensureProgram(this, state.gl);
-    state.glSecne = this;
-    state.glParam = this.glParam;
+    this.updateRenderState(state);
     updateGLRender(this, state);
   },
   finalize: function (state){
@@ -23,11 +22,16 @@ inherit(GLScene, GLRender.prototype, {
       state.gl.deleteProgram(this.program);
     }
   },
+  updateRenderState: function (state){
+    state.glSecne = this;
+    state.glParam = this.glParam;
+  },
   render: function (state){
     var program = this.program, gl = state.gl;
     if (program) {
       gl.useProgram(program);
     }
+    this.updateRenderState(state);
     useBinder(this.binder, state);
     this._children.forEach(function (c){
       c.render(state)
