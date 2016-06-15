@@ -593,7 +593,7 @@ Flip.CssProxy = CssProxy;
     })
   }
 })();
-  function capitalizeString(str){
+  function capitalizeString(str) {
     if (!str) {
       return '';
   }
@@ -2279,7 +2279,7 @@ function setDefaultImmediateStyle(renderGlobal,property,selector,rule){
   }
 }
 
-  function TimeLine(task){
+  function TimeLine(task) {
     this.last = this.now = this._stopTime = 0;
     this._startTime = this._lastStop = Date.now();
     this.task = task;
@@ -2288,19 +2288,19 @@ function setDefaultImmediateStyle(renderGlobal,property,selector,rule){
 
   inherit(TimeLine, Flip.util.Object, {
     ticksPerSecond: 1000,
-    stop: function (){
+    stop: function () {
       if (!this._isStop) {
         this._isStop = true;
         this._lastStop = Date.now();
     }
     },
-    start: function (){
+    start: function () {
       if (this._isStop) {
         this._isStop = false;
         this._stopTime += Date.now() - this._lastStop;
     }
     },
-    move: function (){
+    move: function () {
       if (!this._isStop) {
         this.last = this.now;
         this.now = Date.now() - this._startTime - this._stopTime;
