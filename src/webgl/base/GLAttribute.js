@@ -6,32 +6,34 @@ function GLAttribute(name, bufferOrData, stride, offset) {
   this.name = name;
   this._stride = stride || 0;
   this._offset = offset || 0;
-  this.buffer=bufferOrData;
+  this.buffer = bufferOrData;
   this._invalid = true;
 }
 inherit(GLAttribute, GLBinder.prototype, {
-  set buffer(v){
+  set buffer(v) {
     var ob = this._buffer;
     if (ob instanceof GLBuffer) {
       ob.release(this);
     }
     if (v instanceof GLBuffer) {
       this._buffer = v;
-    } else if (v && v.buffer instanceof ArrayBuffer) {
+    }
+    else if (v && v.buffer instanceof ArrayBuffer) {
       this._buffer = new GLBuffer(v);
-    } else {
-      throw Error('expect data array or GLBuffer');
+    }
+    else {
+      throw Error('expect attribute data to be a TypedArray or GLBuffer');
     }
     this._buffer.ref(this);
   },
-  get buffer(){
+  get buffer() {
     return this._buffer;
   },
-  get data(){
-    var b = this.buffer;
+  get data() {
+      var b = this.buffer;
     return b ? b.data : null
   },
-  set data(v){
+  set data(v) {
     if (v instanceof GLBuffer) {
       this.buffer = v;
     }
@@ -40,31 +42,31 @@ inherit(GLAttribute, GLBinder.prototype, {
       if (b) {
         b.data = v;
         b.invalid();
-    }
+      }
       else {
         this.buffer = new GLBuffer(v)
+      }
     }
-    }
-    else {
+      else {
       throw Error();
     }
     this.invalid();
   },
-  bind:function(gl,state){
-    var entry=state.glParam[this.name];
+  bind: function (gl, state) {
+    var entry = state.glParam[this.name];
     this.buffer.bind(gl);
     gl.vertexAttribPointer(entry._loc, entry._size, gl.FLOAT, false, this._stride, this._offset);
   },
-  invalid:function(){
+  invalid: function () {
     this.buffer.invalid();
   },
-  finalize:function(state,gl){
+  finalize: function (state, gl) {
     this.buffer.release(this);
     this.buffer.finalize(gl);
-  }
+    }
   }
 );
-function AttributeEntry(type, loc,name) {
+function AttributeEntry(type, loc, name) {
   var t;
   switch (type) {
     case 'vec2':
@@ -82,10 +84,10 @@ function AttributeEntry(type, loc,name) {
   }
   this._size = t;
   this._loc = loc;
-  this.name=name;
+  this.name = name;
 }
-AttributeEntry.prototype={
-  convert:function(array){
-    return new GLAttribute(this.name,array)
+AttributeEntry.prototype = {
+  convert: function (array) {
+    return new GLAttribute(this.name, array)
   }
 };

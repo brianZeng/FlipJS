@@ -1,7 +1,7 @@
 /**
  * Created by Administrator on 2015/3/31.
  */
-function GLUniform(opt){
+function GLUniform(opt) {
   if (!(this instanceof GLUniform)) {
     return new GLUniform(opt);
   }
@@ -9,14 +9,14 @@ function GLUniform(opt){
   this.value = opt.value;
 }
 inherit(GLUniform, GLBinder.prototype, {
-  get value(){
+  get value() {
     return this._val;
   },
-  set value(v){
+  set value(v) {
     this.invalid();
     this._val = v;
   },
-  bind: function (gl, state){
+  bind: function (gl, state) {
     var entry;
     if (this._invalid && (entry = state.glSecne.uniforms[this.name])) {
       entry.use(gl, this._val);
@@ -24,13 +24,21 @@ inherit(GLUniform, GLBinder.prototype, {
     }
   }
 });
-function UniformEntry(type, location, name){
-  this.set = UniformEntry.setter[type];
-  this.convert = UniformEntry.converter[type];
+function UniformEntry(type, location, name) {
   this._loc = location;
   this.name = name;
+  this.type = type;
 }
-function convertToVec(vec, num){
+
+UniformEntry.prototype = {
+  use: function (gl, value) {
+    uniformEntrySetter[this.type](gl, value, this._loc);
+  },
+  convert: function (value) {
+    return uniformEntryConverter[this.type](this.name, value);
+  }
+};
+function convertToVec(vec, num) {
   var arr;
   if (vec instanceof GLVec) {
     arr = vec.elements;
@@ -42,75 +50,73 @@ function convertToVec(vec, num){
   }
   throw Error('cannot convert to vec' + num);
 }
-UniformEntry.converter = {
-  vec4: function (value){
-    return new GLUniform({ name: this.name, value: convertToVec(value, 4) })
+var uniformEntryConverter = UniformEntry.converter = {
+  vec4: function (name, value) {
+    return new GLUniform({ name: name, value: convertToVec(value, 4) })
   },
-  vec3: function (value){
-    return new GLUniform({ name: this.name, value: convertToVec(value, 3) })
+  vec3: function (name, value) {
+    return new GLUniform({ name: name, value: convertToVec(value, 3) })
   },
-  vec2: function (value){
-    return new GLUniform({ name: this.name, value: convertToVec(value, 2) })
+  vec2: function (name, value) {
+    return new GLUniform({ name: name, value: convertToVec(value, 2) })
   },
-  mat4: function (mat){
-    return convertMat(mat, 16);
+  mat4: function (name, mat) {
+    return new GLUniform({ name: name, value: convertMat(mat, 16) })
   },
-  mat3: function (mat){
-    return convertMat(mat, 9);
+  mat3: function (name, mat) {
+    return new GLUniform({ name: name, value: convertMat(mat, 9) });
   },
-  mat2: function (mat){
-    return convertMat(mat, 4);
+  mat2: function (name, mat) {
+    return new GLUniform({ name: name, value: convertMat(mat, 4) });
   },
-  float: function (val){
-    return new GLUniform({ name: this.name, value: parseFloat(val) })
+  float: function (name, val) {
+    return new GLUniform({ name: name, value: parseFloat(val) })
   },
-  sampler2D: function (source){
-    return new GLSampler2D({ name: this.name, source: source })
+  sampler2D: function (name, source) {
+    return new GLSampler2D({ name: name, source: source })
   },
-  samplerCube: function (gl, index){
+  samplerCube: function (name, source) {
     throw Error('not implement')
   },
-  int: function (val){
-    return new GLUniform({ name: this.name, value: parseInt(val) })
+  int: function (name, val) {
+    return new GLUniform({ name: name, value: parseInt(val) })
   }
 };
-UniformEntry.setter = {
-  vec4: function (gl, vec){
-    gl.uniform4fv(this._loc, vec.elements);
+var uniformEntrySetter = UniformEntry.setter = {
+  vec4: function (gl, vec, loc) {
+    gl.uniform4fv(loc, vec.elements);
   },
-  vec3: function (gl, vec){
-    gl.uniform3fv(this._loc, vec.elements);
+  vec3: function (gl, vec, loc) {
+    gl.uniform3fv(loc, vec.elements);
   },
-  vec2: function (gl, vec){
-    gl.uniform2fv(this._loc, vec.elements);
+  vec2: function (gl, vec, loc) {
+    gl.uniform2fv(loc, vec.elements);
   },
-  mat4: function (gl, mat){
-    gl.uniformMatrix4fv(this._loc, false, mat.elements);
+  mat4: function (gl, mat, loc) {
+    gl.uniformMatrix4fv(loc, false, mat.elements);
   },
-  mat3: function (gl, mat){
-    gl.uniformMatrix3fv(this._loc, false, mat.elements);
+  mat3: function (gl, mat, loc) {
+    gl.uniformMatrix3fv(loc, false, mat.elements);
   },
-  mat2: function (gl, mat){
-    gl.uniformMatrix2fv(this._loc, false, mat.elements);
+  mat2: function (gl, mat, loc) {
+    gl.uniformMatrix2fv(loc, false, mat.elements);
   },
-  float: function (gl, f){
-    gl.uniform1f(this._loc, f);
+  float: function (gl, f, loc) {
+    gl.uniform1f(loc, f);
   },
-  sampler2D: function (gl, index){
-    gl.uniform1i(this._loc, index);
+  sampler2D: function (gl, index, loc) {
+    gl.uniform1i(loc, index);
   },
-  samplerCube: function (gl, index){
-    gl.uniform1i(this._loc, index);
+  samplerCube: function (gl, index, loc) {
+    gl.uniform1i(loc, index);
   },
-  int: function (gl, i){
-    gl.uniform1i(this._loc, i);
+  int: function (gl, i, loc) {
+    gl.uniform1i(loc, i);
   }
 };
-function convertMat(mat, elementCount){
+function convertMat(mat, elementCount) {
   var elements;
-  if (mat instanceof GLUniform) {
-    return mat;
-  } else if (mat instanceof Float32Array) {
+  if (mat instanceof Float32Array) {
     elements = new Float32Array(mat);
   }
   else if (mat instanceof Array) {
@@ -124,8 +130,3 @@ function convertMat(mat, elementCount){
   }
   return { elements: elements }
 }
-UniformEntry.prototype = {
-  use: function (gl, value){
-    this.set(gl, value);
-  }
-};

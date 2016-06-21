@@ -15,16 +15,19 @@ function finalizeBinder(binder,state){
   })
 }
 function correlateBinder(ctrl,state){
-  var scene = state.glSecne, attributes = scene.attributes, uniforms = scene.uniforms, target = ctrl.binder;
+  var scene = state.glSecne,
+    attributes = scene.attributes,
+    uniforms = scene.uniforms,
+    target = ctrl.binder;
   if(ctrl._invalidBinder){
-    objForEach(target,function(binderOrFunc,key){
+    objForEach(target, function (binderOrFunc, name) {
       var convertedBinder;
-      if ((attributes.hasOwnProperty(key) && !(target[key] instanceof GLAttribute)) ||
-        (uniforms.hasOwnProperty(key) && !(target[key] instanceof GLUniform))) {
-        convertedBinder = target[key] = (attributes[key] || uniforms[key]).convert(binderOrFunc);
+      if ((attributes.hasOwnProperty(name) && !(target[name] instanceof GLAttribute)) ||
+        (uniforms.hasOwnProperty(name) && !(target[name] instanceof GLUniform))) {
+        convertedBinder = target[name] = (attributes[name] || uniforms[name]).convert(binderOrFunc);
       }
       else if(isFunc(binderOrFunc)){
-        convertedBinder = target[key] = new GLBinder({ name: key, bind: binderOrFunc })
+        convertedBinder = target[name] = new GLBinder({ name: name, bind: binderOrFunc })
       }
       else if (binderOrFunc instanceof GLBinder) {
         convertedBinder = binderOrFunc;

@@ -38,7 +38,7 @@ GLBuffer.prototype = {
     return this._data;
   },
   set data(val){
-    if (!val || val === this._data || !val.length) {
+    if (!val || val === this._data) {
       return;
     }
     if (WebGLRenderingContext.ARRAY_BUFFER === this._type) {

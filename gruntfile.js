@@ -40,7 +40,8 @@ var config = {
     },
     bower_flip:{
       files:{
-        'dist/flip.js':'bin/flip.js'
+        'dist/flip.js': 'bin/flip.js',
+        'dist/flip_gl.js': 'bin/flip_gl.js'
       },
       options:{
         stripBanners:true
@@ -111,7 +112,8 @@ config.uglify = {
   },
   bower_flip:{
     files:{
-      'dist/flip.min.js':'dist/flip.js'
+      'dist/flip.min.js': 'dist/flip.js',
+      'dist/flip_gl.min.js': 'dist/flip_gl.js'
     },
     options:{
       screwIE8:true
