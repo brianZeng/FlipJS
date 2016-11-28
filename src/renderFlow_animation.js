@@ -2,7 +2,7 @@
  * Created by Administrator on 2015/3/6.
  */
 
-function updateAnimation(animation, renderState){
+function updateAnimation(animation, renderState) {
   var clock = animation.clock;
   renderState.animation = animation;
   if (updateClock(clock, renderState)) {
@@ -18,7 +18,7 @@ function updateAnimation(animation, renderState){
   renderState.animatetion = null;
   return true;
 }
-function finalizeAnimation(animation){
+function finalizeAnimation(animation) {
   var fillMode = animation.fillMode;
   if (animation.fillMode !== FILL_MODE.KEEP) {
     animation.finalize();
@@ -27,7 +27,7 @@ function finalizeAnimation(animation){
     }
   }
 }
-function renderAnimation(ani, state){
+function renderAnimation(ani, state) {
   var styleStack = state.styleStack;
   state.animation = ani;
   styleStack.push.apply(styleStack, renderAnimationCssProxies(ani));
@@ -38,18 +38,18 @@ function renderAnimation(ani, state){
   }
   state.animation = null;
 }
-function updateAnimationParam(animation){
-  var p = animation.percent, cur = animation.current = Object.create(animation._immutable);
-  objForEach(animation._variable, function (value, key){
+function updateAnimationParam(animation) {
+  var p = animation.percent, cur = animation.current = objAssign({}, animation._immutable);
+  objForEach(animation._variable, function (value, key) {
     cur[key] = isFunc(value) ? value(p, cur) : (isNaN(value) ? value : p * value);
   });
 }
-function renderAnimationCssProxies(animation, noUpdate){
+function renderAnimationCssProxies(animation, noUpdate) {
   var param = animation.current, results = [], animationSelector = animation.selector;
-  objForEach(animation._cssHandlerMap, function (cbs, selector){
+  objForEach(animation._cssHandlerMap, function (cbs, selector) {
     var globalSelector = selector.replace(/&/g, animationSelector),
       rules = [];
-    cbs.forEach(function (handler){
+    cbs.forEach(function (handler) {
       var cssText = resolveCss(handler.cb, handler.proxy, animation, param, noUpdate).$toCachedCssString();
       if (cssText) {
         rules.push(cssText)
@@ -61,12 +61,12 @@ function renderAnimationCssProxies(animation, noUpdate){
   });
   return results;
 }
-function renderAnimationTransform(animation, matCache){
+function renderAnimationTransform(animation, matCache) {
   var animationSelector = animation.selector, param = animation.current;
-  objForEach(animation._matHandlerMap, function (cbs, selector){
+  objForEach(animation._matHandlerMap, function (cbs, selector) {
     var globalSelector = selector.replace(/&/g, animationSelector),
       mat = getMat3BySelector(matCache, globalSelector);
-    cbs.forEach(function (callback){
+    cbs.forEach(function (callback) {
       mat = callback.call(animation, mat, param) || mat;
       if (!(mat instanceof Mat3)) {
         throw Error('Transform function should return an instance of Flip.Mat3');
@@ -75,7 +75,7 @@ function renderAnimationTransform(animation, matCache){
     globalSelector && (matCache[globalSelector] = mat);
   });
 }
-function getMat3BySelector(map, selector){
+function getMat3BySelector(map, selector) {
   var mat = map[selector];
   if (!mat) {
     mat = new Mat3();
@@ -85,7 +85,7 @@ function getMat3BySelector(map, selector){
   }
   return mat;
 }
-function resolveCss(callbackOrRuleObj, cssProxy, thisObj, e, noUpdate){
+function resolveCss(callbackOrRuleObj, cssProxy, thisObj, e, noUpdate) {
   if (!noUpdate) {
     if (isObj(callbackOrRuleObj)) {
       cssProxy.$merge(callbackOrRuleObj);

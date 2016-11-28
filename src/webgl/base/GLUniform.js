@@ -1,11 +1,14 @@
 /**
  * Created by Administrator on 2015/3/31.
  */
+
+
 function GLUniform(opt) {
   if (!(this instanceof GLUniform)) {
     return new GLUniform(opt);
   }
   this.name = opt.name;
+  this.type = opt.type;
   this.value = opt.value;
 }
 inherit(GLUniform, GLBinder.prototype, {
@@ -14,74 +17,131 @@ inherit(GLUniform, GLBinder.prototype, {
   },
   set value(v) {
     this.invalid();
-    this._val = v;
+    this._val = convertUniformValueByType(v, this.type);
   },
   bind: function (gl, state) {
-    var entry;
-    if (this._invalid && (entry = state.glSecne.uniforms[this.name])) {
-      entry.use(gl, this._val);
+    var entry = state.glSecne.uniforms[this.name];
+    if (entry) {
+      entry.use(gl, this._val, this._invalid);
       this._invalid = false;
     }
   }
 });
+function GLDynamicUniform(opt) {
+  if (!(this instanceof GLDynamicUniform)) {
+    return new GLDynamicUniform(opt)
+  }
+  this.name = opt.name;
+  this.type = opt.type;
+  if (isFunc(opt.getValue)) {
+    this.getValue = opt.getValue;
+  }
+}
+inherit(GLDynamicUniform, GLUniform.prototype, {
+  get value() {
+    return this.getValue()
+  },
+  getValue: function () {
+    throw Error('no value provided for:' + this.name);
+  },
+  bind: function (gl, state) {
+    var entry = state.glSecne.uniforms[this.name];
+    if (entry) {
+      entry.use(gl, convertUniformValueByType(this.getValue(), this.type));
+    }
+  }
+
+});
+
 function UniformEntry(type, location, name) {
   this._loc = location;
   this.name = name;
   this.type = type;
+  this._lastValue = void 0;
 }
-
 UniformEntry.prototype = {
-  use: function (gl, value) {
-    uniformEntrySetter[this.type](gl, value, this._loc);
+  use: function (gl, value, force) {
+    var type = this.type;
+    if (this.maybeInvalid(value, type) || force) {
+      uniformEntrySetter[type](gl, value, this._loc);
+      if (/(mat|vec)(2|3|4)/.test(type)) {
+        this._lastValue = new Float32Array(value.elements);
+      }
+      else {
+        this._lastValue = value;
+      }
+    }
   },
+  maybeInvalid: function (val, type) {
+    var last = this._lastValue;
+    if (last) {
+      if (/(mat|vec)(2|3|4)/.test(type)) {
+        if (isObj(val) && val.elements) {
+          var currentElements = last;
+          for (var i = 0, len = currentElements.length; i < len; i++) {
+            if (currentElements[i] !== val.elements[i]) {
+              return true
+            }
+          }
+          return false;
+        }
+      }
+      else if (/float|int/.test(type)) {
+        return val !== last;
+      }
+    }
+    return true;
+  }
+  ,
   convert: function (value) {
-    return uniformEntryConverter[this.type](this.name, value);
+    var type = this.type, name = this.name;
+    if (type === 'sampler2D') {
+      var options;
+      if (isCanvasLike(value) || isImageLike(value) || !value) {
+        options = { name: name, source: value }
+      }
+      else if (isObj(value)) {
+        options = objAssign(value, { name: name })
+      }
+      return new GLSampler2D(options)
+    }
+    else if (type === 'samplerCube') {
+      throw Error('not support type:' + type);
+    }
+    else {
+      if (isFunc(value)) {
+        return new GLDynamicUniform({ name: name, type: type, getValue: value });
+      }
+      return new GLUniform({ name: name, value: value, type: type });
+    }
   }
 };
+function convertUniformValueByType(value, type) {
+  if (/vec(2|3|4)/.test(type)) {
+    return convertToVec(value, +RegExp.$1);
+  }
+  else if (/mat(2|3|4)/.test(type)) {
+    var dim = +RegExp.$1;
+    return convertMat(value, dim * dim);
+  }
+  else if (type == 'int') {
+    return parseInt(value)
+  }
+  else if (type == 'float') {
+    return +value;
+  }
+  return value;
+}
 function convertToVec(vec, num) {
-  var arr;
   if (vec instanceof GLVec) {
-    arr = vec.elements;
+    return vec.clone();
   } else if (vec instanceof Array) {
     return new GLVec(vec.slice(0, num));
-  }
-  if (vec.subarray) {
-    return new GLVec(arr.subarray(0, num));
+  } else if (vec instanceof Float32Array) {
+    return new GLVec(vec.subarray(0, num));
   }
   throw Error('cannot convert to vec' + num);
 }
-var uniformEntryConverter = UniformEntry.converter = {
-  vec4: function (name, value) {
-    return new GLUniform({ name: name, value: convertToVec(value, 4) })
-  },
-  vec3: function (name, value) {
-    return new GLUniform({ name: name, value: convertToVec(value, 3) })
-  },
-  vec2: function (name, value) {
-    return new GLUniform({ name: name, value: convertToVec(value, 2) })
-  },
-  mat4: function (name, mat) {
-    return new GLUniform({ name: name, value: convertMat(mat, 16) })
-  },
-  mat3: function (name, mat) {
-    return new GLUniform({ name: name, value: convertMat(mat, 9) });
-  },
-  mat2: function (name, mat) {
-    return new GLUniform({ name: name, value: convertMat(mat, 4) });
-  },
-  float: function (name, val) {
-    return new GLUniform({ name: name, value: parseFloat(val) })
-  },
-  sampler2D: function (name, source) {
-    return new GLSampler2D({ name: name, source: source })
-  },
-  samplerCube: function (name, source) {
-    throw Error('not implement')
-  },
-  int: function (name, val) {
-    return new GLUniform({ name: name, value: parseInt(val) })
-  }
-};
 var uniformEntrySetter = UniformEntry.setter = {
   vec4: function (gl, vec, loc) {
     gl.uniform4fv(loc, vec.elements);
@@ -124,6 +184,9 @@ function convertMat(mat, elementCount) {
     for (var i = 0; i < elementCount; i++) {
       elements[i] = mat[i];
     }
+  }
+  else if (mat.elements) {
+    return convertMat(mat.elements, elementCount)
   }
   else {
     throw Error('not support');

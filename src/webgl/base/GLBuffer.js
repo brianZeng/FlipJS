@@ -64,5 +64,14 @@ GLBuffer.prototype = {
       gl.bufferData(this._type, this._data, this.usage);
       this._buffered = true;
     }
+  },
+  dispose: function (gl) {
+    if (this._glHandle) {
+      if (this._refs.length) {
+        console.warn('the buffer is being used when disposed');
+      }
+      gl.deleteBuffer(this._glHandle);
+      this._glHandle = null;
+    }
   }
 };

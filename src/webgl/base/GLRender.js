@@ -6,25 +6,43 @@ function GLRender(opt){
   opt=opt||{};
   this.binder={};
   this._children=[];
+  this._disabled = false;
   this._parent=null;
   this.addBinder(opt.binder)
 }
-function updateGLRender(render,state){
-  state.glRender=render;
-  correlateBinder(render,state);
-}
 inherit(GLRender,Render.prototype,{
-  get parent(){return this._parent},
-  update:function(state){
-    updateGLRender(this, state);
-    this._children.forEach(function (c){
-        c.update(state)
-      }
-    );
+  get disabled() {
+    return this._disabled
   },
-  finalize:function(state){
-    finalizeBinder(this.binder,state.glResMng);
-    this._children.forEach(function(c){c.finalize(state)});
+  get parent(){return this._parent},
+  set disabled(v) {
+    if (this._disabled != v) {
+      this._disabled = v;
+      this.invalid();
+    }
+  },
+  findChild: function (filter, deep) {
+    var result;
+    this._children.some(function (child) {
+      if (filter(child)) {
+        result = child;
+      }
+      else if (deep && isFunc(child.findChild)) {
+        result = child.findChild(filter, deep);
+      }
+      return result;
+    });
+    return result;
+  },
+  update: function (state) {
+    if (!this._disabled) {
+      state.glRender = this;
+      correlateBinder(this, state);
+      this._children.forEach(function (c) {
+          c.update(state)
+        }
+      );
+    }
   },
   add:function(){
     for(var i=0,arg=arguments[0];arg;arg=arguments[++i]){
@@ -47,9 +65,19 @@ inherit(GLRender,Render.prototype,{
     return this
   },
   render:function(state){
-    useBinder(this.binder, state);
-    this._children.forEach(function (c){
-      c.render(state)
-    });
+    if (!this._disabled) {
+      useBinder(this.binder, state);
+      this._children.forEach(function (c) {
+        c.render(state)
+      });
+    }
+  },
+  dispose: function (gl) {
+    disposeBinder(this.binder, gl);
+    this._children.forEach(function (c) {
+      if (isFunc(c.dispose)) {
+        c.dispose(gl);
+      }
+    })
   }
 });

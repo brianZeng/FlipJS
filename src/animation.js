@@ -105,6 +105,10 @@ inherit(Animation, Render,
     },
     use: function (opt){
       useAniOption(this, opt);
+      var renderFunc = opt.render;
+      if (isFunc(renderFunc)) {
+        this.render = decorateFunction(this.render, renderFunc);
+      }
       return this;
     },
     /**

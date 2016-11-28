@@ -5,7 +5,7 @@ function GLBinder(opt){
   if (!(this instanceof GLBinder)) {
     return new GLBinder(opt);
   }
-  this.name = opt.name;
+  this.name = opt.name || nextUid(this.constructor.name || 'GLBinder');
   if (isFunc(opt.bind)) {
     this.bind = opt.bind;
   }

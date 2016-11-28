@@ -5,21 +5,25 @@ function GLScene(opt) {
   if (!(this instanceof GLScene)) {
     return new GLScene(opt);
   }
-  GLRender.call(this, opt);
   this.vertexSource = opt.vertexSource;
   this.fragSource = opt.fragSource;
+  this.define = objAssign({}, opt.define);
+  this._glVars = getGLVarDeclarations(this.vertexSource + this.fragSource);
+  opt.binder = this.buildBinder(opt.binder);
+  GLRender.call(this, opt);
 }
 inherit(GLScene, GLRender.prototype, {
   update: function (state) {
     ensureProgram(this, state.gl);
     this.updateRenderState(state);
-    updateGLRender(this, state);
+    GLRender.prototype.update.call(this, state);
   },
-  finalize: function (state) {
-    GLRender.prototype.finalize.call(this, state);
+  dispose: function (gl) {
+    GLRender.prototype.dispose.apply(this, arguments);
     var program = this.program;
     if (program) {
-      state.gl.deleteProgram(this.program);
+      gl.deleteProgram(this.program);
+      this.program = null;
     }
   },
   updateRenderState: function (state) {
@@ -37,44 +41,55 @@ inherit(GLScene, GLRender.prototype, {
       c.render(state)
     });
   },
-  buildBinder: function (binder) {
-    return buildBinder(this.fragSource + this.vertexSource, binder)
+  buildBinder: function (binders) {
+    return buildBinder(this._glVars, binders)
   }
 });
-GLScene.buildBinder = buildBinder;
+GLScene.buildBinder = function (source, binders) {
+  return buildBinder(getGLVarDeclarations(source), binders)
+};
 function ensureProgram(scene, gl) {
-  var program, vSource, fSource, varDefs;
+  var program;
   if (!(program = scene.program)) {
-    program = scene.program = createGLProgram(gl, vSource = scene.vertexSource, fSource = scene.fragSource);
-    varDefs = getVarEntries(gl, program, vSource + fSource);
-    scene.glParam = mixObj(
-      scene.attributes = varDefs.attributes,
-      scene.uniforms = varDefs.uniforms
-    );
+    var vSource = scene.vertexSource;
+    var fSource = scene.fragSource;
+    program = scene.program = createGLProgram(gl, vSource, fSource, scene.define);
+    var varDefs = getVarEntries(gl, program, vSource + fSource);
+    scene.glParam = objAssign({}, scene.attributes = varDefs.attributes, scene.uniforms = varDefs.uniforms);
   }
 }
-function createGLProgram(gl, vSource, fSource) {
-  var program = gl.createProgram(), shader = gl.createShader(gl.FRAGMENT_SHADER), error;
-  gl.shaderSource(shader, fSource);
+function createGLProgram(gl, vSource, fSource, define) {
+  var program = gl.createProgram(),
+    shader = gl.createShader(gl.FRAGMENT_SHADER),
+    marco = '',
+    error;
+  objForEach(define, function (val, key) {
+    marco += '#define ' + key + ' ' + val + '\n';
+  });
+  gl.shaderSource(shader, marco + fSource);
   gl.compileShader(shader);
   var compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
   if (!compiled) {
     error = gl.getShaderInfoLog(shader);
-    console.log('fshader Failed to compile shader: ' + error);
+    throw Error('fragment shader fail:' + error);
   }
   gl.attachShader(program, shader);
   gl.deleteShader(shader);
   shader = gl.createShader(gl.VERTEX_SHADER);
-  gl.shaderSource(shader, vSource);
+  gl.shaderSource(shader, marco + vSource);
   gl.compileShader(shader);
   compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
   if (!compiled) {
     error = gl.getShaderInfoLog(shader);
-    console.log('vshader Failed to compile shader: ' + error);
+    throw Error('vertex shader fail:' + error);
   }
   gl.attachShader(program, shader);
   gl.linkProgram(program);
   gl.deleteShader(shader);
+  error = gl.getProgramInfoLog(program);
+  if (error) {
+    throw Error('program link fail:' + error);
+  }
   return program;
 }
 function getVarEntries(gl, program, source) {
@@ -84,68 +99,55 @@ function getVarEntries(gl, program, source) {
   objForEach(def.attributes, function (define, name) {
     var loc = gl.getAttribLocation(program, name);
     if (loc == -1) {
-      throw Error('Fail to get attribute ' + name);
+      console.warn('Fail to get attribute ' + name);
     }
     attributes[name] = new AttributeEntry(define.type, loc, name);
-    gl.enableVertexAttribArray(loc);
   });
   objForEach(def.uniforms, function (define, name) {
     if (!uniforms.hasOwnProperty(name)) {
       var loc = gl.getUniformLocation(program, name);
       if (loc == -1) {
-        throw Error('Fail to get uniform ' + name);
+        console.warn('Fail to get uniform ' + name);
       }
-      uniforms[name] = new UniformEntry(define.type, loc, name)
+      uniforms[name] = new UniformEntry(define.type, loc, name);
     }
   });
   return { uniforms: uniforms, attributes: attributes }
 }
-/*
- function getAttributeEntries(gl, program, vSource) {
-  var u = {}, loc, name, match, nrg = /\battribute\s+(vec[234]|float)\s+\b(\w+)\b\s?;/gm;
-  while ((match = nrg.exec(vSource))) {
-    loc = gl.getAttribLocation(program, name = match[2]);
-    if (loc == -1) {
-      throw Error('get attribute ' + name + ' fail');
-    }
-    u[name] = new AttributeEntry(match[1], loc, name);
-    gl.enableVertexAttribArray(loc);
-  }
-  return u;
-}
- function getUniformEntries(gl, program, vSource, fSource) {
-  var u = {}, source = vSource + fSource, match, name, loc, nrg = /\buniform\s+(vec[234]|float|sampler2D|samplerCube|mat[234])\s+\b(\w+)\b\s?;/gm;
-  while ((match = nrg.exec(source))) {
-    loc = gl.getUniformLocation(program, name = match[2]);
-    if (loc == -1) {
-      throw Error('get uniform ' + name + ' fail');
-    }
-    if (!u[name]) {
-      u[name] = new UniformEntry(match[1], loc, name);
-    }
-  }
-  return u;
- }*/
-function buildBinder(source, map) {
-  var dec = getGLVarDeclarations(source),
-    uniforms = dec.uniforms,
-    attributes = dec.attributes,
+function buildBinder(declare, map) {
+  var uniforms = declare.uniforms,
+    attributes = declare.attributes,
     ret = {};
   objForEach(map, function (value, name) {
-    var define;
-    if (uniforms.hasOwnProperty(name)) {
-      define = uniforms[name];
-      ret[name] = uniformEntryConverter[define.type](define.name, value);
-    } else if (attributes.hasOwnProperty(name)) {
-      ret[name] = new GLAttribute(name, value);
+    var define, converted = value;
+    if (!(converted instanceof GLBinder)) {
+      if (uniforms.hasOwnProperty(name) && !(value instanceof GLUniform)) {
+        define = uniforms[name];
+        converted = getUniform(define.name, define.type, value);
+      } else if (attributes.hasOwnProperty(name) && !(value instanceof GLAttribute)) {
+        converted = new GLAttribute(name, value);
+      }
     }
+    ret[name] = converted;
   });
   return ret;
+}
+function getUniform(name, type, value) {
+  if (type == 'sampler2D') {
+    return new GLSampler2D({ name: name, source: value })
+  }
+  else if (type == 'samplerCube') {
+    throw Error('not support');
+  }
+  else if (isFunc(value)) {
+    return new GLDynamicUniform({ name: name, type: type, getValue: value })
+  }
+  return GLUniform({ name: name, type: type, value: value })
 }
 function getGLVarDeclarations(source) {
   var uniforms = {},
     attributes = {},
-    nrg = /\b(uniform|attribute)\s+(vec[234]|float|sampler2D|samplerCube|mat[234])\s+\b(\w+)\b\s?;/gm,
+    nrg = /\b(uniform|attribute)\s+(vec[234]|int|float|sampler2D|samplerCube|mat[234])\s+\b(\w+)\b\s?;/gm,
     match;
   while (match = nrg.exec(source)) {
     var target = match[1] === 'uniform' ? uniforms : attributes;

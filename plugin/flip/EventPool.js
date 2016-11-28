@@ -7,7 +7,7 @@
   }, eventType = {
     NULL: 0,
     PRESS: 1, CLICK: 2, DRAG: 3, RELEASE: 4, MOVE: 5//point
-  },util=Flip.util,forEach=util.Object.forEach;
+  }, util = Flip.util, forEach = util.Object.forEach;
 
   function EventPool(element) {
     this.registerHandlers(element);
@@ -25,7 +25,7 @@
     this._lastKey = null;
   }
 
-  util.inherit(EventPool,Flip.Render,{
+  util.inherit(EventPool, Flip.Render, {
     get shouldSkipFrame() {
       return this._skipped < this.skipFrameNum;
     },
@@ -33,9 +33,14 @@
       var r = [], e, ps = this.pEvents, len;
       forEach(ps, function (array, name) {
         len = array.length;
-        if (len == 0) delete ps[name];
-        else e = array[len - 1];
-        if (e == undefined) return;
+        if (len == 0) {
+          delete ps[name];
+        } else {
+          e = array[len - 1];
+        }
+        if (e == undefined) {
+          return;
+        }
         e.identifier = name;
         r.push(e);
       });
@@ -45,12 +50,15 @@
       return this.kEvents.slice(-1);
     },
     ignoreEvent: function (current, preview) {
-      if (preview instanceof PointEvent)
+      if (preview instanceof PointEvent) {
         return this.minMoveDistance > Math.abs(preview.clientX - current.clientX) + Math.abs(preview.clientY - current.clientY);
+      }
       return false;
     },
     registerHandlers: function (element) {
-      if (!(element instanceof HTMLElement) || element.eventPool)return;
+      if (!(element instanceof HTMLElement) || element.eventPool) {
+        return;
+      }
       var pool = this, preventFun = function (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -61,60 +69,72 @@
           element.addEventListener(name, f.bind(pool), true);
           element.addEventListener(name, preventFun, true);
         }
-        else
+        else {
           document.addEventListener(name, f.fun.bind(pool));
+        }
       });
       element.eventPool = pool;
       pool.element = element;
     },
     clear: function () {
       var pes = this.pEvents, keys = Object.getOwnPropertyNames(pes), lps = this._lastPoints;
-     // keys.remove('mouse');
+      // keys.remove('mouse');
       keys.forEach(function (name) {
-        if (!lps[name] || lps[name].action == actionType.UP) delete lps[name];
+        if (!lps[name] || lps[name].action == actionType.UP) {
+          delete lps[name];
+        }
       });
       this.pEvents = {};
       this.kEvents = [];
     },
     update: function (state) {
-      if (this.preventAll)return this.clear();
+      if (this.preventAll) {
+        return this.clear();
+      }
       var evts = this.lastKeyEvents.concat(this.lastPointEvents);
-      if (!this.shouldSkipFrame&&evts.length) {
+      if (!this.shouldSkipFrame && evts.length) {
         this.shouldClear = true;
         this.emit('update', [evts, state]);
-        if (this.shouldClear)
+        if (this.shouldClear) {
           this.clear();
+        }
         this._skipped = 0;
       }
-      else
+      else {
         this._skipped += 1;
+      }
     },
     add: function (event) {
       var evtArray, preview;
       if (event instanceof PointEvent) {
         evtArray = this.pEvents[event.identifier];
-        if (!evtArray) this.pEvents[event.identifier] = evtArray = [];
+        if (!evtArray) {
+          this.pEvents[event.identifier] = evtArray = [];
+        }
         preview = this._lastPoints[event.identifier];
         if (!event.combine(preview)) {
           evtArray.push(event);
           this._lastPoints[event.identifier] = event;
         }
       }
-      else if (event instanceof KeyEvent)
+      else if (event instanceof KeyEvent) {
         if (!event.combine(this._lastKey)) {
           this.kEvents.push(event);
           this._lastKey = event;
           event.definition = this.getKeyDefinition(event.keyCode);
         }
+      }
       return this;
     },
     addKeyDefinition: function (name, code) {
       var d = this.keyDefinition, codes = d.codes, names = d.names, nameIndex;
-      if (arguments.length > 2)
+      if (arguments.length > 2) {
         for (var i = 1, f = this.addKeyDefinition.bind(this, name), arg = arguments[i]; arg; arg = arguments[++i])
           f(arg);
-      else {
-        if (codes.indexOf(code) > -1)return this;
+      } else {
+        if (codes.indexOf(code) > -1) {
+          return this;
+        }
         nameIndex = names.indexOf(name);
         if (nameIndex == -1) {
           names.push(name);
@@ -131,17 +151,22 @@
     },
     getKeyCodes: function (name) {
       var d = this.keyDefinition, nameIndex = d.names.indexOf(name);
-      if (nameIndex < 0)return undefined;
+      if (nameIndex < 0) {
+        return undefined;
+      }
       for (var i = 0, indecies = d.index, len = indecies.length, r = [], codes = d.codes; i < len; i++)
-        if (indecies[i] == nameIndex)r.push(codes[i]);
+        if (indecies[i] == nameIndex) {
+          r.push(codes[i]);
+        }
       return r;
     },
     hasCodeDefinition: function (code) {
       return this.keyDefinition.codes.indexOf(code) != -1;
     },
     set onupdate(f) {
-      if (typeof f == "function")
+      if (typeof f == "function") {
         this.on('update', f);
+      }
     }
   });
   function eventTypeName(type) {
@@ -177,9 +202,9 @@
   }
 
   function PointEvent(e, action) {
-    if (e.identifier == undefined)
+    if (e.identifier == undefined) {
       e.identifier = 'mouse';
-    else {
+    } else {
       var target = e.target;
       e.offsetX = e.clientX - target.clientLeft - target.offsetLeft;
       e.offsetY = e.clientY - target.clientTop - target.offsetTop;
@@ -198,7 +223,7 @@
 
   PointEvent.prototype = {
     combine: function (preview) {
-      if (!preview)
+      if (!preview) {
         switch (this.action) {
           case actionType.DOWN:
             this.event = eventType.PRESS;
@@ -212,6 +237,7 @@
           default :
             throw '';
         }
+      }
       var pEvt = preview.event;
       this.dx = this.clientX - preview.clientX;
       this.dy = this.clientY - preview.clientY;
@@ -240,7 +266,9 @@
               this.event = eventType.DRAG;
               return false;
             default:
-              if (pEvt !== eventType.MOVE)this.startTime = this.timeStamp;
+              if (pEvt !== eventType.MOVE) {
+                this.startTime = this.timeStamp;
+              }
               this.event = eventType.MOVE;
               return false;
           }
@@ -276,8 +304,10 @@
 
   KeyEvent.prototype = {
     combine: function (preview) {
-      if (!preview)return false;
-      if (preview.event == eventType.PRESS)
+      if (!preview) {
+        return false;
+      }
+      if (preview.event == eventType.PRESS) {
         if (this.action == actionType.DOWN) {
           this.event = eventType.PRESS;
           this.repeat += preview.repeat;
@@ -288,6 +318,7 @@
           this.event = eventType.CLICK;
           return true;
         }
+      }
       return false;
     },
     equalType: function (name) {
@@ -311,20 +342,25 @@
     mousemove: function (e) {
       var cur = new PointEvent(e, actionType.MOVE),
         array = this.pEvents[cur.identifier], pre;
-      if (array && array.length > 0)pre = array[array.length - 1];
-      if (!this.ignoreEvent(cur, pre))
+      if (array && array.length > 0) {
+        pre = array[array.length - 1];
+      }
+      if (!this.ignoreEvent(cur, pre)) {
         this.add(cur);
+      }
     },
     keydown: {
       fun: function (e) {
-        if (this.hasCodeDefinition(e.keyCode))
+        if (this.hasCodeDefinition(e.keyCode)) {
           this.add(new KeyEvent(e, actionType.DOWN));
+        }
       }
     },
     keyup: {
       fun: function (e) {
-        if (this.hasCodeDefinition(e.keyCode))
+        if (this.hasCodeDefinition(e.keyCode)) {
           this.add(new KeyEvent(e, actionType.UP));
+        }
       }
     },
     touchstart: function (e) {
@@ -345,10 +381,14 @@
     }
 
   };
-  function getEventPool (element) {
+
+  function getEventPool(element) {
     var p = element.eventPool;
-    if (!p)p = new EventPool(element);
+    if (!p) {
+      p = new EventPool(element);
+    }
     return p;
   }
+
   Flip.getEventPool = getEventPool;
 })(Flip);

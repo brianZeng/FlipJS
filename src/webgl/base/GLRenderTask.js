@@ -1,7 +1,7 @@
 /**
  * Created by Administrator on 2015/3/31.
  */
-function GLRenderTask(opt){
+function GLRenderTask(opt) {
   if (!(this instanceof GLRenderTask)) {
     return new GLRenderTask(opt);
   }
@@ -9,16 +9,21 @@ function GLRenderTask(opt){
   this.init(opt);
 }
 inherit(GLRenderTask, RenderTask, {
-  init: function (opt){
+  init: function (opt) {
     var cvs, gl = opt.gl || (cvs = opt.canvas).getContext('webgl') || cvs.getContext('experimental-webgl');
     this.gl = gl;
-    this.resMng = gl.resMng || (gl.resMng = new GLManager(gl));
+    if (gl) {
+      this.resMng = gl.resMng || (gl.resMng = new GLManager(gl));
+    }
+    else {
+      console.error('webgl not support');
+    }
   },
-  update: function (state){
+  update: function (state) {
     state.gl = this.gl;
     state.glResMng = this.resMng;
   },
-  remove: function (item){
+  remove: function (item) {
     var upobjs = this._updateObjs, index = upobjs.indexOf(item);
     if (index > -1) {
       upobjs[index] = null;

@@ -14,23 +14,23 @@ inherit(GLAttribute, GLBinder.prototype, {
     var ob = this._buffer;
     if (ob instanceof GLBuffer) {
       ob.release(this);
-    }
+      }
     if (v instanceof GLBuffer) {
       this._buffer = v;
     }
     else if (v && v.buffer instanceof ArrayBuffer) {
       this._buffer = new GLBuffer(v);
     }
-    else {
+      else {
       throw Error('expect attribute data to be a TypedArray or GLBuffer');
-    }
+      }
     this._buffer.ref(this);
   },
   get buffer() {
     return this._buffer;
   },
   get data() {
-      var b = this.buffer;
+    var b = this.buffer;
     return b ? b.data : null
   },
   set data(v) {
@@ -55,12 +55,13 @@ inherit(GLAttribute, GLBinder.prototype, {
   bind: function (gl, state) {
     var entry = state.glParam[this.name];
     this.buffer.bind(gl);
+    gl.enableVertexAttribArray(entry._loc);
     gl.vertexAttribPointer(entry._loc, entry._size, gl.FLOAT, false, this._stride, this._offset);
   },
   invalid: function () {
     this.buffer.invalid();
   },
-  finalize: function (state, gl) {
+  dispose: function (gl) {
     this.buffer.release(this);
     this.buffer.finalize(gl);
     }

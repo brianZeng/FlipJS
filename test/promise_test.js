@@ -136,7 +136,7 @@ describe('promise test', function (){
       expect(notCalled).not.toHaveBeenCalled();
       done();
     });
-  })
+  });
 });
 describe('animation promise', function (){
   var Promise = Flip.Promise;
